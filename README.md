@@ -33,7 +33,7 @@ It auths with the watch's own ABS token, so there's nothing extra to configure.
  Watch (WatchShelf, Monkey C)
   |  on-watch login: server URL + username + password -> ABS token (stored; pw discarded)
   |
-  |-- browse:   GET  {server}/watchshelf-transcode/list?lib      -> all books (lean)
+  |-- browse:   GET  {server}/watchshelf-transcode/{list|authors|series|collections} -> lean lists
   |-- open:     GET  {server}/watchshelf-transcode/files?item    -> the book's files (lean)
   |-- queue:    split each file into 30-min chunks
   |-- sync:     GET  {server}/watchshelf-transcode/transcode?item&file&start&end -> mp3 chunk
@@ -61,7 +61,8 @@ make build            # -> bin/WatchShelf.prg for the Tactix 8 Solar (fenix8sola
 Sideload `bin/WatchShelf.prg` to the watch's `GARMIN/APPS/` (the tactix 8 is MTP on
 macOS — use OpenMTP or Android File Transfer; power-cycle the watch if a client can't
 see it). WatchShelf appears under the watch's **Music / audio providers**. Open it →
-**Log in** → **Browse library** → pick a book → it downloads in chunks.
+**Log in** → **Browse library** → **All books / By author / By series / By
+collection** → pick a book → it downloads in chunks.
 
 ## Known limitations
 
