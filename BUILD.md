@@ -103,16 +103,21 @@ IQ Store upload also validates which listed devices can actually run an audio ap
 | `make devices` | list installed device ids |
 | `make clean` | remove `bin/` and `gen/` |
 
-## Runtime checks still to do on the sim/device
+## Verified against a live ABS server
 
-The app compiles clean, but these are behaviours only a real run can confirm:
+Ran the ABS client + sidecar against a real Audiobookshelf (v2.35.1, behind
+Cloudflare): token auth, `/api/libraries` → items → item-detail shapes, direct
+MP3 download (`206 audio/mpeg`), **m4b → ADTS** convert, and the **`/progress`
+forwarder** (ABS `currentTime` confirmed updated on read-back) all pass.
 
-- **Progress sync** - WatchShelf sends `POST /api/me/progress/:id` with
-  `X-HTTP-Method-Override: PATCH`. If your ABS build ignores that header,
-  progress won't update; then add a `POST → PATCH` forwarder route to the sidecar
-  (or enable method-override at the proxy).
-- **Audio download + playback** - that `makeWebRequest(... HTTP_RESPONSE_CONTENT_TYPE_AUDIO)`
-  returns a usable `Media.ContentRef` and the native player plays the chapters.
-- **m4b whole-file** - a chapterless `.m4b` direct-downloaded and declared
-  `ENCODING_M4A`; if a book won't play, route it via the sidecar (`fmt=m4a`,
-  which produces clean ADTS - already verified end-to-end).
+## Still to confirm on the sim/device
+
+- **On-watch playback** - that a downloaded track's `Media.ContentRef` actually
+  plays through the native player to Bluetooth, including **ADTS** (m4b) output.
+- **Cloudflare + the watch's UA** - the watch's real User-Agent isn't blocked by
+  Cloudflare bot protection. In testing a `Garmin`/empty UA passed (only the
+  literal `Python-urllib` was 403'd), so this is low risk - but if downloads
+  403 on-device, allowlist the Garmin UA (or `/api/*`) in Cloudflare.
+- **Large single-file books** - a multi-hour single MP3 with no chapters downloads
+  as one big track; watch reliability there (multi-file / chaptered books split
+  into smaller tracks and are fine).

@@ -2,18 +2,20 @@
 
 A Garmin **Audio Content Provider** app that streams-then-plays audiobooks from a
 self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a
-**Garmin Tactix 8** and other music-capable Garmin watches. Download a book's
-chapters over Wi-Fi/LTE, then play them offline with real chapter navigation and
-two-way progress sync back to ABS.
+**Garmin Tactix 8** and other music-capable Garmin watches. Download a book over
+Wi-Fi/LTE, then play it offline with part/chapter navigation and two-way progress
+sync back to ABS.
 
 WatchShelf is a lean adaptation of Garmin's official **MonkeyMusic** sample: the
 same class hierarchy and system hooks (proven to compile), with the music-server
 logic swapped for Audiobookshelf + a tiny transcode sidecar.
 
-> **Status:** compiles clean against **Connect IQ SDK 9.2.0** - `make build` →
-> `bin/WatchShelf.prg` for the Tactix 8 (`fenix847mm`). Build is CLI-only (no
-> editor); see [BUILD.md](BUILD.md). Runtime behaviours (audio download/playback,
-> progress-sync PATCH) still to confirm on the simulator/device.
+> **Status:** compiles clean against **Connect IQ SDK 9.2.0** (`make build` →
+> `bin/WatchShelf.prg` for the Tactix 8 / `fenix847mm`), CLI-only (see
+> [BUILD.md](BUILD.md)). The ABS client + sidecar are **validated end-to-end
+> against a live ABS server**: browse, direct MP3 download, m4b→ADTS convert, and
+> progress write-back (ABS confirmed updated) all pass. What remains is on-watch
+> playback itself (native player → Bluetooth), which needs the device/simulator.
 
 ---
 
@@ -24,10 +26,11 @@ logic swapped for Audiobookshelf + a tiny transcode sidecar.
     |  Application.Properties: ABS server URL, API key, sidecar URL, sidecar key
     |
     |-- browse:   GET  {abs}/api/libraries, /libraries/:id/items, /items/:id
-    |-- download: GET  audio (one CHAPTER = one Media track)
-    |               direct:  {abs}/api/items/:id/file/:ino/download   (mp3/m4a books)
-    |               sidecar: {sidecar}/transcode?...&start&end&fmt=mp3 (chapters / flac/opus)
-    |-- progress: POST {abs}/api/me/progress/:itemId  (X-HTTP-Method-Override: PATCH)
+    |-- download: GET  audio (one FILE = one track; or one chapter for 1-file books)
+    |               mp3:     {abs}/api/items/:id/file/:ino/download   (direct, byte-exact)
+    |               aac/m4b: {sidecar}/transcode?...&fmt=m4a          (lossless AAC->ADTS)
+    |               flac/cut:{sidecar}/transcode?...&fmt=mp3[&start&end]
+    |-- progress: POST {sidecar}/progress -> sidecar PATCHes {abs}/api/me/progress/:itemId
     v
   Transcode sidecar (node:http + ffmpeg, 127.0.0.1:8081, behind your proxy on :443)
     |  holds the ABS token server-side; watch authenticates with a shared key
@@ -41,8 +44,8 @@ logic swapped for Audiobookshelf + a tiny transcode sidecar.
 
 | System hook | WatchShelf view/delegate | What it does |
 |---|---|---|
-| `getSyncConfigurationView()` | `LibraryView(MODE_SYNC)` -> `LibraryMenuDelegate` -> `BookMenuDelegate` | Browse ABS **library -> book**, queue every chapter, kick a sync |
-| `getSyncDelegate()` | `SyncDelegate` | Background download each queued chapter as an audio track; delete queued items |
+| `getSyncConfigurationView()` | `LibraryView(MODE_SYNC)` -> `LibraryMenuDelegate` -> `BookMenuDelegate` | Browse ABS **library -> book**, queue its tracks (per file, or per chapter for single-file books), kick a sync |
+| `getSyncDelegate()` | `SyncDelegate` | Background download each queued track as audio; delete queued items |
 | `getPlaybackConfigurationView()` | `LibraryView(MODE_PLAYBACK)` -> `DownloadedMenu` | **Downloaded** management screen (cache size, tap to remove) |
 | `getContentDelegate()` | `ContentDelegate` -> `ContentIterator` | Serve chapter tracks to the native player; sync progress on position change |
 
@@ -52,47 +55,50 @@ cache (`Media.getCachedContentObj` / `deleteCachedItem` / `getCacheStatistics`).
 User settings (server URL, API key, sidecar URL/key) live in
 `Application.Properties`, editable from Garmin Connect Mobile / Express.
 
-### Chapters as tracks
+### Tracks: one per file, or one per chapter
 
-Each **chapter** is downloaded as a **separate `Media` track** (never flattened)
-so the watch's Next/Previous buttons move chapter-to-chapter. Because ABS only
-serves whole files, per-chapter slices are cut by the sidecar (`start`/`end` ->
-ffmpeg `-ss`/`-to`) into small, complete mp3s.
+Each **audio file** becomes a separate `Media` track, so Next/Previous move
+part-to-part — this is what makes **multi-file books** (the common case in a real
+library) work. For a **single-file book that has chapters**, WatchShelf instead
+cuts one track per chapter via the sidecar (`start`/`end` -> ffmpeg `-ss`/`-t`)
+for smaller downloads and real chapter navigation. Every track stores its
+**book-absolute start offset** so progress maps back to ABS.
 
 ### Progress sync (two-way)
 
 * **On load:** `userMediaProgress.currentTime` is read from item detail.
 * **On play:** `ContentDelegate.onSong` fires on the notify/pause/stop/complete
-  events; WatchShelf converts the in-chapter position to **book-absolute**
-  seconds (`chapterStart + position`) and updates `/api/me/progress/:itemId`.
+  events; WatchShelf converts the in-track position to **book-absolute** seconds
+  (`trackStart + position`) and POSTs it to the sidecar's `/progress`.
 
-> **Note on PATCH:** Garmin's `Communications` module has **no**
-> `HTTP_REQUEST_METHOD_PATCH` (only GET/PUT/POST/DELETE). ABS's progress
-> endpoint is `PATCH /api/me/progress/:id`, so WatchShelf issues a **POST** with
-> an `X-HTTP-Method-Override: PATCH` header. ABS (an Express app) honours this
-> when method-override is enabled. If your ABS build does not, enable
-> method-override at the reverse proxy, or extend the sidecar with a
-> `POST /progress` route that forwards a real PATCH server-side.
+> **Why progress goes through the sidecar:** Garmin's `Communications` has **no**
+> `HTTP_REQUEST_METHOD_PATCH` (only GET/POST/PUT/DELETE), ABS's endpoint is
+> `PATCH /api/me/progress/:id`, and ABS **ignores** `X-HTTP-Method-Override`
+> (verified live: POST → 404). So WatchShelf **POSTs to the sidecar's
+> `/progress`**, which issues the real PATCH server-side. Tested end-to-end — ABS
+> confirmed updated. (The watch's own ABS token isn't even needed for progress.)
 
 ---
 
-## The two gotchas (read these)
+## The gotchas (read these)
 
 ### 1. Audiobookshelf will not hand us a plain MP3 -> the sidecar exists
 
 ABS's own transcoder emits **HLS/AAC**, which Garmin's `makeWebRequest` audio
 downloader **cannot consume**. Garmin needs a single, self-contained file with
-`:mediaEncoding` matching the body (`ENCODING_MP3` <-> `audio/mpeg`). So:
+`:mediaEncoding` matching the body (`ENCODING_MP3` <-> `audio/mpeg`). So, by codec:
 
-* **mp3 / m4a / m4b books** -> direct-download the byte-exact file from ABS.
-* **flac / opus / ogg / wma books, and all per-chapter cuts** -> route through the
-  **sidecar**. It has **ffmpeg pull the source from ABS over HTTP** (Range-seekable,
-  so `.m4b`/`.mp4` `moov`-at-end demuxing and chapter `-ss` seeks both work), then
-  returns **64 kbps mono MP3** (spoken-word sweet spot, ~28 MB/hour) or, for AAC
-  sources, a lossless **AAC -> ADTS copy** (no re-encode).
+* **mp3 files** -> direct-download the byte-exact file from ABS (no sidecar).
+* **aac / m4b / m4a files** -> **sidecar**, which copies the AAC stream to **ADTS**
+  (lossless, no re-encode; Garmin plays it via `ENCODING_ADTS`).
+* **flac / opus / ... and per-chapter cuts** -> **sidecar** transcode to **64 kbps
+  mono MP3** (~28 MB/hour).
 
-The sidecar holds the ABS token server-side; the watch never sees it and
-authenticates to the sidecar with its own shared key.
+The sidecar has **ffmpeg pull the source from ABS over HTTP** (Range-seekable, so
+`.m4b`/`.mp4` `moov`-at-end demuxing and chapter `-ss` seeks both work), and holds
+the ABS token server-side. In a real library MP3 dominates (a live check found
+70 mp3 vs 6 m4b, zero flac), so the sidecar mainly matters for a few m4b books,
+per-chapter cuts, and progress.
 
 ### 2. On-device audio downloads require real HTTPS on :443 with a valid cert
 
@@ -103,6 +109,15 @@ on port 443 with a complete, valid certificate chain** - a self-signed or
 incomplete-chain cert makes `makeWebRequest` audio downloads fail on-device
 (even when they work in the sim). Put both ABS and the sidecar behind a reverse
 proxy that terminates TLS with a real cert (see `sidecar/Caddyfile.snippet`).
+
+### 3. If ABS is behind Cloudflare, mind the User-Agent
+
+A live test showed the reference server sits behind **Cloudflare**, which **403s
+bot-like User-Agents** (the literal `Python-urllib` was blocked; a `Garmin`/empty
+UA passed). The watch's own UA is very likely fine, but if the app ever gets a
+403, allowlist the Garmin UA (or the `/api/*` paths) in Cloudflare. The
+**sidecar** sends a normal UA on its ABS calls and is best pointed at ABS's
+**internal** URL (e.g. `http://127.0.0.1:13378`) so it skips Cloudflare entirely.
 
 ---
 
@@ -123,10 +138,10 @@ Build it with **`make build`** (see **[BUILD.md](BUILD.md)** - CLI only, no edit
 
 ## Known limitations (first version)
 
-* **Multi-file books:** chapters are cut from the **first** audio file's `ino`.
-  Books split across multiple files (where chapters span files) are not yet
-  mapped file-by-file. Single-file `.m4b`/`.mp3` books (the common case) work.
+* **Chaptered multi-file books:** a book that is *both* multi-file *and* has
+  book-level chapters is played per **file** (not per chapter) — chapter cutting
+  is only applied to single-file books. Per-file navigation still works.
 * **Resume seek:** saved position is read and logged; the native player resumes
-  at chapter boundaries. Sample-accurate mid-chapter resume is a future step.
+  at track boundaries. Sample-accurate mid-track resume is a future step.
 * **No play sessions:** for offline playback WatchShelf skips ABS play sessions
   and syncs via the progress endpoint only (simpler, no session reaping).
