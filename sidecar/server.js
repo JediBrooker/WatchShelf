@@ -1,19 +1,18 @@
 // WatchShelf sidecar. The watch can't download giant audiobook files whole, so
 // this cuts small on-demand chunks with ffmpeg (via HTTP Range - it never pulls
-// the whole file), and serves a lean file list for books whose ABS detail is too
-// big for the watch to accept.
-//
-// Auth: the watch passes its OWN ABS token as ?token=, which the sidecar uses to
-// read from ABS - no separate secret to configure. The only required env is
-// ABS_URL (point it at ABS's INTERNAL address to bypass Cloudflare, e.g.
-// http://127.0.0.1:13378).
+// the whole file), and serves lean lists (books, authors, series, collections,
+// per-book files) so nothing overflows the watch. Auth = the watch's own ABS
+// token (?token=). Only required env: ABS_URL.
 //
 // Routes:
 //   GET /health
-//   GET /files?item=<id>&token=<absToken>
-//        -> {"title":"...","files":[{"ino":N,"duration":S,"size":B,"codec":"mp3"}]}
-//   GET /transcode?item=<id>&file=<ino>&fmt=mp3|m4a&start=<s>&end=<s>&token=<absToken>
-//        -> a small mp3 (or ADTS) chunk.
+//   GET /list?lib&token[&author=id|&series=id|&collection=id]  -> {books:[{id,title,author}]}
+//   GET /authors?lib&token       -> {authors:[{id,name,count}]}
+//   GET /series?lib&token        -> {series:[{id,name,count}]}
+//   GET /collections?lib&token   -> {collections:[{id,name}]}
+//   GET /files?item&token        -> {title,files:[{ino,duration,size,codec}]}
+//   GET /transcode?item&file&fmt&start&end&token -> a small mp3 chunk
+//   POST /progress?token  {itemId,currentTime,duration} -> real PATCH to ABS
 
 import http from 'node:http';
 import { spawn } from 'node:child_process';
@@ -24,8 +23,11 @@ const PORT = Number(process.env.PORT || 8081);
 const UA   = 'WatchShelf-sidecar';
 if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); process.exit(1); }
 
-const CT  = { mp3: 'audio/mpeg', m4a: 'audio/aac' };
+const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac' };
 const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
+const b64  = (s) => Buffer.from(String(s)).toString('base64');
+const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
+const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
 function ffArgs(srcUrl, token, fmt, start, end) {
   const a = ['-hide_banner', '-loglevel', 'error', '-user_agent', UA,
@@ -55,40 +57,59 @@ function transcode(req, res, u) {
   pipeline(ff.stdout, res).catch(() => { ff.kill('SIGKILL'); if (!res.writableEnded) res.destroy(); });
 }
 
-async function files(req, res, u) {
-  const item = u.searchParams.get('item'), token = u.searchParams.get('token');
-  if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
-  try {
-    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}?expanded=1`,
-      { headers: { Authorization: `Bearer ${token}`, 'User-Agent': UA } });
-    if (!r.ok) { res.writeHead(502).end('ABS ' + r.status); return; }
-    const d = await r.json();
-    const m = d.media || {};
-    const out = {
-      title: (m.metadata || {}).title || 'Book',
-      files: (m.audioFiles || []).map((a) => ({
-        ino: a.ino, duration: a.duration, size: (a.metadata || {}).size || a.size || 0, codec: a.codec,
-      })),
-    };
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(out));
-  } catch (e) { res.writeHead(502).end('ABS unreachable'); }
+const bookOf = (it) => ({
+  id: it.id,
+  title: ((it.media || {}).metadata || {}).title || '?',
+  author: ((it.media || {}).metadata || {}).authorName || '',
+});
+
+async function absJson(path, token) {
+  const r = await fetch(`${ABS}${path}`, { headers: bearer(token) });
+  if (!r.ok) { const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
+  return r.json();
 }
 
 async function list(req, res, u) {
   const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
+  const author = u.searchParams.get('author'), series = u.searchParams.get('series'), collection = u.searchParams.get('collection');
   if (!lib || !token || !IDRE.test(lib)) { res.writeHead(400).end('bad params'); return; }
   try {
-    const r = await fetch(`${ABS}/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title`,
-      { headers: { Authorization: `Bearer ${token}`, 'User-Agent': UA } });
-    if (!r.ok) { res.writeHead(502).end('ABS ' + r.status); return; }
-    const d = await r.json();
-    const out = (d.results || []).map((it) => ({
-      id: it.id,
-      title: ((it.media || {}).metadata || {}).title || '?',
-      author: ((it.media || {}).metadata || {}).authorName || '',
-    }));
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify({ books: out }));
-  } catch (e) { res.writeHead(502).end('ABS unreachable'); }
+    let books;
+    if (collection && IDRE.test(collection)) {
+      books = ((await absJson(`/api/collections/${encodeURIComponent(collection)}`, token)).books || []).map(bookOf);
+    } else {
+      let filter = '';
+      if (author && IDRE.test(author)) { filter = `&filter=authors.${b64(author)}`; }
+      else if (series && IDRE.test(series)) { filter = `&filter=series.${b64(series)}`; }
+      books = ((await absJson(`/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title${filter}`, token)).results || []).map(bookOf);
+    }
+    res.writeHead(200, jsonHead).end(JSON.stringify({ books }));
+  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+}
+
+async function groups(req, res, u, path, map) {
+  const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
+  if (!lib || !token || !IDRE.test(lib)) { res.writeHead(400).end('bad params'); return; }
+  try {
+    const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/${path}`, token);
+    res.writeHead(200, jsonHead).end(JSON.stringify(map(d)));
+  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+}
+const authors     = (q, s, u) => groups(q, s, u, 'authors', (d) => ({ authors: (d.authors || []).map((a) => ({ id: a.id, name: a.name, count: a.numBooks })).sort((x, y) => String(x.name).localeCompare(String(y.name))) }));
+const series      = (q, s, u) => groups(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }));
+const collections = (q, s, u) => groups(q, s, u, 'collections', (d) => ({ collections: (d.results || []).map((c) => ({ id: c.id, name: c.name })) }));
+
+async function files(req, res, u) {
+  const item = u.searchParams.get('item'), token = u.searchParams.get('token');
+  if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
+  try {
+    const m = (await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1`, token)).media || {};
+    const out = {
+      title: (m.metadata || {}).title || 'Book',
+      files: (m.audioFiles || []).map((a) => ({ ino: a.ino, duration: a.duration, size: (a.metadata || {}).size || a.size || 0, codec: a.codec })),
+    };
+    res.writeHead(200, jsonHead).end(JSON.stringify(out));
+  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
 }
 
 function readJson(req, cb) {
@@ -107,7 +128,7 @@ function progress(req, res, u) {
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
-        { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': UA }, body: JSON.stringify(payload) });
+        { method: 'PATCH', headers: { ...bearer(token), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       res.writeHead(r.ok ? 200 : 502).end(r.ok ? 'ok' : 'ABS ' + r.status);
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
@@ -115,11 +136,15 @@ function progress(req, res, u) {
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
-  if (u.pathname === '/health') { res.writeHead(200).end('ok'); return; }
-  if (u.pathname === '/list'      && req.method === 'GET') { list(req, res, u); return; }
-  if (u.pathname === '/files'     && req.method === 'GET') { files(req, res, u); return; }
-  if (u.pathname === '/transcode' && req.method === 'GET') { transcode(req, res, u); return; }
-  if (u.pathname === '/progress'  && req.method === 'POST') { progress(req, res, u); return; }
+  const p = u.pathname, g = req.method === 'GET';
+  if (p === '/health') { res.writeHead(200).end('ok'); return; }
+  if (p === '/list'        && g) { list(req, res, u); return; }
+  if (p === '/authors'     && g) { authors(req, res, u); return; }
+  if (p === '/series'      && g) { series(req, res, u); return; }
+  if (p === '/collections' && g) { collections(req, res, u); return; }
+  if (p === '/files'       && g) { files(req, res, u); return; }
+  if (p === '/transcode'   && g) { transcode(req, res, u); return; }
+  if (p === '/progress'    && req.method === 'POST') { progress(req, res, u); return; }
   res.writeHead(404).end();
 });
 const BIND = process.env.BIND || '127.0.0.1';

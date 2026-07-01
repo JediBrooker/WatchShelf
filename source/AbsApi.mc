@@ -47,15 +47,30 @@ module AbsApi {
     // lists and cuts small on-demand chunks. Auth is the watch's own ABS token.
     function sidecarBase() { return serverUrl() + "/watchshelf-transcode"; }
 
-    // GET /list -> { books: [{id, title, author}] } (all books, tiny).
-    function getBookList(libId, cb) {
+    // GET /list -> { books: [{id, title, author}] }. filterType is
+    // "author"/"series"/"collection" (with filterId), or null for all books.
+    function getBookList(libId, filterType, filterId, cb) {
+        var params = { "lib" => libId, "token" => authToken() };
+        if (filterType != null && filterId != null) { params[filterType] = filterId; }
         Communications.makeWebRequest(
-            sidecarBase() + "/list",
+            sidecarBase() + "/list", params,
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
+    // Lean group lists for browse-by: /authors, /series, /collections.
+    function getGroups(path, libId, cb) {
+        Communications.makeWebRequest(
+            sidecarBase() + path,
             { "lib" => libId, "token" => authToken() },
             { :method => Communications.HTTP_REQUEST_METHOD_GET,
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
             cb);
     }
+    function getAuthors(libId, cb)     { getGroups("/authors", libId, cb); }
+    function getSeries(libId, cb)      { getGroups("/series", libId, cb); }
+    function getCollections(libId, cb) { getGroups("/collections", libId, cb); }
 
     // GET /files -> { title, files: [{ino, duration, size, codec}] } (tiny).
     function getFiles(itemId, cb) {

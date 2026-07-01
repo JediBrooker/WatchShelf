@@ -35,4 +35,9 @@
     <string id="fieldServer">Server URL</string>
     <string id="fieldUser">Username</string>
     <string id="fieldPass">Password</string>
+    <string id="allBooks">All books</string>
+    <string id="byAuthor">By author</string>
+    <string id="bySeries">By series</string>
+    <string id="byCollection">By collection</string>
+    <string id="errNone">None found</string>
 </strings>
