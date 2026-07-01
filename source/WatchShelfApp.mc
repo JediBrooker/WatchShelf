@@ -32,14 +32,18 @@ class WatchShelfApp extends Application.AudioContentProviderApp {
         return new SyncDelegate();
     }
 
-    // System -> "configure playback": pick which downloaded books/chapters to play.
+    // System -> "configure playback": manage downloaded books. DownloadedMenu is
+    // a Menu2, which handles Back itself, so it's returned directly with its
+    // delegate - no plain loading view (and no missing-delegate hang).
     function getPlaybackConfigurationView() {
-        return [new LibraryView(LibraryView.MODE_PLAYBACK)];
+        return [new DownloadedMenu(), new DownloadedMenuDelegate()];
     }
 
     // System -> "configure sync": browse ABS libraries -> books -> download.
+    // LibraryView is a plain View, so it MUST be paired with an input delegate
+    // (LibraryViewDelegate) or Back has no handler -> the config view hangs.
     function getSyncConfigurationView() {
-        return [new LibraryView(LibraryView.MODE_SYNC)];
+        return [new LibraryView(), new LibraryViewDelegate()];
     }
 
     // Provider icon shown in the device media menu.

@@ -89,7 +89,9 @@ class SyncDelegate extends Communications.SyncDelegate {
         };
 
         var delegate = new RequestDelegate(method(:onTrackDownloaded), context);
-        delegate.makeWebRequest(info[TrackInfo.URL], null, options);
+        var url = AbsApi.sidecarChunkUrl(info[TrackInfo.ITEM_ID], info[TrackInfo.INO],
+                                        info[TrackInfo.CSTART], info[TrackInfo.CEND]);
+        delegate.makeWebRequest(url, null, options);
     }
 
     // mp3 -> MP3, m4a -> M4A. Anything else is invalid and the download fails.

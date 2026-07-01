@@ -12,6 +12,8 @@ module Store {
     const DELETE_LIST = "deleteList";  // [ refId, ... ] queued to delete from media cache
     const TRACKS      = "tracks";       // { refId => TrackInfo dict } already on device
     const APP_VERSION = "appVersion";  // Number, see Versions
+    const SERVER      = "absServer";   // server URL saved by on-watch login
+    const TOKEN       = "absToken";    // bearer token saved by on-watch login
 }
 
 // ---------------------------------------------------------------------------
@@ -32,14 +34,22 @@ module Versions {
         V1 = 0
     }
     const current = V1;
+    // Visible build tag - bump every build so we can confirm on-watch which
+    // build is actually running (the MTP transfer is unreliable).
+    const tag = "b10";
 }
 
 // Keys for a TrackInfo dict (one downloaded/queued CHAPTER = one Media track).
 module TrackInfo {
-    const URL      = "url";        // fully-qualified download URL (direct ABS or sidecar)
-    const TITLE    = "title";      // display title e.g. "Ch 3 - Wizards First Rule"
-    const TYPE     = "type";       // "mp3" | "m4a" -> Media.ENCODING_*
-    const ITEM_ID  = "itemId";     // ABS libraryItemId (li_...) for progress sync
-    const START    = "start";      // chapter start offset within the book (seconds)
-    const CAN_SKIP = "canSkip";    // Boolean, always true for audiobooks
+    // We store the chunk PARAMETERS (not the full URL) so hundreds of chunks stay
+    // small in Storage - the download URL (which embeds the long token) is rebuilt
+    // at download time via AbsApi.sidecarChunkUrl().
+    const TITLE    = "title";      // display title
+    const TYPE     = "type";       // "mp3" -> Media.ENCODING_*
+    const ITEM_ID  = "itemId";     // ABS libraryItemId
+    const INO      = "ino";        // audio file inode
+    const CSTART   = "cstart";     // chunk start within the file (seconds)
+    const CEND     = "cend";       // chunk end within the file (seconds)
+    const START    = "start";      // book-absolute start (seconds) for progress
+    const CAN_SKIP = "canSkip";
 }

@@ -2,44 +2,33 @@ using Toybox.Application;
 using Toybox.Graphics;
 using Toybox.WatchUi;
 
-// Entry view for both provider flows. It draws a status line and, on first show,
-// either fetches the ABS library list (sync flow) or opens the downloaded-books
-// menu (playback flow).
+// Sync-configuration entry screen. On first show it fetches the ABS library list,
+// then pushes a menu of libraries. It is a plain View, so WatchShelfApp pairs it
+// with LibraryViewDelegate to handle Back (that missing pairing was the hang).
 class LibraryView extends WatchUi.View {
 
-    static const MODE_SYNC = 0;
-    static const MODE_PLAYBACK = 1;
-
-    private var mMode;
     private var mMessage;
     private var mStarted;
 
-    function initialize(mode) {
+    function initialize() {
         View.initialize();
-        mMode = mode;
         mMessage = WatchUi.loadResource(Rez.Strings.loading);
         mStarted = false;
     }
 
     function onShow() {
-        if (mStarted) {
-            // Returning from a pushed menu -> nothing left to do here.
-            WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
-            return;
-        }
+        // Re-shown after the user backs out of the pushed menu: do nothing.
+        // (Previously this called popView from inside onShow - a re-entrant UI
+        // op during a lifecycle callback, which can lock the UI thread.)
+        if (mStarted) { return; }
         mStarted = true;
 
         if (!AbsApi.isConfigured()) {
-            mMessage = WatchUi.loadResource(Rez.Strings.needConfig);
-            WatchUi.requestUpdate();
+            // Sideloaded apps can't use phone settings, so log in on the watch.
+            Login.start();
             return;
         }
-
-        if (mMode == MODE_PLAYBACK) {
-            openDownloadedMenu();
-        } else {
-            AbsApi.getLibraries(method(:onLibraries));
-        }
+        AbsApi.getLibraries(method(:onLibraries));
     }
 
     function onUpdate(dc) {
@@ -50,7 +39,7 @@ class LibraryView extends WatchUi.View {
             mMessage, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
-    // ---- sync flow: got the library list ----------------------------------
+    // Got the library list -> show a menu of book libraries.
     function onLibraries(code, data) {
         if ((code == 200) && (data != null) && (data["libraries"] != null)) {
             var libs = data["libraries"];
@@ -67,10 +56,5 @@ class LibraryView extends WatchUi.View {
             mMessage = WatchUi.loadResource(Rez.Strings.errLibraries) + "\n(" + code + ")";
             WatchUi.requestUpdate();
         }
-    }
-
-    // ---- playback flow: manage what is already downloaded ------------------
-    function openDownloadedMenu() {
-        WatchUi.pushView(new DownloadedMenu(), new DownloadedMenuDelegate(), WatchUi.SLIDE_LEFT);
     }
 }

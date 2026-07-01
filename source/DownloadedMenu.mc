@@ -9,6 +9,11 @@ class DownloadedMenu extends WatchUi.Menu2 {
     function initialize() {
         Menu2.initialize({ :title => titleWithSize() });
 
+        // This "Downloaded" screen is where the audio provider first opens, so it
+        // MUST lead to the books. Always show a way into the library; LibraryView
+        // logs the user in first if they aren't configured yet.
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.browseLibrary), null, "browse", null));
+
         var tracks = Application.Storage.getValue(Store.TRACKS);
         if (tracks == null) { tracks = {}; }
 
@@ -40,6 +45,6 @@ class DownloadedMenu extends WatchUi.Menu2 {
         var used = 0;
         if (stats != null && stats.size != null) { used = stats.size; }
         var mb = (used / (1024 * 1024)).toNumber();
-        return WatchUi.loadResource(Rez.Strings.downloaded) + " (" + mb + " MB)";
+        return WatchUi.loadResource(Rez.Strings.downloaded) + " " + Versions.tag + " (" + mb + " MB)";
     }
 }

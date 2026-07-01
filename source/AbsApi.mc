@@ -10,15 +10,25 @@ using Toybox.System;
 module AbsApi {
 
     // ---- config accessors (never crash if a setting is unset) --------------
+    // Config comes from EITHER on-watch login (Application.Storage - works for a
+    // sideloaded app) OR phone/Garmin-Connect settings (Application.Properties -
+    // only available once the app is published to the Connect IQ Store). The
+    // login values (Storage) win when present.
     function serverUrl() {
-        var v = _prop(Settings.SERVER_URL);
-        // strip a single trailing slash so we can concat clean paths
-        if ((v != null) && v.length() > 0 && v.substring(v.length() - 1, v.length()).equals("/")) {
+        var v = Application.Storage.getValue(Store.SERVER);
+        if (v == null) { v = _prop(Settings.SERVER_URL); }
+        if (v == null) { return null; }
+        if (v.length() > 0 && v.substring(v.length() - 1, v.length()).equals("/")) {
             v = v.substring(0, v.length() - 1);
         }
         return v;
     }
-    function apiKey()     { return _prop(Settings.API_KEY); }
+    // Bearer token: the on-watch login token (Storage), else an API key (settings).
+    function authToken() {
+        var v = Application.Storage.getValue(Store.TOKEN);
+        if (v == null) { v = _prop(Settings.API_KEY); }
+        return v;
+    }
     function sidecarUrl() {
         var v = _prop(Settings.SIDECAR_URL);
         if ((v != null) && v.length() > 0 && v.substring(v.length() - 1, v.length()).equals("/")) {
@@ -27,6 +37,42 @@ module AbsApi {
         return v;
     }
     function sidecarKey() { return _prop(Settings.SIDECAR_KEY); }
+    function hasSidecar() {
+        return (sidecarUrl() != null) && (sidecarKey() != null);
+    }
+
+    // ---- sidecar (server.js behind {server}/watchshelf-transcode) ----------
+    // ALL heavy operations route through the sidecar: most books here are single
+    // 200MB-1GB files the watch cannot download whole, so the sidecar serves lean
+    // lists and cuts small on-demand chunks. Auth is the watch's own ABS token.
+    function sidecarBase() { return serverUrl() + "/watchshelf-transcode"; }
+
+    // GET /list -> { books: [{id, title, author}] } (all books, tiny).
+    function getBookList(libId, cb) {
+        Communications.makeWebRequest(
+            sidecarBase() + "/list",
+            { "lib" => libId, "token" => authToken() },
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
+    // GET /files -> { title, files: [{ino, duration, size, codec}] } (tiny).
+    function getFiles(itemId, cb) {
+        Communications.makeWebRequest(
+            sidecarBase() + "/files",
+            { "item" => itemId, "token" => authToken() },
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
+    // One CHUNK of a file as a small mp3 the watch can download.
+    function sidecarChunkUrl(itemId, ino, startSec, endSec) {
+        return sidecarBase() + "/transcode?item=" + itemId + "&file=" + ino
+            + "&fmt=mp3&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&token=" + authToken();
+    }
 
     function _prop(key) {
         // Properties.getValue throws if the key is undeclared; ours are declared
@@ -37,12 +83,12 @@ module AbsApi {
     }
 
     function isConfigured() {
-        return (serverUrl() != null) && (apiKey() != null);
+        return (serverUrl() != null) && (authToken() != null);
     }
 
     // Common auth header for every request.
     function authHeaders() {
-        return { "Authorization" => "Bearer " + apiKey() };
+        return { "Authorization" => "Bearer " + authToken() };
     }
 
     // ---- library / item listing -------------------------------------------
@@ -63,7 +109,9 @@ module AbsApi {
     function getItems(libraryId, callback) {
         Communications.makeWebRequest(
             serverUrl() + "/api/libraries/" + libraryId + "/items",
-            { "minified" => "1", "limit" => "200", "sort" => "media.metadata.title" },
+            // limit is small on purpose: the watch caps makeWebRequest responses
+            // (NETWORK_RESPONSE_TOO_LARGE / -402), so we page rather than pull all.
+            { "minified" => "1", "limit" => "10", "sort" => "media.metadata.title" },
             { :method => Communications.HTTP_REQUEST_METHOD_GET,
               :headers => authHeaders(),
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
@@ -82,6 +130,37 @@ module AbsApi {
             callback);
     }
 
+    // ---- play session (lean fallback when full item detail is too large) ---
+    // POST /api/items/:id/play -> audioTracks[] with contentUrl + mimeType, WITHOUT
+    // the per-file metaTags/chapters bloat that overflows the watch on big books.
+    function getPlaySession(itemId, cb) {
+        Communications.makeWebRequest(
+            serverUrl() + "/api/items/" + itemId + "/play",
+            { "deviceInfo" => { "clientName" => "WatchShelf" },
+              "mediaPlayer" => "WatchShelf",
+              "forceDirectPlay" => true,
+              "supportedMimeTypes" => ["audio/mpeg", "audio/mp4"] },
+            { :method => Communications.HTTP_REQUEST_METHOD_POST,
+              :headers => { "Authorization" => "Bearer " + authToken(),
+                            "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
+    // Build a downloadable URL from a play track's contentUrl (relative path).
+    function playTrackUrl(contentUrl) {
+        if (contentUrl == null) { return null; }
+        var sep = (contentUrl.find("?") != null) ? "&" : "?";
+        return serverUrl() + contentUrl + sep + "token=" + authToken();
+    }
+
+    // audio/mpeg -> mp3, everything else (audio/mp4, aac) -> m4a. Both direct-play.
+    function mimeToType(mime) {
+        var m = _lower(mime);
+        if ((m != null) && (m.find("mpeg") != null)) { return "mp3"; }
+        return "m4a";
+    }
+
     // ---- per-file playback decision (codec-based) --------------------------
     // MP3   -> direct-download from ABS (byte-exact, Garmin plays it; no sidecar).
     // AAC   (aac/m4a/m4b/mp4) -> sidecar copies the AAC stream to ADTS (lossless,
@@ -97,15 +176,17 @@ module AbsApi {
     }
 
     // Download URL + declared encoding for one whole audio FILE (= one track).
+    // MP3 and AAC/m4b BOTH download byte-exact directly from ABS - the watch
+    // decodes MP4/AAC, so no sidecar is required for the common library. Only
+    // flac/opus need the sidecar transcode.
     function fileTrackUrl(itemId, audioFile) {
         var ino = audioFile["ino"];
-        if (fileIsMp3(audioFile)) { return directFileUrl(itemId, ino); }
-        if (fileIsAac(audioFile)) { return sidecarFileUrl(itemId, ino, "m4a"); }
+        if (fileIsMp3(audioFile) || fileIsAac(audioFile)) { return directFileUrl(itemId, ino); }
         return sidecarFileUrl(itemId, ino, "mp3");
     }
     function fileTrackType(audioFile) {
         if (fileIsMp3(audioFile)) { return "mp3"; }
-        if (fileIsAac(audioFile)) { return "adts"; }
+        if (fileIsAac(audioFile)) { return "m4a"; }
         return "mp3";
     }
 
@@ -115,7 +196,7 @@ module AbsApi {
     // because makeWebRequest audio downloads are simplest with ?token=.
     // :fileid in the ABS route == the audioFile ino.
     function directFileUrl(itemId, ino) {
-        return serverUrl() + "/api/items/" + itemId + "/file/" + ino + "/download?token=" + apiKey();
+        return serverUrl() + "/api/items/" + itemId + "/file/" + ino + "/download?token=" + authToken();
     }
 
     // Sidecar whole-file convert: fmt=m4a copies AAC -> ADTS; fmt=mp3 transcodes.
@@ -147,23 +228,44 @@ module AbsApi {
         return 0;
     }
 
-    // Progress sync goes through the SIDECAR. ABS's endpoint is PATCH
-    // /api/me/progress/:id, but Monkey C's Communications has NO PATCH method
-    // (only GET/POST/PUT/DELETE) and ABS ignores X-HTTP-Method-Override (verified
-    // against the live server: POST -> 404). So the watch POSTs to the sidecar,
-    // which issues the real PATCH to ABS server-side. If the sidecar isn't
-    // configured, progress is skipped silently. currentTime is book-absolute sec.
+    // Progress sync via the sidecar (Monkey C has no PATCH; ABS ignores
+    // X-HTTP-Method-Override). The watch POSTs; the sidecar PATCHes ABS with the
+    // same token. Fire-and-forget.
     function patchProgress(itemId, currentTimeSec, durationSec) {
-        if ((sidecarUrl() == null) || (sidecarKey() == null)) { return; }
         var params = { "itemId" => itemId, "currentTime" => currentTimeSec };
         if (durationSec != null) { params["duration"] = durationSec; }
         Communications.makeWebRequest(
-            sidecarUrl() + "/progress?key=" + sidecarKey(),
+            sidecarBase() + "/progress?token=" + authToken(),
             params,
             { :method => Communications.HTTP_REQUEST_METHOD_POST,
               :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
             new AbsProgressListener().method(:onResponse));
+    }
+
+    // ---- on-watch login ----------------------------------------------------
+    function login(server, username, password, cb) {
+        Communications.makeWebRequest(
+            _noSlash(server) + "/login",
+            { "username" => username, "password" => password },
+            { :method => Communications.HTTP_REQUEST_METHOD_POST,
+              :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+    function saveLogin(server, token) {
+        Application.Storage.setValue(Store.SERVER, _noSlash(server));
+        Application.Storage.setValue(Store.TOKEN, token);
+    }
+    function logout() {
+        Application.Storage.deleteValue(Store.SERVER);
+        Application.Storage.deleteValue(Store.TOKEN);
+    }
+    function _noSlash(url) {
+        if ((url != null) && url.length() > 0 && url.substring(url.length() - 1, url.length()).equals("/")) {
+            return url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 
     // ---- small helpers -----------------------------------------------------

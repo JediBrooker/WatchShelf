@@ -2,7 +2,7 @@
 
 No editor, no IDE, no VS Code. Everything is terminal + the `Makefile`. Verified
 against **Connect IQ SDK 9.2.0** on macOS; the app builds clean for the Tactix 8
-(`fenix847mm`).
+(`fenix8solar51mm`).
 
 ## 0. Prerequisites (one-time)
 
@@ -16,7 +16,7 @@ against **Connect IQ SDK 9.2.0** on macOS; the app builds clean for the Tactix 8
   so it keeps working when you update the SDK.
 - **Your Tactix 8 device bundle** - in the SDK Manager → Devices, the entry
   **“fēnix 8 47mm / 51mm / tactix 8 47mm / 51mm / quatix 8 47mm / 51mm”**
-  (device id `fenix847mm`). Already installed.
+  (device id `fenix8solar51mm`). Already installed.
 - **ffmpeg** on PATH - for the transcode sidecar. Already present.
 
 ## 1. Signing key (one-time)
@@ -32,7 +32,7 @@ and store submissions must be signed with it, or existing installs won't update.
 ## 2. Build for your Tactix 8
 
 ```
-make build              # -> bin/WatchShelf.prg  (device fenix847mm)
+make build              # -> bin/WatchShelf.prg  (device fenix8solar51mm)
 make build DEVICE=venu3 # build for a different installed device
 ```
 
@@ -96,7 +96,7 @@ IQ Store upload also validates which listed devices can actually run an audio ap
 
 | Target | Does |
 |---|---|
-| `make build [DEVICE=id]` | debug `.prg` (default `fenix847mm`) |
+| `make build [DEVICE=id]` | debug `.prg` (default `fenix8solar51mm`) |
 | `make sim [DEVICE=id]` | build + launch simulator |
 | `make package` | store `.iq` across all manifest devices |
 | `make key` | generate the signing key |

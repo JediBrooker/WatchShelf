@@ -1,7 +1,6 @@
-using Toybox.Application;
 using Toybox.WatchUi;
 
-// Picked a library -> load its items and show the book menu.
+// Picked a library -> get the lean book list from the sidecar, show all books.
 class LibraryMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function initialize() {
@@ -9,24 +8,16 @@ class LibraryMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onSelect(item) {
-        var libraryId = item.getId();
-        AbsApi.getItems(libraryId, method(:onItems));
+        AbsApi.getBookList(item.getId(), method(:onList));
     }
 
-    function onItems(code, data) {
-        if ((code == 200) && (data != null) && (data["results"] != null)) {
-            var results = data["results"];
+    function onList(code, data) {
+        if ((code == 200) && (data != null) && (data["books"] != null)) {
+            var books = data["books"];
             var menu = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.pickBook) });
-            for (var i = 0; i < results.size(); ++i) {
-                var it = results[i];
-                var media = it["media"];
-                var title = "?";
-                var sub = null;
-                if (media != null && media["metadata"] != null) {
-                    title = media["metadata"]["title"];
-                    sub = media["metadata"]["authorName"];
-                }
-                menu.addItem(new WatchUi.MenuItem(title, sub, it["id"], null));
+            for (var i = 0; i < books.size(); ++i) {
+                var b = books[i];
+                menu.addItem(new WatchUi.MenuItem(b["title"], b["author"], b["id"], null));
             }
             WatchUi.pushView(menu, new BookMenuDelegate(), WatchUi.SLIDE_LEFT);
         } else {

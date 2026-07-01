@@ -1,25 +1,26 @@
-# Add this to the existing Audiobookshelf site block so the sidecar shares the
-# same valid HTTPS:443 certificate. handle_path strips the /watchshelf-transcode
-# prefix, so the sidecar sees /transcode?... as expected.
+# The watch calls https://<your-abs-domain>/watchshelf-transcode/... and the app
+# derives that path from the ABS server URL you logged in with. So this route must
+# live on WHATEVER fronts your Audiobookshelf domain (the same thing Cloudflare
+# points at). handle_path strips the prefix so the sidecar sees /list,/files,/transcode.
 #
-# The WatchShelf app "Transcode sidecar URL" setting should then be:
-#   https://abs.example.com/watchshelf-transcode
-
-abs.example.com {
+# --- Caddy (add inside your existing ABS site block) ---
+books.jedibrooker.com {
     handle_path /watchshelf-transcode/* {
         reverse_proxy 127.0.0.1:8081
     }
-
-    # existing Audiobookshelf backend
-    reverse_proxy 127.0.0.1:13378
+    reverse_proxy 127.0.0.1:13378        # your existing Audiobookshelf
 }
 
-# ---------------------------------------------------------------------------
-# nginx equivalent (inside the existing ABS server { } block on :443):
-#
+# --- nginx (inside the server{} block that serves ABS) ---
 # location /watchshelf-transcode/ {
 #     proxy_pass http://127.0.0.1:8081/;   # trailing slash strips the prefix
-#     proxy_buffering off;                 # stream through; don't buffer the book
-#     proxy_read_timeout 3600s;            # long transcodes
+#     proxy_buffering off;                 # stream chunks; don't buffer
+#     proxy_read_timeout 600s;
 # }
-# ---------------------------------------------------------------------------
+#
+# --- Cloudflare Tunnel (cloudflared config.yml ingress, BEFORE the ABS catch-all) ---
+# - hostname: books.jedibrooker.com
+#   path: /watchshelf-transcode/*
+#   service: http://127.0.0.1:8081
+# - hostname: books.jedibrooker.com
+#   service: http://127.0.0.1:13378
