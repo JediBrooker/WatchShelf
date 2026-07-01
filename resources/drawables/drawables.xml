@@ -1,0 +1,14 @@
+<drawables>
+    <!-- Launcher/app icon. -->
+    <bitmap id="launcher" filename="launcher_icon.png" dithering="none"/>
+
+    <!-- Provider icon shown in the device media menu. A palette keeps it crisp
+         on limited-color MIP displays. -->
+    <bitmap id="providerIcon" filename="provider_icon.png" dithering="none">
+        <palette>
+            <color>000000</color>
+            <color>FF8000</color>
+            <color>FFFFFF</color>
+        </palette>
+    </bitmap>
+</drawables>

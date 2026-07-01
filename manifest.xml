@@ -1,0 +1,88 @@
+<!-- WatchShelf manifest. type MUST be audio-content-provider-app. minSdkVersion 3.1.0
+     because we use Toybox.Media.SyncDelegate, Application.Properties/Storage, ContentRef,
+     Communications.notifySync*/startSync, and PlaybackProfile skip*TimeDelta (4.2.4+, guarded).
+     Attribute is minSdkVersion (as in the MonkeyMusic sample), NOT minApiLevel.
+     Product ids: fenix847mm (== Tactix 8 47mm & 51mm, per its deviceId/displayName)
+     first, then the music/ACP-capable set. Every id here is confirmed against an installed
+     SDK device folder (~/Library/Application Support/Garmin/ConnectIQ/Devices/); a listed
+     device that lacks audio support is flagged at build/store-upload time, not here. -->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application entry="WatchShelfApp" id="a1b2c3d4e5f647589a0b1c2d3e4f5061" launcherIcon="@Drawables.launcher" minSdkVersion="3.1.0" name="@Strings.AppName" type="audio-content-provider-app">
+        <iq:products>
+            <!-- Tactix 8 (47mm & 51mm AMOLED) builds as fenix847mm: its deviceId is
+                 fenix847mm, displayName "fenix 8 47/51mm / tactix 8 47/51mm / quatix 8
+                 47/51mm". There is NO tactix847mm / tactix851mm / tactix7 product id. -->
+            <iq:product id="fenix847mm"/>
+            <!-- fenix 7 / 7 Pro -->
+            <iq:product id="fenix7s"/>
+            <iq:product id="fenix7"/>
+            <iq:product id="fenix7x"/>
+            <iq:product id="fenix7spro"/>
+            <iq:product id="fenix7pro"/>
+            <iq:product id="fenix7xpro"/>
+            <iq:product id="fenix7pronowifi"/>
+            <iq:product id="fenix7xpronowifi"/>
+            <!-- fenix 8 43mm + fenix 8 Solar (MIP) + fenix 8 Pro (fenix847mm is above) -->
+            <iq:product id="fenix843mm"/>
+            <iq:product id="fenix8solar47mm"/>
+            <iq:product id="fenix8solar51mm"/>
+            <iq:product id="fenix8pro47mm"/>
+            <!-- epix (gen 2) / epix Pro -->
+            <iq:product id="epix2"/>
+            <iq:product id="epix2pro42mm"/>
+            <iq:product id="epix2pro47mm"/>
+            <iq:product id="epix2pro51mm"/>
+            <!-- enduro 3 -->
+            <iq:product id="enduro3"/>
+            <!-- Forerunner music editions / high-end -->
+            <iq:product id="fr165m"/>
+            <iq:product id="fr170m"/>
+            <iq:product id="fr245m"/>
+            <iq:product id="fr645m"/>
+            <iq:product id="fr255m"/>
+            <iq:product id="fr255sm"/>
+            <iq:product id="fr265"/>
+            <iq:product id="fr265s"/>
+            <iq:product id="fr57042mm"/>
+            <iq:product id="fr57047mm"/>
+            <iq:product id="fr745"/>
+            <iq:product id="fr945"/>
+            <iq:product id="fr945lte"/>
+            <iq:product id="fr955"/>
+            <iq:product id="fr965"/>
+            <iq:product id="fr970"/>
+            <!-- venu -->
+            <iq:product id="venu"/>
+            <iq:product id="venud"/>
+            <iq:product id="venu2"/>
+            <iq:product id="venu2s"/>
+            <iq:product id="venu2plus"/>
+            <iq:product id="venu3"/>
+            <iq:product id="venu3s"/>
+            <iq:product id="venu441mm"/>
+            <iq:product id="venu445mm"/>
+            <iq:product id="venux1"/>
+            <iq:product id="venusqm"/>
+            <iq:product id="venusq2m"/>
+            <!-- vivoactive -->
+            <iq:product id="vivoactive4"/>
+            <iq:product id="vivoactive4s"/>
+            <iq:product id="vivoactive5"/>
+            <iq:product id="vivoactive6"/>
+            <!-- descent mk2 / mk3 -->
+            <iq:product id="descentmk2"/>
+            <iq:product id="descentmk2s"/>
+            <iq:product id="descentmk343mm"/>
+            <iq:product id="descentmk351mm"/>
+            <!-- MARQ gen 2 -->
+            <iq:product id="marq2"/>
+            <iq:product id="marq2aviator"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Communications"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+    </iq:application>
+</iq:manifest>

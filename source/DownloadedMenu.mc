@@ -1,0 +1,45 @@
+using Toybox.Application;
+using Toybox.Media;
+using Toybox.WatchUi;
+
+// Lists every downloaded chapter track. Selecting an item removes it; the native
+// player is what actually plays the ContentIterator's set.
+class DownloadedMenu extends WatchUi.Menu2 {
+
+    function initialize() {
+        Menu2.initialize({ :title => titleWithSize() });
+
+        var tracks = Application.Storage.getValue(Store.TRACKS);
+        if (tracks == null) { tracks = {}; }
+
+        var refIds = tracks.keys();
+        for (var i = 0; i < refIds.size(); ++i) {
+            var refId = refIds[i];
+            var name = trackTitle(refId, tracks);
+            addItem(new WatchUi.MenuItem(name, WatchUi.loadResource(Rez.Strings.tapToDelete), refId, null));
+        }
+    }
+
+    // Prefer the cached media's own metadata title; fall back to stored TrackInfo.
+    function trackTitle(refId, tracks) {
+        var ref = new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO);
+        var obj = Media.getCachedContentObj(ref);
+        if (obj != null && obj.getMetadata() != null && obj.getMetadata().title != null) {
+            return obj.getMetadata().title;
+        }
+        var info = tracks[refId];
+        if (info != null && info[TrackInfo.TITLE] != null) { return info[TrackInfo.TITLE]; }
+        return "Track";
+    }
+
+    // Show used cache space in the menu title. CacheStatistics exposes `size`
+    // (current bytes) and `capacity` (total bytes) - both Lang.Long. There is no
+    // `used` field.
+    function titleWithSize() {
+        var stats = Media.getCacheStatistics();
+        var used = 0;
+        if (stats != null && stats.size != null) { used = stats.size; }
+        var mb = (used / (1024 * 1024)).toNumber();
+        return WatchUi.loadResource(Rez.Strings.downloaded) + " (" + mb + " MB)";
+    }
+}

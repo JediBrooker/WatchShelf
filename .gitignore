@@ -1,0 +1,23 @@
+# Build artifacts
+bin/
+*.iq
+*.prg
+*.prg.debug.xml
+
+# Connect IQ
+gen/
+.tmp/
+
+# Developer key (NEVER commit)
+developer_key
+*.der
+*.pem
+
+# Node (sidecar)
+node_modules/
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
