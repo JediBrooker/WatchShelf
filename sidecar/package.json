@@ -1,0 +1,11 @@
+{
+  "name": "watchshelf-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tiny ffmpeg transcode/chapter-cut sidecar bridging Audiobookshelf to Garmin WatchShelf.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

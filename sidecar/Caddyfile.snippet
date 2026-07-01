@@ -1,0 +1,25 @@
+# Add this to the existing Audiobookshelf site block so the sidecar shares the
+# same valid HTTPS:443 certificate. handle_path strips the /watchshelf-transcode
+# prefix, so the sidecar sees /transcode?... as expected.
+#
+# The WatchShelf app "Transcode sidecar URL" setting should then be:
+#   https://abs.example.com/watchshelf-transcode
+
+abs.example.com {
+    handle_path /watchshelf-transcode/* {
+        reverse_proxy 127.0.0.1:8081
+    }
+
+    # existing Audiobookshelf backend
+    reverse_proxy 127.0.0.1:13378
+}
+
+# ---------------------------------------------------------------------------
+# nginx equivalent (inside the existing ABS server { } block on :443):
+#
+# location /watchshelf-transcode/ {
+#     proxy_pass http://127.0.0.1:8081/;   # trailing slash strips the prefix
+#     proxy_buffering off;                 # stream through; don't buffer the book
+#     proxy_read_timeout 3600s;            # long transcodes
+# }
+# ---------------------------------------------------------------------------

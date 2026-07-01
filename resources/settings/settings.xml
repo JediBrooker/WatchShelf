@@ -1,0 +1,17 @@
+<settings>
+    <!-- Server group -->
+    <setting propertyKey="@Properties.absServerUrl" title="@Strings.settingServerUrl">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.absApiKey" title="@Strings.settingApiKey">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+
+    <!-- Sidecar group (needed for flac/opus/ogg books and per-chapter cuts) -->
+    <setting propertyKey="@Properties.sidecarUrl" title="@Strings.settingSidecarUrl">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.sidecarKey" title="@Strings.settingSidecarKey">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+</settings>

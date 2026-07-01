@@ -1,0 +1,11 @@
+project.manifest = manifest.xml
+
+# Type checking off (0), matching the MonkeyMusic sample. This code leans on
+# Application.Storage / Properties and ABS JSON, whose getValue() returns a broad
+# union type the strict checker cannot narrow -> dozens of false "container access"
+# errors. Symbol/method existence is STILL validated at level 0 (that is separate
+# from type checking), so real API typos are still caught at build time.
+project.typecheck = 0
+
+base.sourcePath = source
+base.resourcePath = resources

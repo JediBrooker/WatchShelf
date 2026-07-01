@@ -1,0 +1,36 @@
+using Toybox.Application;
+using Toybox.Communications;
+using Toybox.Media;
+using Toybox.WatchUi;
+
+// This is a management screen. Tapping a track queues it for deletion and runs a
+// sync; "Done" starts playback of the downloaded set.
+class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
+
+    function initialize() {
+        Menu2InputDelegate.initialize();
+    }
+
+    // Tap a track = delete it (queued, then a sync performs Media.deleteCachedItem).
+    function onSelect(item) {
+        var refId = item.getId();
+
+        var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
+        if (deleteList == null) { deleteList = []; }
+        deleteList.add(refId);
+        Application.Storage.setValue(Store.DELETE_LIST, deleteList);
+
+        // Run a sync now to perform the deletion, then confirm.
+        Communications.startSync();
+        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.deleting)), null, WatchUi.SLIDE_LEFT);
+    }
+
+    // "Done" (menu action) = start playing the downloaded set.
+    function onDone() {
+        Media.startPlayback(null);
+    }
+
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
+}
