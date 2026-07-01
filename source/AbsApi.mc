@@ -82,42 +82,50 @@ module AbsApi {
             callback);
     }
 
-    // ---- per-file playback decision ---------------------------------------
-
-    // ABS mimeType is derived from container format and can be misleading, so we
-    // decide from codec + ext. mp3/aac in mp3/m4a/m4b/mp4 => the watch can play
-    // the byte-exact file, so direct-download from ABS. Everything else
-    // (flac/opus/vorbis/wma/...) must be transcoded by the sidecar to mp3.
-    function fileIsDirectPlayable(audioFile) {
+    // ---- per-file playback decision (codec-based) --------------------------
+    // MP3   -> direct-download from ABS (byte-exact, Garmin plays it; no sidecar).
+    // AAC   (aac/m4a/m4b/mp4) -> sidecar copies the AAC stream to ADTS (lossless,
+    //        no re-encode) which Garmin plays via ENCODING_ADTS.
+    // other (flac/opus/...)   -> sidecar transcodes to mp3.
+    function fileIsMp3(audioFile) {
         var codec = _lower(audioFile["codec"]);
-        var ext   = _lower(_ext(audioFile));
-        var codecOk = (codec != null) && (codec.equals("mp3") || codec.equals("aac"));
-        var extOk = (ext != null) &&
-                    (ext.equals(".mp3") || ext.equals(".m4a") || ext.equals(".m4b") || ext.equals(".mp4"));
-        return codecOk && extOk;
+        return (codec != null) && codec.equals("mp3");
+    }
+    function fileIsAac(audioFile) {
+        var codec = _lower(audioFile["codec"]);
+        return (codec != null) && (codec.equals("aac") || codec.equals("m4a") || codec.equals("mp4a"));
     }
 
-    // Media.ENCODING_* the watch should declare for a direct-download of this
-    // file. mp3 => MP3, aac/m4a/m4b => M4A. Sidecar output is always mp3.
-    function encodingType(audioFile) {
-        var ext = _lower(_ext(audioFile));
-        if ((ext != null) && ext.equals(".mp3")) { return "mp3"; }
-        return "m4a";
+    // Download URL + declared encoding for one whole audio FILE (= one track).
+    function fileTrackUrl(itemId, audioFile) {
+        var ino = audioFile["ino"];
+        if (fileIsMp3(audioFile)) { return directFileUrl(itemId, ino); }
+        if (fileIsAac(audioFile)) { return sidecarFileUrl(itemId, ino, "m4a"); }
+        return sidecarFileUrl(itemId, ino, "mp3");
+    }
+    function fileTrackType(audioFile) {
+        if (fileIsMp3(audioFile)) { return "mp3"; }
+        if (fileIsAac(audioFile)) { return "adts"; }
+        return "mp3";
     }
 
-    // ---- URL builders (one URL per CHAPTER) --------------------------------
+    // ---- URL builders ------------------------------------------------------
 
-    // Direct ABS download of a whole audio file. Token goes in the query string
+    // Direct ABS download of a whole audio file (mp3). Token in the query string
     // because makeWebRequest audio downloads are simplest with ?token=.
     // :fileid in the ABS route == the audioFile ino.
     function directFileUrl(itemId, ino) {
         return serverUrl() + "/api/items/" + itemId + "/file/" + ino + "/download?token=" + apiKey();
     }
 
-    // Sidecar chapter cut: returns a small, complete mp3 for exactly one chapter
-    // so the user gets true chapter navigation and small transfers. The sidecar
-    // holds the ABS token server-side; the watch authenticates with sidecarKey.
-    // start/end are truncated to integer seconds (fine for a chapter cut).
+    // Sidecar whole-file convert: fmt=m4a copies AAC -> ADTS; fmt=mp3 transcodes.
+    function sidecarFileUrl(itemId, ino, fmt) {
+        return sidecarUrl() + "/transcode?item=" + itemId + "&file=" + ino
+            + "&fmt=" + fmt + "&key=" + sidecarKey();
+    }
+
+    // Sidecar chapter cut: a small complete mp3 for exactly one chapter of a
+    // SINGLE-file book, for real chapter navigation. start/end -> integer seconds.
     function sidecarChapterUrl(itemId, ino, startSec, endSec) {
         return sidecarUrl() + "/transcode"
             + "?item=" + itemId
@@ -139,28 +147,21 @@ module AbsApi {
         return 0;
     }
 
-    // ABS wants PATCH /api/me/progress/:libraryItemId, but Monkey C's
-    // Communications has NO HTTP_REQUEST_METHOD_PATCH (only GET/PUT/POST/DELETE).
-    // We POST with an X-HTTP-Method-Override: PATCH header, which Express
-    // method-override middleware honours. If your ABS build does not honour the
-    // override header, either enable method-override on the proxy or route
-    // progress through the sidecar. (Flagged in apiConcerns.)
-    // currentTime is book-absolute seconds. 200 with EMPTY body on success.
+    // Progress sync goes through the SIDECAR. ABS's endpoint is PATCH
+    // /api/me/progress/:id, but Monkey C's Communications has NO PATCH method
+    // (only GET/POST/PUT/DELETE) and ABS ignores X-HTTP-Method-Override (verified
+    // against the live server: POST -> 404). So the watch POSTs to the sidecar,
+    // which issues the real PATCH to ABS server-side. If the sidecar isn't
+    // configured, progress is skipped silently. currentTime is book-absolute sec.
     function patchProgress(itemId, currentTimeSec, durationSec) {
-        var params = { "currentTime" => currentTimeSec };
-        if (durationSec != null) {
-            params["duration"] = durationSec;
-            if (durationSec > 0) {
-                params["progress"] = currentTimeSec.toFloat() / durationSec.toFloat();
-            }
-        }
+        if ((sidecarUrl() == null) || (sidecarKey() == null)) { return; }
+        var params = { "itemId" => itemId, "currentTime" => currentTimeSec };
+        if (durationSec != null) { params["duration"] = durationSec; }
         Communications.makeWebRequest(
-            serverUrl() + "/api/me/progress/" + itemId,
+            sidecarUrl() + "/progress?key=" + sidecarKey(),
             params,
             { :method => Communications.HTTP_REQUEST_METHOD_POST,
-              :headers => { "Authorization"          => "Bearer " + apiKey(),
-                            "X-HTTP-Method-Override" => "PATCH",
-                            "Content-Type"           => Communications.REQUEST_CONTENT_TYPE_JSON },
+              :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
             new AbsProgressListener().method(:onResponse));
     }

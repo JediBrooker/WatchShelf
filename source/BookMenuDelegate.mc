@@ -3,8 +3,8 @@ using Toybox.Communications;
 using Toybox.System;
 using Toybox.WatchUi;
 
-// Picked a book -> fetch detail, queue every chapter as its own track, then ask
-// the system to run a sync (background download).
+// Picked a book -> fetch detail, queue its tracks (one per audio FILE, or one per
+// chapter for a single-file chaptered book), then run a background sync.
 class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function initialize() {
@@ -16,8 +16,6 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         AbsApi.getItemDetail(itemId, method(:onDetail));
     }
 
-    // Build one track per chapter. If the book has no chapters, treat the whole
-    // book as a single chapter/track.
     function onDetail(code, data) {
         if (code != 200 || data == null || data["media"] == null) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
@@ -39,46 +37,64 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // For a first version we key every chapter off the FIRST audio file's ino.
-        // Multi-file books whose chapters span files are a known limitation
-        // (documented in README / apiConcerns).
-        var primary = audioFiles[0];
-        var ino = primary["ino"];
-        var direct = AbsApi.fileIsDirectPlayable(primary);
-
         var syncList = Application.Storage.getValue(Store.SYNC_LIST);
         if (syncList == null) { syncList = {}; }
 
-        if (chapters == null || chapters.size() == 0) {
-            // Whole-book single track.
-            var url = direct ? AbsApi.directFileUrl(itemId, ino)
-                             : AbsApi.sidecarChapterUrl(itemId, ino, 0, safeDuration(primary));
-            var type = direct ? AbsApi.encodingType(primary) : "mp3";
-            syncList[itemId + ":0"] = trackInfo(url, title, type, itemId, 0);
-        } else {
+        if (audioFiles.size() == 1 && chapters != null && chapters.size() > 0) {
+            // Single-file book WITH chapters: one sidecar-cut track per chapter,
+            // for small downloads and real chapter navigation.
+            var ino = audioFiles[0]["ino"];
             for (var i = 0; i < chapters.size(); ++i) {
                 var ch = chapters[i];
                 var start = numOr(ch["start"], 0);
                 var end = numOr(ch["end"], start);
                 var chTitle = ch["title"];
                 if (chTitle == null) { chTitle = "Chapter " + (i + 1); }
-                // Per-chapter cuts always go through the sidecar (fmt=mp3) so we
-                // get a small, complete, seekable file per chapter. ABS itself
-                // only serves whole files, so we cannot direct-download a slice.
                 var chUrl = AbsApi.sidecarChapterUrl(itemId, ino, start, end);
-                syncList[itemId + ":" + i] = trackInfo(chUrl, chTitle, "mp3", itemId, start);
+                syncList[itemId + ":c" + i] = trackInfo(chUrl, chTitle, "mp3", itemId, start);
+            }
+        } else {
+            // One track per audio FILE. Handles multi-file books (the common case
+            // in a real ABS library) and single-file no-chapter books. Book-
+            // absolute start = running sum of prior file durations, so progress
+            // maps back to ABS correctly.
+            var files = sortByIndex(audioFiles);
+            var offset = 0;
+            for (var i = 0; i < files.size(); ++i) {
+                var af = files[i];
+                var url = AbsApi.fileTrackUrl(itemId, af);
+                var type = AbsApi.fileTrackType(af);
+                var partTitle = (files.size() > 1) ? (title + " - Part " + (i + 1)) : title;
+                syncList[itemId + ":f" + i] = trackInfo(url, partTitle, type, itemId, offset);
+                offset = offset + numOr(af["duration"], 0);
             }
         }
 
         Application.Storage.setValue(Store.SYNC_LIST, syncList);
-
-        // Log the saved resume position for debugging; native player resumes at
-        // chapter boundaries.
         System.println("Resume position (s): " + AbsApi.progressSeconds(data));
 
-        // Confirm and kick off the background sync.
         WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queued)), null, WatchUi.SLIDE_LEFT);
         Communications.startSync();
+    }
+
+    // Sort audio files by their ABS `index` (file order), tolerating a missing
+    // index. Plain-statement insertion sort (Array.add returns Void in Monkey C).
+    function sortByIndex(files) {
+        var out = [];
+        for (var i = 0; i < files.size(); ++i) {
+            var af = files[i];
+            var idx = numOr(af["index"], i);
+            var pos = out.size();
+            for (var j = 0; j < out.size(); ++j) {
+                if (idx < numOr(out[j]["index"], j)) { pos = j; break; }
+            }
+            var rebuilt = new [out.size() + 1];
+            for (var k = 0; k < pos; ++k) { rebuilt[k] = out[k]; }
+            rebuilt[pos] = af;
+            for (var k = pos; k < out.size(); ++k) { rebuilt[k + 1] = out[k]; }
+            out = rebuilt;
+        }
+        return out;
     }
 
     function trackInfo(url, title, type, itemId, start) {
@@ -90,10 +106,6 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             TrackInfo.START    => start,
             TrackInfo.CAN_SKIP => true
         };
-    }
-
-    function safeDuration(audioFile) {
-        return numOr(audioFile["duration"], 0);
     }
 
     function numOr(v, dflt) {
