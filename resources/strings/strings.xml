@@ -28,4 +28,11 @@
     <string id="settingSidecarKeyPrompt">Secret the watch sends to the sidecar</string>
     <string id="settingsGroupServer">Server</string>
     <string id="settingsGroupSidecar">Transcode Sidecar</string>
+    <string id="browseLibrary">Browse library</string>
+    <string id="logIn">Log in</string>
+    <string id="loggingIn">Logging in...</string>
+    <string id="loginFailed">Login failed</string>
+    <string id="fieldServer">Server URL</string>
+    <string id="fieldUser">Username</string>
+    <string id="fieldPass">Password</string>
 </strings>

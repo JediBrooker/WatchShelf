@@ -7,7 +7,7 @@
 #   make devices            -> list installed device ids
 #   make clean
 
-DEVICE ?= fenix847mm
+DEVICE ?= fenix8solar51mm
 APP    := WatchShelf
 KEY    ?= developer_key.der
 JUNGLE := monkey.jungle

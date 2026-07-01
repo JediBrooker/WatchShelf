@@ -15,6 +15,13 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
     function onSelect(item) {
         var refId = item.getId();
 
+        // The "Browse library" row -> open the library (LibraryView logs in first
+        // if we're not configured yet, otherwise it lists books to download).
+        if ((refId instanceof Toybox.Lang.String) && refId.equals("browse")) {
+            WatchUi.pushView(new LibraryView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
         if (deleteList == null) { deleteList = []; }
         deleteList.add(refId);

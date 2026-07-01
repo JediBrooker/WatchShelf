@@ -1,0 +1,17 @@
+# One-command sidecar: `docker compose up -d --build`
+# It only needs ABS_URL. Point it at Audiobookshelf's INTERNAL address if you can
+# (bypasses Cloudflare); the public https URL also works (the sidecar sends a UA).
+services:
+  watchshelf-sidecar:
+    build: .
+    container_name: watchshelf-sidecar
+    environment:
+      - ABS_URL=https://books.jedibrooker.com   # <-- or http://audiobookshelf:13378 (internal)
+      - BIND=0.0.0.0
+      - PORT=8081
+    ports:
+      - "127.0.0.1:8081:8081"    # exposed to localhost only; your reverse proxy fronts it
+    restart: unless-stopped
+    # If ABS runs in Docker on the same host, join its network instead of using the
+    # public URL, e.g.:
+    # networks: [ audiobookshelf_default ]
