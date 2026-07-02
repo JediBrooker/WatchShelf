@@ -20,6 +20,15 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.logOut), null, "logout", null));
         }
 
+        // A crashed/interrupted sync can leave queued entries behind (they're
+        // only cleared as each one finishes downloading), which then get
+        // reprocessed on every future sync alongside anything new. Offer a way
+        // to wipe just the pending queue - sideloaded apps can't be cleanly
+        // uninstalled to reset this, so it has to be reachable from in here.
+        if (hasQueued()) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.clearQueue), null, "clearqueue", null));
+        }
+
         var tracks = Application.Storage.getValue(Store.TRACKS);
         if (tracks == null) { tracks = {}; }
 
@@ -29,6 +38,13 @@ class DownloadedMenu extends WatchUi.Menu2 {
             var name = trackTitle(refId, tracks);
             addItem(new WatchUi.MenuItem(name, WatchUi.loadResource(Rez.Strings.tapToDelete), refId, null));
         }
+    }
+
+    function hasQueued() {
+        var syncList = Application.Storage.getValue(Store.SYNC_LIST);
+        var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
+        return ((syncList != null) && (syncList.size() > 0))
+            || ((deleteList != null) && (deleteList.size() > 0));
     }
 
     // Prefer the cached media's own metadata title; fall back to stored TrackInfo.
