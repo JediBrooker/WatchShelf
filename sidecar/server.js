@@ -33,6 +33,11 @@ const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
 const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+// Error responses on JSON endpoints must BE JSON: the watch declares a JSON
+// responseType, and a plain-text/HTML error body surfaces on-device as the
+// opaque parse error -400 (INVALID_HTTP_BODY_IN_NETWORK_RESPONSE) instead of
+// the real HTTP status - which masked an ABS 401 as "-400" in the field.
+const fail = (res, code, msg) => { res.writeHead(code, jsonHead).end(JSON.stringify({ error: msg })); };
 
 function ffArgs(srcUrl, token, fmt, start, end) {
   const a = ['-hide_banner', '-loglevel', 'error', '-user_agent', UA,
@@ -120,7 +125,7 @@ async function absJson(path, token) {
 async function list(req, res, u) {
   const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
   const author = u.searchParams.get('author'), series = u.searchParams.get('series'), collection = u.searchParams.get('collection');
-  if (!lib || !token || !IDRE.test(lib)) { res.writeHead(400).end('bad params'); return; }
+  if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
   try {
     let books;
     if (collection && IDRE.test(collection)) {
@@ -132,16 +137,16 @@ async function list(req, res, u) {
       books = ((await absJson(`/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title${filter}`, token)).results || []).map(bookOf);
     }
     res.writeHead(200, jsonHead).end(JSON.stringify({ books }));
-  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 
 async function groups(req, res, u, path, map) {
   const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
-  if (!lib || !token || !IDRE.test(lib)) { res.writeHead(400).end('bad params'); return; }
+  if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
   try {
     const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/${path}`, token);
     res.writeHead(200, jsonHead).end(JSON.stringify(map(d)));
-  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 const authors     = (q, s, u) => groups(q, s, u, 'authors', (d) => ({ authors: (d.authors || []).map((a) => ({ id: a.id, name: a.name, count: a.numBooks })).sort((x, y) => String(x.name).localeCompare(String(y.name))) }));
 const series      = (q, s, u) => groups(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }));
@@ -149,7 +154,7 @@ const collections = (q, s, u) => groups(q, s, u, 'collections', (d) => ({ collec
 
 async function files(req, res, u) {
   const item = u.searchParams.get('item'), token = u.searchParams.get('token');
-  if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
+  if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
   try {
     const m = (await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1`, token)).media || {};
     const out = {
@@ -157,7 +162,7 @@ async function files(req, res, u) {
       files: (m.audioFiles || []).map((a) => ({ ino: a.ino, duration: a.duration, size: (a.metadata || {}).size || a.size || 0, codec: a.codec })),
     };
     res.writeHead(200, jsonHead).end(JSON.stringify(out));
-  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 
 function readJson(req, cb) {
@@ -169,15 +174,15 @@ function readJson(req, cb) {
 
 function progress(req, res, u) {
   const token = u.searchParams.get('token');
-  if (!token) { res.writeHead(400).end('bad params'); return; }
+  if (!token) { fail(res, 400, 'bad params'); return; }
   readJson(req, async (body) => {
-    if (!body || typeof body.itemId !== 'string' || !IDRE.test(body.itemId) || typeof body.currentTime !== 'number') { res.writeHead(400).end('bad body'); return; }
+    if (!body || typeof body.itemId !== 'string' || !IDRE.test(body.itemId) || typeof body.currentTime !== 'number') { fail(res, 400, 'bad body'); return; }
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
         { method: 'PATCH', headers: { ...bearer(token), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      res.writeHead(r.ok ? 200 : 502).end(r.ok ? 'ok' : 'ABS ' + r.status);
+      if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
 }
@@ -186,18 +191,24 @@ function progress(req, res, u) {
 // Lets the watch talk to ONLY the sidecar; ABS can stay fully internal.
 function login(req, res) {
   readJson(req, async (body) => {
-    if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') { res.writeHead(400).end('bad body'); return; }
+    if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') { fail(res, 400, 'bad body'); return; }
     try {
       const r = await fetch(`${ABS}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
         body: JSON.stringify({ username: body.username, password: body.password }),
       });
-      if (!r.ok) { res.writeHead(r.status === 401 ? 401 : 502).end('login ' + r.status); return; }
-      const token = (((await r.json()) || {}).user || {}).token;
-      if (!token) { res.writeHead(502).end('no token'); return; }
+      if (!r.ok) { fail(res, r.status === 401 ? 401 : 502, 'login ' + r.status); return; }
+      const u = (((await r.json()) || {}).user || {});
+      // ABS >= 2.26 issues a JWT accessToken at login; the legacy static
+      // user.token is deprecated there and updated servers REJECT it for API
+      // calls even though login still echoes it - the watch then 401s on its
+      // very first call after a "successful" login. Prefer the new token,
+      // fall back to the legacy field for older servers.
+      const token = u.accessToken || u.token;
+      if (!token) { fail(res, 502, 'no token'); return; }
       res.writeHead(200, jsonHead).end(JSON.stringify({ user: { token } }));
-    } catch (e) { res.writeHead(502).end('ABS unreachable'); }
+    } catch (e) { fail(res, 502, 'ABS unreachable'); }
   });
 }
 
@@ -206,11 +217,11 @@ function login(req, res) {
 // podcast libraries and only list book libraries.
 async function libraries(req, res, u) {
   const token = u.searchParams.get('token');
-  if (!token) { res.writeHead(400).end('bad params'); return; }
+  if (!token) { fail(res, 400, 'bad params'); return; }
   try {
     const d = await absJson('/api/libraries', token);
     res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name, mediaType: l.mediaType })) }));
-  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 
 const server = http.createServer((req, res) => {
