@@ -34,7 +34,7 @@ module Versions {
     const current = V1;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b24";
+    const tag = "b25";
 }
 
 // Keys for a TrackInfo dict (one downloaded/queued CHAPTER = one Media track).

@@ -4,17 +4,18 @@ using Toybox.Media;
 
 // Downloads queued CHAPTER tracks to the device media cache. One chapter == one
 // Media track, so the native player gives real chapter navigation (we never
-// flatten a book into a single track). Mirrors MonkeyMusic's SyncDelegate,
-// including its base class: Media.SyncDelegate is deprecated ("may be removed
-// after System 9") but still fully present on SDK 9.2.0, and Garmin's own
-// current MonkeyMusic reference extends it, paired end-to-end with the Media.*
-// notify/cache functions - never mixed with Communications.SyncDelegate. An
-// earlier version of this file extended Communications.SyncDelegate instead
-// (an unverified claim that this was "required" on SDK 9.x, which official
-// docs do not support) while ContentIterator.mc uses Media.getContentRefIter()
-// for the content cache - an untested class-family mix no reference
-// implementation validates. Reverted to match MonkeyMusic exactly.
-class SyncDelegate extends Media.SyncDelegate {
+// flatten a book into a single track). Mirrors MonkeyMusic's SyncDelegate but
+// operates on chapter tracks and reports progress via Communications.notify*.
+// Extends Communications.SyncDelegate. VERIFIED against SDK 9.2.0's api.mir
+// (the compiler's own contract, not docs or samples):
+// AudioContentProviderApp.getSyncDelegate() is declared
+// `as Communications.SyncDelegate or Null`, and Media.SyncDelegate is a
+// SEPARATE class (not a subtype), so returning one violates the declared
+// contract. Do NOT "fix" this back to Media.SyncDelegate to match the GitHub
+// MonkeyMusic sample - that sample is 2018-era and predates the type change;
+// build b24 tried exactly that, fixed nothing (both known failures
+// persisted), and was reverted.
+class SyncDelegate extends Communications.SyncDelegate {
 
     private var mSyncList;   // { trackKey => TrackInfo }
     private var mDeleteList; // [ refId, ... ]
@@ -42,7 +43,7 @@ class SyncDelegate extends Media.SyncDelegate {
     function onStartSync() {
         mTotal = mSyncList.size() + mDeleteList.size();
         if (mTotal == 0) {
-            Media.notifySyncComplete(null);
+            Communications.notifySyncComplete(null);
             return;
         }
         deleteQueued();
@@ -53,7 +54,7 @@ class SyncDelegate extends Media.SyncDelegate {
     // System-initiated cancel: stop cleanly. In-flight request is abandoned.
     function onStopSync() {
         Communications.cancelAllRequests();
-        Media.notifySyncComplete(null);
+        Communications.notifySyncComplete(null);
     }
 
     // Delete every queued refId from the media cache, then clear the queue.
@@ -76,7 +77,7 @@ class SyncDelegate extends Media.SyncDelegate {
     function downloadNext() {
         if (mKeys.size() == 0) {
             Application.Storage.setValue(Store.SYNC_LIST, {});
-            Media.notifySyncComplete(null);
+            Communications.notifySyncComplete(null);
             return;
         }
 
@@ -129,13 +130,13 @@ class SyncDelegate extends Media.SyncDelegate {
             mKeys = mKeys.slice(1, mKeys.size());
             downloadNext();
         } else {
-            Media.notifySyncComplete("Download failed (" + code + ")");
+            Communications.notifySyncComplete("Download failed (" + code + ")");
         }
     }
 
     function onOpDone() {
         ++mDone;
         var pct = ((mDone / mTotal.toFloat()) * 100).toNumber();
-        Media.notifySyncProgress(pct);
+        Communications.notifySyncProgress(pct);
     }
 }
