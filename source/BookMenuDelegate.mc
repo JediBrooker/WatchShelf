@@ -2,11 +2,12 @@ using Toybox.Application;
 using Toybox.Communications;
 using Toybox.WatchUi;
 
-// Picked a book -> get its lean file list from the sidecar, split each file into
-// song-length downloadable chunks (a short one first, then ~3-min ones), queue
-// them (as small param sets, not full URLs), and run a background sync.
-// Everything goes through the sidecar because most books here are single
-// 200MB-1GB files the watch cannot download whole.
+// Picked a book -> get its lean file list from the sidecar, store ONE small
+// per-book job (file inos + durations + title + resume cursor), and run a
+// background sync. Chunk boundaries are derived by the Chunks module at
+// download time - never stored per-chunk (see Constants.mc for the OOM
+// post-mortem that forced this). Everything goes through the sidecar because
+// most books here are single 200MB-1GB files the watch cannot download whole.
 class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     private var mItemId;
@@ -28,67 +29,47 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // Song-length chunks (~3 min, ~2MB at 96kbps mono) - matching how real,
-        // proven-working ACP apps like Spotify actually download audio (individual
-        // songs, a few MB each), not the originally-assumed 30-min/~14MB chunks,
-        // which failed immediately on real hardware ("Media Error Occurred").
-        // The very FIRST chunk of a book is deliberately much shorter - while
-        // this is still an open on-device debugging question, there's something
-        // to test playback with almost immediately rather than waiting for a
-        // full 3-min chunk (let alone a whole book).
-        var chunk = 180;
-        var firstChunk = 15;
         var files = data["files"];
         var title = data["title"];
         if (title == null) { title = "Book"; }
 
+        var inos = [];
+        var durs = [];
+        for (var f = 0; f < files.size(); ++f) {
+            var dur = numOr(files[f]["duration"], 0).toNumber();
+            if (dur <= 0) { continue; }
+            inos.add(files[f]["ino"]);
+            durs.add(dur);
+        }
+
+        var expected = Chunks.total(durs);
+        if (expected == 0) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNoAudio)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         // Re-selecting an already-fully-downloaded book must not silently queue
-        // a full re-download of every chunk - tell the user it's already there
-        // instead of burning battery/data re-syncing the same book.
-        var expected = expectedChunkCount(files, chunk, firstChunk);
-        if ((expected > 0) && (alreadyDownloadedCount() >= expected)) {
+        // a full re-download - tell the user it's already there instead.
+        var have = BookStore.count(mItemId);
+        if (have >= expected) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.alreadyDownloaded)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
-        var syncList = Application.Storage.getValue(Store.SYNC_LIST);
-        if (syncList == null) { syncList = {}; }
+        // One small job per book. "done" starts at the already-downloaded chunk
+        // count so an interrupted book resumes where it left off (chunks always
+        // download in order, so count == next index).
+        var jobs = Application.Storage.getValue(Store.SYNC_JOBS);
+        if (jobs == null) { jobs = {}; }
+        jobs[mItemId] = {
+            "inos"  => inos,
+            "durs"  => durs,
+            "title" => title,
+            "done"  => have
+        };
+        Application.Storage.setValue(Store.SYNC_JOBS, jobs);
 
-        var bookOffset = 0;
-        var idx = 0;
-        for (var f = 0; f < files.size(); ++f) {
-            var ino = files[f]["ino"];
-            var dur = numOr(files[f]["duration"], 0).toNumber();
-            if (dur <= 0) { continue; }
-            var pos = 0;
-            while (pos < dur) {
-                var size = (idx == 0) ? firstChunk : chunk;
-                var end = pos + size;
-                if (end > dur) { end = dur; }
-                syncList[mItemId + ":" + idx] = {
-                    TrackInfo.ITEM_ID    => mItemId,
-                    TrackInfo.INO        => ino,
-                    TrackInfo.CSTART     => pos,
-                    TrackInfo.CEND       => end,
-                    TrackInfo.START      => bookOffset + pos,
-                    TrackInfo.TITLE      => title + " " + (idx + 1),
-                    TrackInfo.BOOK_TITLE => title,
-                    TrackInfo.TYPE       => "adts",
-                    TrackInfo.CAN_SKIP   => true
-                };
-                idx += 1;
-                pos = end;
-            }
-            bookOffset = bookOffset + dur;
-        }
-
-        if (idx == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNoAudio)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
-            return;
-        }
-
-        Application.Storage.setValue(Store.SYNC_LIST, syncList);
         WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queued)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
         Communications.startSync();
     }
@@ -96,39 +77,6 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     function numOr(v, dflt) {
         if (v == null) { return dflt; }
         return v;
-    }
-
-    // Mirrors the chunking loop above exactly (count only, no allocation) so it
-    // can never disagree with how many chunks a book actually splits into.
-    function expectedChunkCount(files, chunk, firstChunk) {
-        var count = 0;
-        for (var f = 0; f < files.size(); ++f) {
-            var dur = numOr(files[f]["duration"], 0).toNumber();
-            if (dur <= 0) { continue; }
-            var pos = 0;
-            while (pos < dur) {
-                var size = (count == 0) ? firstChunk : chunk;
-                var end = pos + size;
-                if (end > dur) { end = dur; }
-                count += 1;
-                pos = end;
-            }
-        }
-        return count;
-    }
-
-    function alreadyDownloadedCount() {
-        var tracks = Application.Storage.getValue(Store.TRACKS);
-        if (tracks == null) { return 0; }
-        var count = 0;
-        var refIds = tracks.keys();
-        for (var i = 0; i < refIds.size(); ++i) {
-            var info = tracks[refIds[i]];
-            if ((info != null) && (info[TrackInfo.ITEM_ID] != null) && info[TrackInfo.ITEM_ID].equals(mItemId)) {
-                count += 1;
-            }
-        }
-        return count;
     }
 
     function onBack() {

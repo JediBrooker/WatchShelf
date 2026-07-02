@@ -43,49 +43,41 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
 
         // "Clear queue" -> abandon anything pending (a crashed/interrupted sync
-        // can leave entries behind, since they're only cleared as each finishes)
-        // WITHOUT starting a sync - we want to drop them, not process them.
+        // can leave queued jobs behind, since they're only cleared as each book
+        // finishes) WITHOUT starting a sync - we want to drop them, not process
+        // them.
         if ((id instanceof Toybox.Lang.String) && id.equals("clearqueue")) {
-            Application.Storage.setValue(Store.SYNC_LIST, {});
+            Application.Storage.setValue(Store.SYNC_JOBS, {});
             Application.Storage.setValue(Store.DELETE_LIST, []);
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queueCleared)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
-        // "Delete all downloads" -> queue every downloaded chunk, across every book.
+        // "Delete all downloads" -> queue every downloaded book.
         if ((id instanceof Toybox.Lang.String) && id.equals("deleteall")) {
-            var tracks = Application.Storage.getValue(Store.TRACKS);
-            if (tracks == null) { tracks = {}; }
-            queueDelete(tracks.keys());
+            var index = Application.Storage.getValue(Store.BOOK_INDEX);
+            if (index == null) { index = []; }
+            queueDelete(index);
             return;
         }
 
-        // Anything else is a BOOK's itemId (DownloadedMenu now groups chunks by
-        // book, not one row per chunk - a book can be 100+ ~3-min chunks, so
-        // showing/deleting them individually isn't usable). Find every
-        // downloaded refId that belongs to this book and queue them all.
-        var tracks = Application.Storage.getValue(Store.TRACKS);
-        if (tracks == null) { tracks = {}; }
-        var refIds = tracks.keys();
-        var toDelete = [];
-        for (var i = 0; i < refIds.size(); ++i) {
-            var info = tracks[refIds[i]];
-            if ((info != null) && (info[TrackInfo.ITEM_ID] != null) && info[TrackInfo.ITEM_ID].equals(id)) {
-                toDelete.add(refIds[i]);
-            }
-        }
-        queueDelete(toDelete);
+        // Anything else is a BOOK's itemId - queue that one book for deletion.
+        // Deletions are always whole-book (a book can be 100+ ~3-min chunks;
+        // per-chunk anything isn't usable, and per-chunk STORAGE is what used
+        // to OOM-crash the app - see Constants.mc).
+        queueDelete([id]);
     }
 
-    // Add every given refId to the delete queue, then run a sync now to perform
-    // the deletions (Media.deleteCachedItem happens in SyncDelegate.deleteQueued).
-    function queueDelete(refIds) {
-        if (refIds.size() == 0) { return; }
+    // Add every given book itemId to the delete queue, then run a sync now to
+    // perform the deletions (Media.deleteCachedItem happens per cached chunk in
+    // SyncDelegate.deleteQueued).
+    function queueDelete(itemIds) {
+        if (itemIds.size() == 0) { return; }
 
         var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
         if (deleteList == null) { deleteList = []; }
-        for (var i = 0; i < refIds.size(); ++i) {
-            deleteList.add(refIds[i]);
+        for (var i = 0; i < itemIds.size(); ++i) {
+            deleteList.add(itemIds[i]);
         }
         Application.Storage.setValue(Store.DELETE_LIST, deleteList);
 
