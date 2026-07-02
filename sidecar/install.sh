@@ -511,6 +511,25 @@ setup_cloudflare() {
   ask "Subdomain for the sidecar, e.g. watchshelf.yourdomain.com"; local sub="$REPLY_VALUE"
   valid_hostname "$sub" || { err "That doesn't look like a valid hostname (needs at least one dot, e.g. watchshelf.yourdomain.com)."; return 1; }
   local first_label="${sub%%.*}" rest_domain="${sub#*.}"
+
+  # cloudflared very often runs in its OWN container (or even a different
+  # host on the LAN) rather than directly on this machine - in that case
+  # "127.0.0.1" means "inside the cloudflared container," not this server,
+  # and can never reach the sidecar. Ask, and use the real LAN IP instead
+  # when that's the case.
+  local svc_url="127.0.0.1:8081"
+  if confirm "Does cloudflared run in its own container or a different machine (not directly on this server)?"; then
+    local lan_ip
+    lan_ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    if [ -n "$lan_ip" ]; then
+      svc_url="${lan_ip}:8081"
+      ok "Using this server's LAN IP for the URL: $lan_ip"
+    else
+      warn "Couldn't auto-detect this server's LAN IP - run 'ip a' and use the address"
+      warn "under the network interface that isn't 'lo', instead of 127.0.0.1 below."
+    fi
+  fi
+
   cat <<EOF
 
 This part is done in the Cloudflare dashboard - no file to edit here:
@@ -523,7 +542,7 @@ This part is done in the Cloudflare dashboard - no file to edit here:
        Domain:    ${rest_domain}
        Path:      (leave blank)
        Type:      HTTP
-       URL:       127.0.0.1:8081
+       URL:       ${svc_url}
   4. Save. Cloudflare issues the certificate and DNS record automatically.
 
 EOF
