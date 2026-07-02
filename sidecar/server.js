@@ -6,6 +6,8 @@
 //
 // Routes:
 //   GET /health
+//   POST /login?  {username,password}   -> {user:{token}} (proxied to ABS /login)
+//   GET /libraries?token                -> {libraries:[{id,name}]}
 //   GET /list?lib&token[&author=id|&series=id|&collection=id]  -> {books:[{id,title,author}]}
 //   GET /authors?lib&token       -> {authors:[{id,name,count}]}
 //   GET /series?lib&token        -> {series:[{id,name,count}]}
@@ -138,12 +140,43 @@ function progress(req, res, u) {
   });
 }
 
+// POST /login {username,password} -> proxy to ABS /login, return a slim {user:{token}}.
+// Lets the watch talk to ONLY the sidecar; ABS can stay fully internal.
+function login(req, res) {
+  readJson(req, async (body) => {
+    if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') { res.writeHead(400).end('bad body'); return; }
+    try {
+      const r = await fetch(`${ABS}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
+        body: JSON.stringify({ username: body.username, password: body.password }),
+      });
+      if (!r.ok) { res.writeHead(r.status === 401 ? 401 : 502).end('login ' + r.status); return; }
+      const token = (((await r.json()) || {}).user || {}).token;
+      if (!token) { res.writeHead(502).end('no token'); return; }
+      res.writeHead(200, jsonHead).end(JSON.stringify({ user: { token } }));
+    } catch (e) { res.writeHead(502).end('ABS unreachable'); }
+  });
+}
+
+// GET /libraries?token -> slim {libraries:[{id,name}]} (proxied from ABS /api/libraries).
+async function libraries(req, res, u) {
+  const token = u.searchParams.get('token');
+  if (!token) { res.writeHead(400).end('bad params'); return; }
+  try {
+    const d = await absJson('/api/libraries', token);
+    res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name })) }));
+  } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
+}
+
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   let p = u.pathname;
   if (BASE_PATH && p.startsWith(BASE_PATH)) { p = p.slice(BASE_PATH.length) || '/'; }
   const g = req.method === 'GET';
   if (p === '/health') { res.writeHead(200).end('ok'); return; }
+  if (p === '/login'       && req.method === 'POST') { login(req, res); return; }
+  if (p === '/libraries'   && g) { libraries(req, res, u); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }
   if (p === '/authors'     && g) { authors(req, res, u); return; }
   if (p === '/series'      && g) { series(req, res, u); return; }

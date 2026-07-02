@@ -3,7 +3,6 @@
 
     <!-- status / flow messages -->
     <string id="loading">Loading...</string>
-    <string id="needConfig">Set ABS server\nand API key in\nphone settings</string>
     <string id="pickLibrary">Choose Library</string>
     <string id="pickBook">Choose Book</string>
     <string id="downloaded">Downloaded</string>
@@ -18,21 +17,15 @@
     <string id="errNoAudio">No audio in this book</string>
 
     <!-- settings labels (shown in Garmin Connect Mobile / Express) -->
-    <string id="settingServerUrl">Audiobookshelf server URL</string>
-    <string id="settingServerUrlPrompt">https://abs.example.com</string>
+    <string id="settingServerUrl">WatchShelf URL</string>
+    <string id="settingServerUrlPrompt">https://watchshelf.example.com</string>
     <string id="settingApiKey">Audiobookshelf API key</string>
     <string id="settingApiKeyPrompt">Long-lived ABS API key (Bearer)</string>
-    <string id="settingSidecarUrl">Transcode sidecar URL</string>
-    <string id="settingSidecarUrlPrompt">https://abs.example.com/watchshelf-transcode</string>
-    <string id="settingSidecarKey">Sidecar shared key</string>
-    <string id="settingSidecarKeyPrompt">Secret the watch sends to the sidecar</string>
-    <string id="settingsGroupServer">Server</string>
-    <string id="settingsGroupSidecar">Transcode Sidecar</string>
     <string id="browseLibrary">Browse library</string>
     <string id="logIn">Log in</string>
     <string id="loggingIn">Logging in...</string>
     <string id="loginFailed">Login failed</string>
-    <string id="fieldServer">Server URL</string>
+    <string id="fieldServer">WatchShelf URL</string>
     <string id="fieldUser">Username</string>
     <string id="fieldPass">Password</string>
     <string id="allBooks">All books</string>

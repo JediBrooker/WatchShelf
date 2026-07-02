@@ -43,23 +43,25 @@ make sim                # builds, launches the simulator, loads the app
 ```
 
 WatchShelf is an **audio content provider**, so in the sim it lives under the
-**media / music** UI, not as a normal app icon. To test against a plain-HTTP ABS,
-disable the sim's *Settings → Use Device HTTPS Requirements*. Set the four app
-settings (below) via the simulator's app-settings editor.
+**media / music** UI, not as a normal app icon. To test against a plain-HTTP
+sidecar, disable the sim's *Settings → Use Device HTTPS Requirements*. On-watch
+login (step 5) works in the sim too; the settings below (step 4) are an
+alternative if you'd rather not log in.
 
-## 4. App settings (sim or watch)
+## 4. Config (on-watch login, or phone settings once published)
 
-Four string settings drive the app:
+Normally you just **log in on the watch** (see step 5) with the sidecar's URL,
+your ABS username, and your ABS password — no settings screen needed for a
+sideloaded install.
+
+The two Properties below exist only for the **Connect IQ Store** path (phone
+settings via Garmin Connect Mobile / Express aren't reachable for a sideloaded
+app), and are a fallback if you'd rather not log in on-watch:
 
 | Setting | Example |
 |---|---|
-| Audiobookshelf server URL | `https://abs.example.com` |
+| WatchShelf URL | `https://watchshelf.example.com` (the **sidecar's** URL, not ABS's) |
 | Audiobookshelf API key | a long-lived ABS key (Settings → API Keys) with **download** permission |
-| Transcode sidecar URL | `https://abs.example.com/watchshelf-transcode` |
-| Sidecar shared key | matches the sidecar's `SIDECAR_KEY` |
-
-On the watch these are edited in **Garmin Connect Mobile** / **Garmin Express**
-(watch → WatchShelf → Settings).
 
 ## 5. Sideload to the Tactix 8
 
@@ -67,20 +69,24 @@ On the watch these are edited in **Garmin Connect Mobile** / **Garmin Express**
 2. Connect the watch by USB - it mounts as a drive.
 3. Copy `bin/WatchShelf.prg` to the watch's **`GARMIN/APPS/`** folder.
 4. Eject. WatchShelf appears under the watch's **Music / audio providers**.
-5. **On-device the ABS server and the sidecar MUST be HTTPS on port 443 with a
-   valid CA cert** - self-signed / LAN-only / custom-port fails the watch's audio
-   downloader even though it works in the sim.
+5. Open it → **Log in** → enter the **sidecar's** URL (not ABS's) + your ABS
+   username + password.
+6. **On-device the sidecar MUST be HTTPS on port 443 with a valid CA cert** -
+   self-signed / LAN-only / custom-port fails the watch's audio downloader even
+   though it works in the sim. ABS itself does NOT need to be exposed - the watch
+   never talks to it directly (see `sidecar/PROXIES.md`).
 
 ## 6. Run the sidecar
 
 ```
 cd sidecar
-cp .env.example .env      # fill ABS_URL, ABS_TOKEN, SIDECAR_KEY, PORT
+cp .env.example .env      # fill in ABS_URL (that's the only required setting)
 npm start                 # needs ffmpeg on PATH
 ```
 
-Mount it behind your reverse proxy so it shares the ABS `:443` cert - see
-`sidecar/Caddyfile.snippet` (Caddy) or the nginx block in the same file.
+Expose it over HTTPS with whatever reverse proxy you already run - copy-pasteable
+recipes for Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik are in
+[sidecar/PROXIES.md](sidecar/PROXIES.md).
 
 ## 7. Store package (later)
 
@@ -105,19 +111,14 @@ IQ Store upload also validates which listed devices can actually run an audio ap
 
 ## Verified against a live ABS server
 
-Ran the ABS client + sidecar against a real Audiobookshelf (v2.35.1, behind
-Cloudflare): token auth, `/api/libraries` → items → item-detail shapes, direct
-MP3 download (`206 audio/mpeg`), **m4b → ADTS** convert, and the **`/progress`
-forwarder** (ABS `currentTime` confirmed updated on read-back) all pass.
+Ran the sidecar against a real Audiobookshelf (behind Cloudflare): `/login` proxy,
+`/libraries`, `/list` (all books + author/series-filtered), `/authors`, `/series`,
+`/files`, on-demand `/transcode` chunks, and the `/progress` forwarder (ABS
+`currentTime` confirmed updated on read-back) all pass end-to-end.
 
 ## Still to confirm on the sim/device
 
-- **On-watch playback** - that a downloaded track's `Media.ContentRef` actually
-  plays through the native player to Bluetooth, including **ADTS** (m4b) output.
-- **Cloudflare + the watch's UA** - the watch's real User-Agent isn't blocked by
-  Cloudflare bot protection. In testing a `Garmin`/empty UA passed (only the
-  literal `Python-urllib` was 403'd), so this is low risk - but if downloads
-  403 on-device, allowlist the Garmin UA (or `/api/*`) in Cloudflare.
-- **Large single-file books** - a multi-hour single MP3 with no chapters downloads
-  as one big track; watch reliability there (multi-file / chaptered books split
-  into smaller tracks and are fine).
+- **On-watch playback** - that a downloaded chunk actually plays through the native
+  player to Bluetooth.
+- **Long books = many chunks** - a 25-hour book splits into ~50 chunks; sync works
+  but is slow, and hasn't been timed end-to-end on real hardware.

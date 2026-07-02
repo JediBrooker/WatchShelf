@@ -3,7 +3,7 @@ using Toybox.Graphics;
 using Toybox.Timer;
 using Toybox.WatchUi;
 
-// On-watch login. For each field we show a label ("Server URL", "Username",
+// On-watch login. For each field we show a label ("WatchShelf URL", "Username",
 // "Password") for ~1s, then auto-open the keyboard for it - so the user knows
 // what they're typing without an extra button press. Each field's value is
 // recorded when the keyboard closes; LoginView.onShow then shows the next field.
