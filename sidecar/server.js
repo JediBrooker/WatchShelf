@@ -159,13 +159,15 @@ function login(req, res) {
   });
 }
 
-// GET /libraries?token -> slim {libraries:[{id,name}]} (proxied from ABS /api/libraries).
+// GET /libraries?token -> slim {libraries:[{id,name,mediaType}]} (proxied from
+// ABS /api/libraries). mediaType is passed through - the watch uses it to skip
+// podcast libraries and only list book libraries.
 async function libraries(req, res, u) {
   const token = u.searchParams.get('token');
   if (!token) { res.writeHead(400).end('bad params'); return; }
   try {
     const d = await absJson('/api/libraries', token);
-    res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name })) }));
+    res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name, mediaType: l.mediaType })) }));
   } catch (e) { res.writeHead(502).end(String(e.message || 'ABS')); }
 }
 
