@@ -4,7 +4,9 @@ using Toybox.Media;
 using Toybox.WatchUi;
 
 // This is a management screen. Tapping a book queues ALL of its chunks for
-// deletion and runs a sync; "Done" starts playback of the downloaded set.
+// deletion and runs a sync; "Play downloaded" starts playback directly (see
+// the note on that branch below for why this isn't wired through Menu2's
+// onDone() the way Garmin's own MonkeyMusic sample does it).
 class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function initialize() {
@@ -18,6 +20,16 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         // if we're not configured yet, otherwise it lists books to download).
         if ((id instanceof Toybox.Lang.String) && id.equals("browse")) {
             WatchUi.pushView(new LibraryView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        // "Play downloaded" -> start playback directly. NOT wired through
+        // Menu2's onDone() (see class comment) - onDone() never fires on a
+        // plain Menu2 like this one, only on a WatchUi.CheckboxMenu, so a
+        // Done-triggered "play" was unreachable on real hardware no matter
+        // what the user pressed. This is a normal, always-reachable tap.
+        if ((id instanceof Toybox.Lang.String) && id.equals("play")) {
+            Media.startPlayback(null);
             return;
         }
 
@@ -79,11 +91,6 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
 
         Communications.startSync();
         WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.deleting)), null, WatchUi.SLIDE_LEFT);
-    }
-
-    // "Done" (menu action) = start playing the downloaded set.
-    function onDone() {
-        Media.startPlayback(null);
     }
 
     function onBack() {

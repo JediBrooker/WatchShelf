@@ -5,7 +5,10 @@ using Toybox.WatchUi;
 // Lists downloaded books (grouped from their individual chunk tracks - a book is
 // ~3-min chunks, so a long audiobook can be 100+ tracks; showing each one
 // individually would make this screen unusable). Selecting a book removes ALL of
-// its chunks; the native player is what actually plays the ContentIterator's set.
+// its chunks; "Play downloaded" starts playback (Media.startPlayback), which
+// hands off to the native player driving ContentIterator's set. The watch's own
+// Music widget (hold the music-controls button -> Music Providers -> WatchShelf)
+// reaches the SAME downloaded content and is the platform-standard way in too.
 class DownloadedMenu extends WatchUi.Menu2 {
 
     function initialize() {
@@ -15,6 +18,19 @@ class DownloadedMenu extends WatchUi.Menu2 {
         // MUST lead to the books. Always show a way into the library; LibraryView
         // logs the user in first if they aren't configured yet.
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.browseLibrary), null, "browse", null));
+
+        var books = groupedBooks();
+        var itemIds = books.keys();
+
+        // Explicit, direct "Play" action - a plain MenuItem calling
+        // Media.startPlayback() straight from onSelect. NOT wired through
+        // Menu2's onDone(): per Garmin's own API docs, onDone() is only ever
+        // triggered by a WatchUi.CheckboxMenu, never a plain Menu2 like this
+        // one - so a Done-based "play" action here would be silently
+        // unreachable on real hardware no matter what the user pressed.
+        if (itemIds.size() > 0) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.playDownloaded), null, "play", null));
+        }
 
         // Only offer to log out if actually logged in - avoids a pointless item
         // on a fresh, unconfigured install.
@@ -30,9 +46,6 @@ class DownloadedMenu extends WatchUi.Menu2 {
         if (hasQueued()) {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.clearQueue), null, "clearqueue", null));
         }
-
-        var books = groupedBooks();
-        var itemIds = books.keys();
 
         if (itemIds.size() > 0) {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteAllDownloads), null, "deleteall", null));
