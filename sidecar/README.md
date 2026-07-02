@@ -28,11 +28,8 @@ needs to be public).
    compose service name if it's a sibling container — see the comments in the file).
 2. `docker compose up -d --build`
 3. Expose the sidecar over HTTPS with **whatever reverse proxy you already run** —
-   see [PROXIES.md](PROXIES.md) for copy-pasteable recipes (Cloudflare Tunnel, nginx,
-   Apache, Caddy, Traefik). The simplest and recommended shape is a **dedicated
-   subdomain** (e.g. `watchshelf.example.com`) pointed straight at the sidecar; a
-   same-domain path (`books.example.com/watchshelf-transcode`) also works if you'd
-   rather not add a subdomain.
+   see [GETTING_STARTED.md](GETTING_STARTED.md) for a plain step-by-step guide, one
+   for each of Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik.
 4. Verify: `curl https://<whatever you exposed>/health` → `ok`.
 5. On the watch, log in with that URL — **not** your ABS server's URL.
 
