@@ -74,7 +74,7 @@ app), and are a fallback if you'd rather not log in on-watch:
 6. **On-device the sidecar MUST be HTTPS on port 443 with a valid CA cert** -
    self-signed / LAN-only / custom-port fails the watch's audio downloader even
    though it works in the sim. ABS itself does NOT need to be exposed - the watch
-   never talks to it directly (see `sidecar/PROXIES.md`).
+   never talks to it directly (see `sidecar/GETTING_STARTED.md`).
 
 ## 6. Run the sidecar
 
@@ -84,9 +84,9 @@ cp .env.example .env      # fill in ABS_URL (that's the only required setting)
 npm start                 # needs ffmpeg on PATH
 ```
 
-Expose it over HTTPS with whatever reverse proxy you already run - copy-pasteable
-recipes for Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik are in
-[sidecar/PROXIES.md](sidecar/PROXIES.md).
+Expose it over HTTPS with whatever reverse proxy you already run - a plain
+step-by-step guide for Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik is in
+[sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 
 ## 7. Store package (later)
 

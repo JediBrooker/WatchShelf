@@ -27,10 +27,9 @@ the sidecar**:
   exposed to the internet** — it can stay fully private.
 
 You expose the **sidecar** at any HTTPS URL and enter *that* URL on the watch. A
-dedicated subdomain (`watchshelf.example.com`) is the simplest and works identically on
-every reverse proxy; a same-domain path (`books.example.com/watchshelf-transcode`)
-works too. Recipes for **Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik** are in
-[sidecar/PROXIES.md](sidecar/PROXIES.md).
+plain, step-by-step guide — including *why* the sidecar is needed at all — for each
+of **Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik** is in
+[sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 
 ## How it works
 
