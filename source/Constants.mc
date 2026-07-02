@@ -22,10 +22,8 @@ module Store {
 // Properties.getValue throws InvalidKeyException for an undeclared key.
 // ---------------------------------------------------------------------------
 module Settings {
-    const SERVER_URL  = "absServerUrl";  // e.g. https://abs.example.com  (no trailing slash)
+    const SERVER_URL  = "absServerUrl";  // the sidecar's public URL (no trailing slash)
     const API_KEY     = "absApiKey";     // ABS long-lived API key, used as Bearer token
-    const SIDECAR_URL = "sidecarUrl";    // e.g. https://abs.example.com/watchshelf-transcode
-    const SIDECAR_KEY = "sidecarKey";    // shared secret the watch sends to the sidecar (?key=)
 }
 
 // Bump `current` whenever the stored data shape changes so stale caches reset.
@@ -36,7 +34,7 @@ module Versions {
     const current = V1;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b11";
+    const tag = "b12";
 }
 
 // Keys for a TrackInfo dict (one downloaded/queued CHAPTER = one Media track).

@@ -2,6 +2,4 @@
     <!-- These MUST be declared here for Application.Properties.getValue to work. -->
     <property id="absServerUrl" type="string"></property>
     <property id="absApiKey"    type="string"></property>
-    <property id="sidecarUrl"   type="string"></property>
-    <property id="sidecarKey"   type="string"></property>
 </properties>

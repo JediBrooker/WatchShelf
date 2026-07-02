@@ -1,12 +1,17 @@
 # One-command sidecar: `docker compose up -d --build`
-# It only needs ABS_URL. Point it at Audiobookshelf's INTERNAL address if you can
-# (bypasses Cloudflare); the public https URL also works (the sidecar sends a UA).
+# It only needs ABS_URL - the address of your Audiobookshelf server AS SEEN FROM THIS
+# CONTAINER. With this setup the WATCH only ever talks to the sidecar, so ABS itself
+# can stay fully private/internal - it never needs to be exposed to the internet.
 services:
   watchshelf-sidecar:
     build: .
     container_name: watchshelf-sidecar
     environment:
-      - ABS_URL=https://books.jedibrooker.com   # <-- or http://audiobookshelf:13378 (internal)
+      # Pick ONE that this container can reach:
+      #   http://host.docker.internal:13378   # ABS runs on the host (Docker Desktop / recent Docker)
+      #   http://audiobookshelf:13378         # ABS is another compose service (join its network below)
+      #   https://books.example.com           # ABS is already public (works too; the sidecar sends a UA)
+      - ABS_URL=http://host.docker.internal:13378
       - BIND=0.0.0.0
       - PORT=8081
     ports:
