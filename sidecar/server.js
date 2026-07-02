@@ -18,7 +18,6 @@
 
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { pipeline } from 'node:stream/promises';
 
 const ABS  = (process.env.ABS_URL || '').replace(/\/+$/, '');
 const PORT = Number(process.env.PORT || 8081);
@@ -43,6 +42,13 @@ function ffArgs(srcUrl, token, fmt, start, end) {
   a.push('-i', srcUrl);
   if (start != null && end != null) { a.push('-t', String(Math.max(0, Number(end) - Number(start)))); }
   else if (end != null)            { a.push('-to', String(end)); }
+  // Strip every inherited metadata field (title/author/comments/cover art/etc.) -
+  // WatchShelf doesn't need it embedded (book metadata lives server-side), and a
+  // Garmin-confirmed bug (certain characters, e.g. (c) or curly quotes, in MP3
+  // ID3 text frames) silently breaks native playback on real hardware with no
+  // error surfaced to the app. -id3v2_version 0 additionally suppresses ffmpeg's
+  // own default encoder tag, so the mp3 output carries no ID3 tag at all.
+  a.push('-map_metadata', '-1', '-id3v2_version', '0');
   if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'copy', '-f', 'adts', 'pipe:1'); }
   else { a.push('-map', '0:a:0', '-c:a', 'libmp3lame', '-b:a', '64k', '-ac', '1', '-ar', '22050', '-f', 'mp3', 'pipe:1'); }
   return a;
@@ -57,10 +63,30 @@ function transcode(req, res, u) {
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
   const src = `${ABS}/api/items/${encodeURIComponent(item)}/file/${encodeURIComponent(file)}/download`;
   const ff = spawn('ffmpeg', ffArgs(src, token, fmt, start, end), { stdio: ['ignore', 'pipe', 'inherit'] });
-  res.writeHead(200, { 'Content-Type': CT[fmt], 'Cache-Control': 'no-store' });
-  ff.on('error', () => { if (!res.writableEnded) res.destroy(); });
-  req.on('close', () => ff.kill('SIGKILL'));
-  pipeline(ff.stdout, res).catch(() => { ff.kill('SIGKILL'); if (!res.writableEnded) res.destroy(); });
+
+  // Buffer the whole chunk instead of streaming ffmpeg's stdout live: a 30-min
+  // chunk is small and bounded (tens of MB at most), and the watch's audio
+  // downloader needs a real Content-Length up front. A chunked, size-unknown
+  // response can leave the OS with a file it can't validate/size correctly,
+  // which surfaces as a native "Media Error Occurred" well after the download
+  // itself already reported success to the app.
+  const parts = [];
+  let done = false;
+  ff.stdout.on('data', (c) => parts.push(c));
+  req.on('close', () => { if (!done) { done = true; ff.kill('SIGKILL'); } });
+  ff.on('error', () => {
+    if (done) { return; }
+    done = true;
+    if (!res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
+  });
+  ff.on('close', (code) => {
+    if (done) { return; }
+    done = true;
+    if (code !== 0) { if (!res.headersSent) { res.writeHead(502).end('transcode failed'); } return; }
+    const buf = Buffer.concat(parts);
+    res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
+    res.end(buf);
+  });
 }
 
 const bookOf = (it) => ({
