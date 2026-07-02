@@ -101,6 +101,42 @@ module BookStore {
         Application.Storage.deleteValue(key(itemId));
     }
 
+    // ---- BOOK_INDEX maintenance (the menu/playback book list) -------------
+
+    function addToIndex(itemId) {
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { index = []; }
+        for (var i = 0; i < index.size(); ++i) {
+            if (index[i].equals(itemId)) { return; }
+        }
+        index.add(itemId);
+        Application.Storage.setValue(Store.BOOK_INDEX, index);
+    }
+
+    function removeFromIndex(itemId) {
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { return; }
+        var out = [];
+        for (var i = 0; i < index.size(); ++i) {
+            if (!index[i].equals(itemId)) { out.add(index[i]); }
+        }
+        Application.Storage.setValue(Store.BOOK_INDEX, out);
+    }
+
+    // Add every recorded refId of a book to `out` as { refId => true } - a
+    // membership set for the end-of-sync orphan sweep.
+    function addRefIds(itemId, out) {
+        var p = 0;
+        while (true) {
+            var arr = Application.Storage.getValue(pageKey(itemId, p));
+            if (arr == null) { return; }
+            for (var i = 0; i < arr.size(); ++i) {
+                if (arr[i] != null) { out[arr[i]] = true; }
+            }
+            p += 1;
+        }
+    }
+
     // Build { refId => [bookOrder, bookAbsoluteStartSeconds] } for one book
     // into `out` (a shared lookup dict used by playback). bookOrder is the
     // caller-supplied position of this book (its BOOK_INDEX slot) - playback

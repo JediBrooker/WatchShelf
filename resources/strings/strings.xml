@@ -6,8 +6,10 @@
     <string id="pickLibrary">Choose Library</string>
     <string id="pickBook">Choose Book</string>
     <string id="downloaded">Downloaded</string>
-    <string id="queued">Queued.\nSyncing...</string>
-    <string id="deleting">Removing...</string>
+    <string id="queued">Queued</string>
+    <string id="deleting">Removing</string>
+    <string id="downloadsFull">Downloads full.\nDelete a book first.</string>
+    <string id="errTooManyFiles">This book has\ntoo many files</string>
     <string id="clearQueue">Clear queue</string>
     <string id="queueCleared">Queue cleared</string>
     <string id="deleteAllDownloads">Delete all downloads</string>

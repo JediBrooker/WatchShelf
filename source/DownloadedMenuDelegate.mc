@@ -47,9 +47,9 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         // finishes) WITHOUT starting a sync - we want to drop them, not process
         // them.
         if ((id instanceof Toybox.Lang.String) && id.equals("clearqueue")) {
-            Application.Storage.setValue(Store.SYNC_JOBS, {});
+            JobStore.clearAll();
             Application.Storage.setValue(Store.DELETE_LIST, []);
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queueCleared)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            Notify.flash(Rez.Strings.queueCleared);
             return;
         }
 
@@ -82,7 +82,7 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         Application.Storage.setValue(Store.DELETE_LIST, deleteList);
 
         Communications.startSync();
-        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.deleting)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+        Notify.flash(Rez.Strings.deleting);
     }
 
     function onBack() {

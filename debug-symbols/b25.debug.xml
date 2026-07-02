@@ -1,0 +1,1757 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<debugInfo>
+    <manifest filename="/Users/cbrooker/Code/ABS-Garmin/manifest.xml"/>
+    <pcToLineNum>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="1" lineNum="33" parent="globals/BrowseDelegate" pc="268435460" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="2" lineNum="18" parent="globals/SyncDelegate" pc="268435472" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/bin/gen/006-B4533-00/source/Rez.mcgen" id="3" lineNum="7" parent="globals/Rez" pc="268435484" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="4" lineNum="65" parent="globals/GroupDelegate" pc="268435504" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="5" lineNum="4" parent="globals/LibraryMenuDelegate" pc="268435516" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="6" lineNum="7" parent="globals/WatchShelfApp" pc="268435528" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="7" lineNum="7" parent="globals/ContentDelegate" pc="268435540" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="8" lineNum="13" parent="globals/ContentIterator" pc="268435552" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="9" lineNum="115" parent="globals/FieldDelegate" pc="268435564" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="10" lineNum="8" parent="globals/LibraryView" pc="268435576" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="11" lineNum="6" parent="globals/LibraryViewDelegate" pc="268435588" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="12" lineNum="10" parent="globals/BookMenuDelegate" pc="268435600" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="13" lineNum="27" parent="globals/LoginView" pc="268435612" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="14" lineNum="10" parent="globals/DownloadedMenuDelegate" pc="268435624" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="15" lineNum="8" parent="globals/ErrorViewDelegate" pc="268435636" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="16" lineNum="5" parent="globals/ErrorView" pc="268435648" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="17" lineNum="12" parent="globals/DownloadedMenu" pc="268435660" symbol="&lt;init&gt;"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="18" lineNum="45" parent="globals/BrowseDelegate" pc="268435672" symbol="onSeries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="18" lineNum="45" parent="globals/BrowseDelegate" pc="268435674" symbol="onSeries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="19" lineNum="62" parent="globals/BrowseDelegate" pc="268435698" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="19" lineNum="62" parent="globals/BrowseDelegate" pc="268435700" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="20" lineNum="44" parent="globals/BrowseDelegate" pc="268435716" symbol="onAuthors"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="20" lineNum="44" parent="globals/BrowseDelegate" pc="268435718" symbol="onAuthors"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="48" parent="globals/BrowseDelegate" pc="268435742" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="49" parent="globals/BrowseDelegate" pc="268435745" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="50" parent="globals/BrowseDelegate" pc="268435785" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="51" parent="globals/BrowseDelegate" pc="268435867" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="53" parent="globals/BrowseDelegate" pc="268435871" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="54" parent="globals/BrowseDelegate" pc="268435878" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="55" parent="globals/BrowseDelegate" pc="268435944" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="56" parent="globals/BrowseDelegate" pc="268435960" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="57" parent="globals/BrowseDelegate" pc="268435967" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="58" parent="globals/BrowseDelegate" pc="268436005" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="21" lineNum="60" parent="globals/BrowseDelegate" pc="268436066" symbol="pushGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="22" lineNum="43" parent="globals/BrowseDelegate" pc="268436109" symbol="onBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="22" lineNum="43" parent="globals/BrowseDelegate" pc="268436111" symbol="onBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="23" lineNum="46" parent="globals/BrowseDelegate" pc="268436129" symbol="onCollections"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="23" lineNum="46" parent="globals/BrowseDelegate" pc="268436131" symbol="onCollections"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="24" lineNum="35" parent="globals/BrowseDelegate" pc="268436155" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="24" lineNum="35" parent="globals/BrowseDelegate" pc="268436157" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="24" lineNum="35" parent="globals/BrowseDelegate" pc="268436169" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="36" parent="globals/BrowseDelegate" pc="268436179" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="37" parent="globals/BrowseDelegate" pc="268436182" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="38" parent="globals/BrowseDelegate" pc="268436191" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="38" parent="globals/BrowseDelegate" pc="268436208" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="39" parent="globals/BrowseDelegate" pc="268436244" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="39" parent="globals/BrowseDelegate" pc="268436261" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="40" parent="globals/BrowseDelegate" pc="268436295" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="40" parent="globals/BrowseDelegate" pc="268436312" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="25" lineNum="41" parent="globals/BrowseDelegate" pc="268436346" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="43" parent="globals/SyncDelegate" pc="268436378" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="44" parent="globals/SyncDelegate" pc="268436380" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="45" parent="globals/SyncDelegate" pc="268436410" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="46" parent="globals/SyncDelegate" pc="268436420" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="47" parent="globals/SyncDelegate" pc="268436434" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="49" parent="globals/SyncDelegate" pc="268436438" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="50" parent="globals/SyncDelegate" pc="268436445" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="26" lineNum="51" parent="globals/SyncDelegate" pc="268436463" symbol="onStartSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="77" parent="globals/SyncDelegate" pc="268436471" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="78" parent="globals/SyncDelegate" pc="268436474" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="79" parent="globals/SyncDelegate" pc="268436490" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="80" parent="globals/SyncDelegate" pc="268436510" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="81" parent="globals/SyncDelegate" pc="268436524" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="84" parent="globals/SyncDelegate" pc="268436528" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="85" parent="globals/SyncDelegate" pc="268436537" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="88" parent="globals/SyncDelegate" pc="268436547" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="90" parent="globals/SyncDelegate" pc="268436570" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="98" parent="globals/SyncDelegate" pc="268436615" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="99" parent="globals/SyncDelegate" pc="268436650" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="27" lineNum="101" parent="globals/SyncDelegate" pc="268436696" symbol="downloadNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="28" lineNum="137" parent="globals/SyncDelegate" pc="268436712" symbol="onOpDone"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="28" lineNum="138" parent="globals/SyncDelegate" pc="268436715" symbol="onOpDone"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="28" lineNum="139" parent="globals/SyncDelegate" pc="268436730" symbol="onOpDone"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="28" lineNum="140" parent="globals/SyncDelegate" pc="268436758" symbol="onOpDone"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="61" parent="globals/SyncDelegate" pc="268436774" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="62" parent="globals/SyncDelegate" pc="268436777" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="63" parent="globals/SyncDelegate" pc="268436796" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="63" parent="globals/SyncDelegate" pc="268436802" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="65" parent="globals/SyncDelegate" pc="268436809" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="66" parent="globals/SyncDelegate" pc="268436829" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="67" parent="globals/SyncDelegate" pc="268436839" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="68" parent="globals/SyncDelegate" pc="268436878" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="69" parent="globals/SyncDelegate" pc="268436890" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="71" parent="globals/SyncDelegate" pc="268436907" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="72" parent="globals/SyncDelegate" pc="268436927" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="29" lineNum="73" parent="globals/SyncDelegate" pc="268436945" symbol="deleteQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="115" parent="globals/SyncDelegate" pc="268436955" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="116" parent="globals/SyncDelegate" pc="268436958" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="117" parent="globals/SyncDelegate" pc="268436967" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="119" parent="globals/SyncDelegate" pc="268436976" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="120" parent="globals/SyncDelegate" pc="268436995" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="120" parent="globals/SyncDelegate" pc="268437001" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="121" parent="globals/SyncDelegate" pc="268437008" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="122" parent="globals/SyncDelegate" pc="268437021" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="125" parent="globals/SyncDelegate" pc="268437041" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="126" parent="globals/SyncDelegate" pc="268437063" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="128" parent="globals/SyncDelegate" pc="268437086" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="130" parent="globals/SyncDelegate" pc="268437093" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="131" parent="globals/SyncDelegate" pc="268437126" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="30" lineNum="133" parent="globals/SyncDelegate" pc="268437136" symbol="onTrackDownloaded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="31" lineNum="55" parent="globals/SyncDelegate" pc="268437164" symbol="onStopSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="31" lineNum="56" parent="globals/SyncDelegate" pc="268437166" symbol="onStopSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="31" lineNum="57" parent="globals/SyncDelegate" pc="268437177" symbol="onStopSync"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="105" parent="globals/SyncDelegate" pc="268437192" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="106" parent="globals/SyncDelegate" pc="268437194" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="106" parent="globals/SyncDelegate" pc="268437211" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="107" parent="globals/SyncDelegate" pc="268437217" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="107" parent="globals/SyncDelegate" pc="268437234" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="108" parent="globals/SyncDelegate" pc="268437240" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="108" parent="globals/SyncDelegate" pc="268437257" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="109" parent="globals/SyncDelegate" pc="268437263" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="109" parent="globals/SyncDelegate" pc="268437280" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="32" lineNum="110" parent="globals/SyncDelegate" pc="268437286" symbol="typeToEncoding"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="26" parent="globals/SyncDelegate" pc="268437288" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="27" parent="globals/SyncDelegate" pc="268437290" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="29" parent="globals/SyncDelegate" pc="268437302" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="30" parent="globals/SyncDelegate" pc="268437326" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="30" parent="globals/SyncDelegate" pc="268437335" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="32" parent="globals/SyncDelegate" pc="268437347" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="33" parent="globals/SyncDelegate" pc="268437371" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="33" parent="globals/SyncDelegate" pc="268437380" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="33" lineNum="35" parent="globals/SyncDelegate" pc="268437392" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="34" lineNum="39" parent="globals/SyncDelegate" pc="268437401" symbol="isSyncNeeded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/SyncDelegate.mc" id="34" lineNum="40" parent="globals/SyncDelegate" pc="268437403" symbol="isSyncNeeded"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="35" lineNum="18" parent="globals/LoginCreds" pc="268437436" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="35" lineNum="18" parent="globals/LoginCreds" pc="268437438" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="35" lineNum="18" parent="globals/LoginCreds" pc="268437450" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="35" lineNum="18" parent="globals/LoginCreds" pc="268437462" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="36" lineNum="71" parent="globals/GroupDelegate" pc="268437475" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="36" lineNum="71" parent="globals/GroupDelegate" pc="268437477" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="37" lineNum="70" parent="globals/GroupDelegate" pc="268437493" symbol="onBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="37" lineNum="70" parent="globals/GroupDelegate" pc="268437495" symbol="onBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="38" lineNum="68" parent="globals/GroupDelegate" pc="268437513" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="38" lineNum="68" parent="globals/GroupDelegate" pc="268437515" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="38" lineNum="68" parent="globals/GroupDelegate" pc="268437527" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="38" lineNum="68" parent="globals/GroupDelegate" pc="268437536" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="39" lineNum="69" parent="globals/GroupDelegate" pc="268437546" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="39" lineNum="69" parent="globals/GroupDelegate" pc="268437548" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="40" lineNum="168" parent="globals/AbsProgressListener" pc="268437592" symbol="onResponse"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="40" lineNum="169" parent="globals/AbsProgressListener" pc="268437594" symbol="onResponse"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="40" lineNum="170" parent="globals/AbsProgressListener" pc="268437603" symbol="onResponse"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="42" lineNum="7" parent="globals/LibraryMenuDelegate" pc="268437628" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="42" lineNum="7" parent="globals/LibraryMenuDelegate" pc="268437630" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="43" lineNum="5" parent="globals/LibraryMenuDelegate" pc="268437646" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="43" lineNum="5" parent="globals/LibraryMenuDelegate" pc="268437648" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="44" lineNum="6" parent="globals/LibraryMenuDelegate" pc="268437661" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryMenuDelegate.mc" id="44" lineNum="6" parent="globals/LibraryMenuDelegate" pc="268437663" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="45" lineNum="50" parent="globals/WatchShelfApp" pc="268437684" symbol="getProviderIconInfo"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="45" lineNum="51" parent="globals/WatchShelfApp" pc="268437686" symbol="getProviderIconInfo"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="46" lineNum="38" parent="globals/WatchShelfApp" pc="268437733" symbol="getPlaybackConfigurationView"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="46" lineNum="39" parent="globals/WatchShelfApp" pc="268437735" symbol="getPlaybackConfigurationView"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="47" lineNum="23" parent="globals/WatchShelfApp" pc="268437782" symbol="getContentDelegate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="47" lineNum="24" parent="globals/WatchShelfApp" pc="268437784" symbol="getContentDelegate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="48" lineNum="31" parent="globals/WatchShelfApp" pc="268437803" symbol="getSyncDelegate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="48" lineNum="32" parent="globals/WatchShelfApp" pc="268437805" symbol="getSyncDelegate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="9" parent="globals/WatchShelfApp" pc="268437824" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="11" parent="globals/WatchShelfApp" pc="268437827" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="12" parent="globals/WatchShelfApp" pc="268437846" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="13" parent="globals/WatchShelfApp" pc="268437853" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="14" parent="globals/WatchShelfApp" pc="268437864" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="15" parent="globals/WatchShelfApp" pc="268437875" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="49" lineNum="19" parent="globals/WatchShelfApp" pc="268437897" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="50" lineNum="45" parent="globals/WatchShelfApp" pc="268437910" symbol="getSyncConfigurationView"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/WatchShelfApp.mc" id="50" lineNum="46" parent="globals/WatchShelfApp" pc="268437912" symbol="getSyncConfigurationView"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="51" lineNum="56" parent="globals/ContentDelegate" pc="268437959" symbol="onShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="51" lineNum="57" parent="globals/ContentDelegate" pc="268437961" symbol="onShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="52" lineNum="16" parent="globals/ContentDelegate" pc="268437974" symbol="getContentIterator"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="52" lineNum="17" parent="globals/ContentDelegate" pc="268437976" symbol="getContentIterator"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="39" parent="globals/ContentDelegate" pc="268437982" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="40" parent="globals/ContentDelegate" pc="268437985" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="41" parent="globals/ContentDelegate" pc="268438004" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="41" parent="globals/ContentDelegate" pc="268438010" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="42" parent="globals/ContentDelegate" pc="268438014" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="43" parent="globals/ContentDelegate" pc="268438021" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="43" parent="globals/ContentDelegate" pc="268438027" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="45" parent="globals/ContentDelegate" pc="268438031" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="45" parent="globals/ContentDelegate" pc="268438045" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="47" parent="globals/ContentDelegate" pc="268438049" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="48" parent="globals/ContentDelegate" pc="268438059" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="48" parent="globals/ContentDelegate" pc="268438065" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="49" parent="globals/ContentDelegate" pc="268438071" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="53" lineNum="53" parent="globals/ContentDelegate" pc="268438078" symbol="syncProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="54" lineNum="61" parent="globals/ContentDelegate" pc="268438103" symbol="onThumbsUp"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="55" lineNum="11" parent="globals/ContentDelegate" pc="268438106" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="55" lineNum="12" parent="globals/ContentDelegate" pc="268438108" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="55" lineNum="13" parent="globals/ContentDelegate" pc="268438120" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="56" lineNum="30" parent="globals/ContentDelegate" pc="268438128" symbol="onSong"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="56" lineNum="31" parent="globals/ContentDelegate" pc="268438130" symbol="onSong"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="56" lineNum="35" parent="globals/ContentDelegate" pc="268438162" symbol="onSong"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="58" lineNum="20" parent="globals/ContentDelegate" pc="268438179" symbol="resetContentIterator"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="58" lineNum="21" parent="globals/ContentDelegate" pc="268438181" symbol="resetContentIterator"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="58" lineNum="22" parent="globals/ContentDelegate" pc="268438206" symbol="resetContentIterator"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentDelegate.mc" id="59" lineNum="62" parent="globals/ContentDelegate" pc="268438212" symbol="onThumbsDown"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="60" lineNum="55" parent="globals/ContentIterator" pc="268438215" symbol="next"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="60" lineNum="56" parent="globals/ContentIterator" pc="268438217" symbol="next"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="60" lineNum="57" parent="globals/ContentIterator" pc="268438240" symbol="next"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="60" lineNum="58" parent="globals/ContentIterator" pc="268438255" symbol="next"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="60" lineNum="60" parent="globals/ContentIterator" pc="268438272" symbol="next"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="99" parent="globals/ContentIterator" pc="268438274" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="100" parent="globals/ContentIterator" pc="268438277" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="102" parent="globals/ContentIterator" pc="268438301" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="103" parent="globals/ContentIterator" pc="268438355" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="108" parent="globals/ContentIterator" pc="268438359" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="109" parent="globals/ContentIterator" pc="268438400" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="61" lineNum="112" parent="globals/ContentIterator" pc="268438421" symbol="objAt"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="62" lineNum="63" parent="globals/ContentIterator" pc="268438423" symbol="previous"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="62" lineNum="64" parent="globals/ContentIterator" pc="268438425" symbol="previous"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="62" lineNum="65" parent="globals/ContentIterator" pc="268438435" symbol="previous"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="62" lineNum="66" parent="globals/ContentIterator" pc="268438450" symbol="previous"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="62" lineNum="68" parent="globals/ContentIterator" pc="268438467" symbol="previous"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="161" parent="globals/ContentIterator" pc="268438469" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="162" parent="globals/ContentIterator" pc="268438472" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="163" parent="globals/ContentIterator" pc="268438486" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="164" parent="globals/ContentIterator" pc="268438500" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="165" parent="globals/ContentIterator" pc="268438515" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="63" lineNum="167" parent="globals/ContentIterator" pc="268438524" symbol="before"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="64" lineNum="75" parent="globals/ContentIterator" pc="268438550" symbol="peekPrevious"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="64" lineNum="76" parent="globals/ContentIterator" pc="268438552" symbol="peekPrevious"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="65" lineNum="79" parent="globals/ContentIterator" pc="268438569" symbol="canSkip"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="65" lineNum="80" parent="globals/ContentIterator" pc="268438571" symbol="canSkip"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="87" parent="globals/ContentIterator" pc="268438573" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="88" parent="globals/ContentIterator" pc="268438575" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="89" parent="globals/ContentIterator" pc="268438583" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="90" parent="globals/ContentIterator" pc="268438591" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="92" parent="globals/ContentIterator" pc="268438601" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="66" lineNum="93" parent="globals/ContentIterator" pc="268438608" symbol="toggleShuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="27" parent="globals/ContentIterator" pc="268438617" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="28" parent="globals/ContentIterator" pc="268438620" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="29" parent="globals/ContentIterator" pc="268438644" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="36" parent="globals/ContentIterator" pc="268438657" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="37" parent="globals/ContentIterator" pc="268438666" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="38" parent="globals/ContentIterator" pc="268438675" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="39" parent="globals/ContentIterator" pc="268438685" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="42" parent="globals/ContentIterator" pc="268438695" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="43" parent="globals/ContentIterator" pc="268438706" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="45" parent="globals/ContentIterator" pc="268438719" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="46" parent="globals/ContentIterator" pc="268438730" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="67" lineNum="48" parent="globals/ContentIterator" pc="268438743" symbol="getPlaybackProfile"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="68" lineNum="176" parent="globals/ContentIterator" pc="268438746" symbol="startOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="68" lineNum="177" parent="globals/ContentIterator" pc="268438749" symbol="startOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="68" lineNum="178" parent="globals/ContentIterator" pc="268438756" symbol="startOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="68" lineNum="178" parent="globals/ContentIterator" pc="268438774" symbol="startOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="68" lineNum="179" parent="globals/ContentIterator" pc="268438786" symbol="startOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="69" lineNum="71" parent="globals/ContentIterator" pc="268438788" symbol="peekNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="69" lineNum="72" parent="globals/ContentIterator" pc="268438790" symbol="peekNext"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="70" lineNum="51" parent="globals/ContentIterator" pc="268438807" symbol="get"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="70" lineNum="52" parent="globals/ContentIterator" pc="268438809" symbol="get"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="71" lineNum="83" parent="globals/ContentIterator" pc="268438823" symbol="shuffling"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="71" lineNum="84" parent="globals/ContentIterator" pc="268438825" symbol="shuffling"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="72" lineNum="19" parent="globals/ContentIterator" pc="268438831" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="72" lineNum="20" parent="globals/ContentIterator" pc="268438833" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="72" lineNum="21" parent="globals/ContentIterator" pc="268438845" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="72" lineNum="22" parent="globals/ContentIterator" pc="268438853" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="72" lineNum="23" parent="globals/ContentIterator" pc="268438861" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="182" parent="globals/ContentIterator" pc="268438869" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="183" parent="globals/ContentIterator" pc="268438872" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="184" parent="globals/ContentIterator" pc="268438895" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="185" parent="globals/ContentIterator" pc="268438913" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="186" parent="globals/ContentIterator" pc="268438923" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="187" parent="globals/ContentIterator" pc="268438939" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="73" lineNum="189" parent="globals/ContentIterator" pc="268438959" symbol="shuffle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="74" lineNum="170" parent="globals/ContentIterator" pc="268438968" symbol="bookTitleOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="74" lineNum="171" parent="globals/ContentIterator" pc="268438971" symbol="bookTitleOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="74" lineNum="172" parent="globals/ContentIterator" pc="268438978" symbol="bookTitleOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="74" lineNum="172" parent="globals/ContentIterator" pc="268438996" symbol="bookTitleOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="74" lineNum="173" parent="globals/ContentIterator" pc="268439008" symbol="bookTitleOf"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="126" parent="globals/ContentIterator" pc="268439014" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="127" parent="globals/ContentIterator" pc="268439017" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="128" parent="globals/ContentIterator" pc="268439026" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="129" parent="globals/ContentIterator" pc="268439045" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="129" parent="globals/ContentIterator" pc="268439051" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="131" parent="globals/ContentIterator" pc="268439058" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="132" parent="globals/ContentIterator" pc="268439062" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="133" parent="globals/ContentIterator" pc="268439089" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="134" parent="globals/ContentIterator" pc="268439095" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="135" parent="globals/ContentIterator" pc="268439105" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="136" parent="globals/ContentIterator" pc="268439111" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="137" parent="globals/ContentIterator" pc="268439129" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="141" parent="globals/ContentIterator" pc="268439145" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="142" parent="globals/ContentIterator" pc="268439161" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="144" parent="globals/ContentIterator" pc="268439168" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="145" parent="globals/ContentIterator" pc="268439181" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="146" parent="globals/ContentIterator" pc="268439201" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="146" parent="globals/ContentIterator" pc="268439224" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="146" parent="globals/ContentIterator" pc="268439228" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="150" parent="globals/ContentIterator" pc="268439244" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="151" parent="globals/ContentIterator" pc="268439261" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="151" parent="globals/ContentIterator" pc="268439272" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="152" parent="globals/ContentIterator" pc="268439295" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="153" parent="globals/ContentIterator" pc="268439302" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="153" parent="globals/ContentIterator" pc="268439323" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="154" parent="globals/ContentIterator" pc="268439349" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ContentIterator.mc" id="75" lineNum="156" parent="globals/ContentIterator" pc="268439368" symbol="buildPlaylist"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="76" lineNum="22" parent="globals/Login" pc="268439377" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="76" lineNum="23" parent="globals/Login" pc="268439387" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="77" lineNum="94" parent="globals/AbsApi" pc="268439447" symbol="isConfigured"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="77" lineNum="95" parent="globals/AbsApi" pc="268439457" symbol="isConfigured"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="78" lineNum="29" parent="globals/AbsApi" pc="268439478" symbol="authToken"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="78" lineNum="30" parent="globals/AbsApi" pc="268439489" symbol="authToken"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="78" lineNum="31" parent="globals/AbsApi" pc="268439508" symbol="authToken"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="78" lineNum="31" parent="globals/AbsApi" pc="268439514" symbol="authToken"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="78" lineNum="32" parent="globals/AbsApi" pc="268439532" symbol="authToken"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="79" lineNum="146" parent="globals/AbsApi" pc="268439535" symbol="saveLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="79" lineNum="147" parent="globals/AbsApi" pc="268439545" symbol="saveLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="79" lineNum="148" parent="globals/AbsApi" pc="268439573" symbol="saveLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="80" lineNum="65" parent="globals/AbsApi" pc="268439594" symbol="getCollections"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="80" lineNum="65" parent="globals/AbsApi" pc="268439604" symbol="getCollections"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="81" lineNum="40" parent="globals/AbsApi" pc="268439623" symbol="sidecarBase"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="81" lineNum="40" parent="globals/AbsApi" pc="268439633" symbol="sidecarBase"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="82" lineNum="137" parent="globals/AbsApi" pc="268439640" symbol="login"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="82" lineNum="138" parent="globals/AbsApi" pc="268439650" symbol="login"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="83" lineNum="68" parent="globals/AbsApi" pc="268439734" symbol="getFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="83" lineNum="69" parent="globals/AbsApi" pc="268439744" symbol="getFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="84" lineNum="86" parent="globals/AbsApi" pc="268439817" symbol="_prop"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="84" lineNum="89" parent="globals/AbsApi" pc="268439828" symbol="_prop"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="84" lineNum="90" parent="globals/AbsApi" pc="268439844" symbol="_prop"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="84" lineNum="90" parent="globals/AbsApi" pc="268439878" symbol="_prop"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="84" lineNum="91" parent="globals/AbsApi" pc="268439883" symbol="_prop"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="85" lineNum="44" parent="globals/AbsApi" pc="268439886" symbol="getBookList"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="85" lineNum="45" parent="globals/AbsApi" pc="268439897" symbol="getBookList"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="85" lineNum="46" parent="globals/AbsApi" pc="268439924" symbol="getBookList"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="85" lineNum="46" parent="globals/AbsApi" pc="268439936" symbol="getBookList"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="85" lineNum="47" parent="globals/AbsApi" pc="268439946" symbol="getBookList"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="86" lineNum="150" parent="globals/AbsApi" pc="268439996" symbol="logout"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="86" lineNum="151" parent="globals/AbsApi" pc="268440006" symbol="logout"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="86" lineNum="152" parent="globals/AbsApi" pc="268440024" symbol="logout"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="87" lineNum="124" parent="globals/AbsApi" pc="268440043" symbol="patchProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="87" lineNum="125" parent="globals/AbsApi" pc="268440054" symbol="patchProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="87" lineNum="126" parent="globals/AbsApi" pc="268440077" symbol="patchProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="87" lineNum="126" parent="globals/AbsApi" pc="268440083" symbol="patchProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="87" lineNum="127" parent="globals/AbsApi" pc="268440096" symbol="patchProgress"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="88" lineNum="64" parent="globals/AbsApi" pc="268440197" symbol="getSeries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="88" lineNum="64" parent="globals/AbsApi" pc="268440207" symbol="getSeries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="89" lineNum="113" parent="globals/AbsApi" pc="268440226" symbol="progressSeconds"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="89" lineNum="114" parent="globals/AbsApi" pc="268440237" symbol="progressSeconds"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="89" lineNum="115" parent="globals/AbsApi" pc="268440247" symbol="progressSeconds"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="89" lineNum="116" parent="globals/AbsApi" pc="268440265" symbol="progressSeconds"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="89" lineNum="118" parent="globals/AbsApi" pc="268440277" symbol="progressSeconds"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="90" lineNum="63" parent="globals/AbsApi" pc="268440279" symbol="getAuthors"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="90" lineNum="63" parent="globals/AbsApi" pc="268440289" symbol="getAuthors"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="91" lineNum="80" parent="globals/AbsApi" pc="268440308" symbol="sidecarChunkUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="91" lineNum="81" parent="globals/AbsApi" pc="268440318" symbol="sidecarChunkUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="92" lineNum="154" parent="globals/AbsApi" pc="268440384" symbol="_noSlash"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="92" lineNum="155" parent="globals/AbsApi" pc="268440394" symbol="_noSlash"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="92" lineNum="156" parent="globals/AbsApi" pc="268440458" symbol="_noSlash"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="92" lineNum="158" parent="globals/AbsApi" pc="268440484" symbol="_noSlash"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="19" parent="globals/AbsApi" pc="268440487" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="20" parent="globals/AbsApi" pc="268440498" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="21" parent="globals/AbsApi" pc="268440517" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="21" parent="globals/AbsApi" pc="268440523" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="22" parent="globals/AbsApi" pc="268440541" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="22" parent="globals/AbsApi" pc="268440547" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="23" parent="globals/AbsApi" pc="268440552" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="24" parent="globals/AbsApi" pc="268440606" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="93" lineNum="26" parent="globals/AbsApi" pc="268440631" symbol="serverUrl"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="94" lineNum="101" parent="globals/AbsApi" pc="268440634" symbol="getLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="94" lineNum="102" parent="globals/AbsApi" pc="268440644" symbol="getLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="95" lineNum="55" parent="globals/AbsApi" pc="268440709" symbol="getGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/AbsApi.mc" id="95" lineNum="56" parent="globals/AbsApi" pc="268440719" symbol="getGroups"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="96" lineNum="125" parent="globals/FieldDelegate" pc="268440789" symbol="onTextEntered"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="96" lineNum="126" parent="globals/FieldDelegate" pc="268440791" symbol="onTextEntered"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="96" lineNum="127" parent="globals/FieldDelegate" pc="268440812" symbol="onTextEntered"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="97" lineNum="129" parent="globals/FieldDelegate" pc="268440814" symbol="onCancel"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="97" lineNum="130" parent="globals/FieldDelegate" pc="268440816" symbol="onCancel"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="97" lineNum="131" parent="globals/FieldDelegate" pc="268440828" symbol="onCancel"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="98" lineNum="118" parent="globals/FieldDelegate" pc="268440830" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="98" lineNum="119" parent="globals/FieldDelegate" pc="268440832" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="98" lineNum="120" parent="globals/FieldDelegate" pc="268440844" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="98" lineNum="121" parent="globals/FieldDelegate" pc="268440853" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="99" lineNum="14" parent="globals/RequestDelegate" pc="268440863" symbol="makeWebRequest"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="99" lineNum="15" parent="globals/RequestDelegate" pc="268440865" symbol="makeWebRequest"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="100" lineNum="9" parent="globals/RequestDelegate" pc="268440898" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="100" lineNum="10" parent="globals/RequestDelegate" pc="268440900" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="100" lineNum="11" parent="globals/RequestDelegate" pc="268440909" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="101" lineNum="18" parent="globals/RequestDelegate" pc="268440919" symbol="onWebResponse"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/RequestDelegate.mc" id="101" lineNum="19" parent="globals/RequestDelegate" pc="268440921" symbol="onWebResponse"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="7" parent="globals/Browse" pc="268440945" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="8" parent="globals/Browse" pc="268440956" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="9" parent="globals/Browse" pc="268441022" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="10" parent="globals/Browse" pc="268441092" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="11" parent="globals/Browse" pc="268441162" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="12" parent="globals/Browse" pc="268441232" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="102" lineNum="13" parent="globals/Browse" pc="268441302" symbol="start"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="17" parent="globals/Browse" pc="268441344" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="18" parent="globals/Browse" pc="268441355" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="19" parent="globals/Browse" pc="268441401" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="21" parent="globals/Browse" pc="268441506" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="23" parent="globals/Browse" pc="268441510" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="24" parent="globals/Browse" pc="268441520" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="25" parent="globals/Browse" pc="268441586" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="26" parent="globals/Browse" pc="268441602" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="27" parent="globals/Browse" pc="268441609" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Browse.mc" id="103" lineNum="29" parent="globals/Browse" pc="268441676" symbol="showBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="43" parent="globals/LibraryView" pc="268441716" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="44" parent="globals/LibraryView" pc="268441719" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="45" parent="globals/LibraryView" pc="268441746" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="46" parent="globals/LibraryView" pc="268441756" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="47" parent="globals/LibraryView" pc="268441822" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="48" parent="globals/LibraryView" pc="268441838" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="50" parent="globals/LibraryView" pc="268441845" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="51" parent="globals/LibraryView" pc="268441881" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="54" parent="globals/LibraryView" pc="268441944" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="56" parent="globals/LibraryView" pc="268441982" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="104" lineNum="57" parent="globals/LibraryView" pc="268442035" symbol="onLibraries"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="19" parent="globals/LibraryView" pc="268442047" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="23" parent="globals/LibraryView" pc="268442049" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="23" parent="globals/LibraryView" pc="268442057" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="24" parent="globals/LibraryView" pc="268442061" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="26" parent="globals/LibraryView" pc="268442069" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="28" parent="globals/LibraryView" pc="268442083" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="29" parent="globals/LibraryView" pc="268442094" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="105" lineNum="31" parent="globals/LibraryView" pc="268442098" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="106" lineNum="13" parent="globals/LibraryView" pc="268442125" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="106" lineNum="14" parent="globals/LibraryView" pc="268442127" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="106" lineNum="15" parent="globals/LibraryView" pc="268442139" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="106" lineNum="16" parent="globals/LibraryView" pc="268442177" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="107" lineNum="34" parent="globals/LibraryView" pc="268442186" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="107" lineNum="35" parent="globals/LibraryView" pc="268442188" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="107" lineNum="36" parent="globals/LibraryView" pc="268442200" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="107" lineNum="37" parent="globals/LibraryView" pc="268442208" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryView.mc" id="107" lineNum="38" parent="globals/LibraryView" pc="268442224" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="108" lineNum="13" parent="globals/LibraryViewDelegate" pc="268442264" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="108" lineNum="14" parent="globals/LibraryViewDelegate" pc="268442266" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="108" lineNum="15" parent="globals/LibraryViewDelegate" pc="268442281" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="109" lineNum="8" parent="globals/LibraryViewDelegate" pc="268442283" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/LibraryViewDelegate.mc" id="109" lineNum="9" parent="globals/LibraryViewDelegate" pc="268442285" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="110" lineNum="134" parent="globals/BookMenuDelegate" pc="268442298" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="110" lineNum="135" parent="globals/BookMenuDelegate" pc="268442300" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="120" parent="globals/BookMenuDelegate" pc="268442316" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="121" parent="globals/BookMenuDelegate" pc="268442319" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="122" parent="globals/BookMenuDelegate" pc="268442338" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="122" parent="globals/BookMenuDelegate" pc="268442344" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="123" parent="globals/BookMenuDelegate" pc="268442349" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="124" parent="globals/BookMenuDelegate" pc="268442352" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="125" parent="globals/BookMenuDelegate" pc="268442361" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="126" parent="globals/BookMenuDelegate" pc="268442377" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="127" parent="globals/BookMenuDelegate" pc="268442387" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="128" parent="globals/BookMenuDelegate" pc="268442429" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="111" lineNum="131" parent="globals/BookMenuDelegate" pc="268442449" symbol="alreadyDownloadedCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="112" lineNum="14" parent="globals/BookMenuDelegate" pc="268442452" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="112" lineNum="15" parent="globals/BookMenuDelegate" pc="268442454" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="112" lineNum="16" parent="globals/BookMenuDelegate" pc="268442466" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="24" parent="globals/BookMenuDelegate" pc="268442475" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="25" parent="globals/BookMenuDelegate" pc="268442478" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="26" parent="globals/BookMenuDelegate" pc="268442524" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="28" parent="globals/BookMenuDelegate" pc="268442621" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="39" parent="globals/BookMenuDelegate" pc="268442625" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="40" parent="globals/BookMenuDelegate" pc="268442630" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="41" parent="globals/BookMenuDelegate" pc="268442634" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="42" parent="globals/BookMenuDelegate" pc="268442644" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="43" parent="globals/BookMenuDelegate" pc="268442654" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="43" parent="globals/BookMenuDelegate" pc="268442660" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="48" parent="globals/BookMenuDelegate" pc="268442670" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="49" parent="globals/BookMenuDelegate" pc="268442686" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="50" parent="globals/BookMenuDelegate" pc="268442705" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="52" parent="globals/BookMenuDelegate" pc="268442787" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="55" parent="globals/BookMenuDelegate" pc="268442791" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="56" parent="globals/BookMenuDelegate" pc="268442810" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="56" parent="globals/BookMenuDelegate" pc="268442816" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="58" parent="globals/BookMenuDelegate" pc="268442823" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="59" parent="globals/BookMenuDelegate" pc="268442826" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="60" parent="globals/BookMenuDelegate" pc="268442829" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="61" parent="globals/BookMenuDelegate" pc="268442845" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="62" parent="globals/BookMenuDelegate" pc="268442858" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="63" parent="globals/BookMenuDelegate" pc="268442886" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="63" parent="globals/BookMenuDelegate" pc="268442893" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="64" parent="globals/BookMenuDelegate" pc="268442899" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="65" parent="globals/BookMenuDelegate" pc="268442902" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="66" parent="globals/BookMenuDelegate" pc="268442910" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="67" parent="globals/BookMenuDelegate" pc="268442926" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="68" parent="globals/BookMenuDelegate" pc="268442933" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="68" parent="globals/BookMenuDelegate" pc="268442941" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="69" parent="globals/BookMenuDelegate" pc="268442948" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="80" parent="globals/BookMenuDelegate" pc="268443046" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="81" parent="globals/BookMenuDelegate" pc="268443053" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="83" parent="globals/BookMenuDelegate" pc="268443060" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="86" parent="globals/BookMenuDelegate" pc="268443077" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="87" parent="globals/BookMenuDelegate" pc="268443084" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="88" parent="globals/BookMenuDelegate" pc="268443166" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="91" parent="globals/BookMenuDelegate" pc="268443170" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="92" parent="globals/BookMenuDelegate" pc="268443190" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="113" lineNum="93" parent="globals/BookMenuDelegate" pc="268443272" symbol="onFiles"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="114" lineNum="96" parent="globals/BookMenuDelegate" pc="268443284" symbol="numOr"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="114" lineNum="97" parent="globals/BookMenuDelegate" pc="268443286" symbol="numOr"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="114" lineNum="97" parent="globals/BookMenuDelegate" pc="268443292" symbol="numOr"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="114" lineNum="98" parent="globals/BookMenuDelegate" pc="268443298" symbol="numOr"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="103" parent="globals/BookMenuDelegate" pc="268443301" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="104" parent="globals/BookMenuDelegate" pc="268443304" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="105" parent="globals/BookMenuDelegate" pc="268443307" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="106" parent="globals/BookMenuDelegate" pc="268443323" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="107" parent="globals/BookMenuDelegate" pc="268443351" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="107" parent="globals/BookMenuDelegate" pc="268443358" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="108" parent="globals/BookMenuDelegate" pc="268443364" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="109" parent="globals/BookMenuDelegate" pc="268443367" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="110" parent="globals/BookMenuDelegate" pc="268443375" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="111" parent="globals/BookMenuDelegate" pc="268443391" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="112" parent="globals/BookMenuDelegate" pc="268443398" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="112" parent="globals/BookMenuDelegate" pc="268443406" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="113" parent="globals/BookMenuDelegate" pc="268443413" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="114" parent="globals/BookMenuDelegate" pc="268443420" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="115" lineNum="117" parent="globals/BookMenuDelegate" pc="268443437" symbol="expectedChunkCount"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="116" lineNum="19" parent="globals/BookMenuDelegate" pc="268443440" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="116" lineNum="20" parent="globals/BookMenuDelegate" pc="268443442" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/BookMenuDelegate.mc" id="116" lineNum="21" parent="globals/BookMenuDelegate" pc="268443456" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="103" parent="globals/LoginView" pc="268443488" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="104" parent="globals/LoginView" pc="268443490" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="105" parent="globals/LoginView" pc="268443535" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="106" parent="globals/LoginView" pc="268443572" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="108" parent="globals/LoginView" pc="268443626" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="109" parent="globals/LoginView" pc="268443635" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="117" lineNum="110" parent="globals/LoginView" pc="268443688" symbol="onLogin"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="63" parent="globals/LoginView" pc="268443700" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="64" parent="globals/LoginView" pc="268443702" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="64" parent="globals/LoginView" pc="268443709" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="65" parent="globals/LoginView" pc="268443744" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="65" parent="globals/LoginView" pc="268443752" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="118" lineNum="66" parent="globals/LoginView" pc="268443787" symbol="labelFor"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="90" parent="globals/LoginView" pc="268443819" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="91" parent="globals/LoginView" pc="268443821" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="91" parent="globals/LoginView" pc="268443828" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="92" parent="globals/LoginView" pc="268443844" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="92" parent="globals/LoginView" pc="268443852" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="93" parent="globals/LoginView" pc="268443868" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="93" parent="globals/LoginView" pc="268443876" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="119" lineNum="94" parent="globals/LoginView" pc="268443892" symbol="setField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="44" parent="globals/LoginView" pc="268443905" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="45" parent="globals/LoginView" pc="268443907" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="46" parent="globals/LoginView" pc="268443918" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="47" parent="globals/LoginView" pc="268443938" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="48" parent="globals/LoginView" pc="268443949" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="49" parent="globals/LoginView" pc="268443978" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="50" parent="globals/LoginView" pc="268444012" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="51" parent="globals/LoginView" pc="268444023" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="52" parent="globals/LoginView" pc="268444032" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="53" parent="globals/LoginView" pc="268444070" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="120" lineNum="54" parent="globals/LoginView" pc="268444081" symbol="onShow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="121" lineNum="97" parent="globals/LoginView" pc="268444141" symbol="cancelFlow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="121" lineNum="98" parent="globals/LoginView" pc="268444143" symbol="cancelFlow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="121" lineNum="99" parent="globals/LoginView" pc="268444152" symbol="cancelFlow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="121" lineNum="100" parent="globals/LoginView" pc="268444190" symbol="cancelFlow"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="70" parent="globals/LoginView" pc="268444202" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="71" parent="globals/LoginView" pc="268444204" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="72" parent="globals/LoginView" pc="268444212" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="73" parent="globals/LoginView" pc="268444222" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="74" parent="globals/LoginView" pc="268444292" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="75" parent="globals/LoginView" pc="268444303" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="76" parent="globals/LoginView" pc="268444374" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="122" lineNum="77" parent="globals/LoginView" pc="268444385" symbol="openField"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="33" parent="globals/LoginView" pc="268444452" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="34" parent="globals/LoginView" pc="268444455" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="35" parent="globals/LoginView" pc="268444467" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="36" parent="globals/LoginView" pc="268444475" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="37" parent="globals/LoginView" pc="268444500" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="38" parent="globals/LoginView" pc="268444512" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="39" parent="globals/LoginView" pc="268444539" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="123" lineNum="40" parent="globals/LoginView" pc="268444551" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="124" lineNum="59" parent="globals/LoginView" pc="268444560" symbol="onHide"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="124" lineNum="60" parent="globals/LoginView" pc="268444562" symbol="onHide"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="124" lineNum="60" parent="globals/LoginView" pc="268444571" symbol="onHide"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="124" lineNum="60" parent="globals/LoginView" pc="268444583" symbol="onHide"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="125" lineNum="81" parent="globals/LoginView" pc="268444595" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="125" lineNum="82" parent="globals/LoginView" pc="268444597" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="125" lineNum="83" parent="globals/LoginView" pc="268444609" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="125" lineNum="84" parent="globals/LoginView" pc="268444617" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/Login.mc" id="125" lineNum="85" parent="globals/LoginView" pc="268444633" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="82" parent="globals/DownloadedMenuDelegate" pc="268444673" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="83" parent="globals/DownloadedMenuDelegate" pc="268444676" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="83" parent="globals/DownloadedMenuDelegate" pc="268444688" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="85" parent="globals/DownloadedMenuDelegate" pc="268444692" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="86" parent="globals/DownloadedMenuDelegate" pc="268444711" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="86" parent="globals/DownloadedMenuDelegate" pc="268444717" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="87" parent="globals/DownloadedMenuDelegate" pc="268444724" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="88" parent="globals/DownloadedMenuDelegate" pc="268444740" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="90" parent="globals/DownloadedMenuDelegate" pc="268444765" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="92" parent="globals/DownloadedMenuDelegate" pc="268444785" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="126" lineNum="93" parent="globals/DownloadedMenuDelegate" pc="268444796" symbol="queueDelete"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="127" lineNum="96" parent="globals/DownloadedMenuDelegate" pc="268444879" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="127" lineNum="97" parent="globals/DownloadedMenuDelegate" pc="268444881" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="128" lineNum="12" parent="globals/DownloadedMenuDelegate" pc="268444897" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="128" lineNum="13" parent="globals/DownloadedMenuDelegate" pc="268444899" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="16" parent="globals/DownloadedMenuDelegate" pc="268444912" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="17" parent="globals/DownloadedMenuDelegate" pc="268444915" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="21" parent="globals/DownloadedMenuDelegate" pc="268444924" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="22" parent="globals/DownloadedMenuDelegate" pc="268444957" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="23" parent="globals/DownloadedMenuDelegate" pc="268445008" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="31" parent="globals/DownloadedMenuDelegate" pc="268445012" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="32" parent="globals/DownloadedMenuDelegate" pc="268445045" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="33" parent="globals/DownloadedMenuDelegate" pc="268445059" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="39" parent="globals/DownloadedMenuDelegate" pc="268445063" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="40" parent="globals/DownloadedMenuDelegate" pc="268445096" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="41" parent="globals/DownloadedMenuDelegate" pc="268445107" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="42" parent="globals/DownloadedMenuDelegate" pc="268445158" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="48" parent="globals/DownloadedMenuDelegate" pc="268445162" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="49" parent="globals/DownloadedMenuDelegate" pc="268445195" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="50" parent="globals/DownloadedMenuDelegate" pc="268445215" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="51" parent="globals/DownloadedMenuDelegate" pc="268445235" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="52" parent="globals/DownloadedMenuDelegate" pc="268445317" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="56" parent="globals/DownloadedMenuDelegate" pc="268445321" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="57" parent="globals/DownloadedMenuDelegate" pc="268445354" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="58" parent="globals/DownloadedMenuDelegate" pc="268445373" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="58" parent="globals/DownloadedMenuDelegate" pc="268445379" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="59" parent="globals/DownloadedMenuDelegate" pc="268445386" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="60" parent="globals/DownloadedMenuDelegate" pc="268445402" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="67" parent="globals/DownloadedMenuDelegate" pc="268445406" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="68" parent="globals/DownloadedMenuDelegate" pc="268445425" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="68" parent="globals/DownloadedMenuDelegate" pc="268445431" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="69" parent="globals/DownloadedMenuDelegate" pc="268445438" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="70" parent="globals/DownloadedMenuDelegate" pc="268445447" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="71" parent="globals/DownloadedMenuDelegate" pc="268445451" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="72" parent="globals/DownloadedMenuDelegate" pc="268445467" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="73" parent="globals/DownloadedMenuDelegate" pc="268445477" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="74" parent="globals/DownloadedMenuDelegate" pc="268445516" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenuDelegate.mc" id="129" lineNum="77" parent="globals/DownloadedMenuDelegate" pc="268445544" symbol="onSelect"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="130" lineNum="14" parent="globals/ErrorViewDelegate" pc="268445556" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="130" lineNum="15" parent="globals/ErrorViewDelegate" pc="268445558" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="130" lineNum="16" parent="globals/ErrorViewDelegate" pc="268445573" symbol="onBack"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="131" lineNum="10" parent="globals/ErrorViewDelegate" pc="268445575" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorViewDelegate.mc" id="131" lineNum="11" parent="globals/ErrorViewDelegate" pc="268445577" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="132" lineNum="9" parent="globals/ErrorView" pc="268445590" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="132" lineNum="10" parent="globals/ErrorView" pc="268445592" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="132" lineNum="11" parent="globals/ErrorView" pc="268445604" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="133" lineNum="14" parent="globals/ErrorView" pc="268445614" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="133" lineNum="15" parent="globals/ErrorView" pc="268445616" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="133" lineNum="16" parent="globals/ErrorView" pc="268445628" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="133" lineNum="17" parent="globals/ErrorView" pc="268445636" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/ErrorView.mc" id="133" lineNum="18" parent="globals/ErrorView" pc="268445652" symbol="onUpdate"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="108" parent="globals/DownloadedMenu" pc="268445692" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="109" parent="globals/DownloadedMenu" pc="268445695" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="110" parent="globals/DownloadedMenu" pc="268445707" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="111" parent="globals/DownloadedMenu" pc="268445710" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="111" parent="globals/DownloadedMenu" pc="268445727" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="112" parent="globals/DownloadedMenu" pc="268445739" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="134" lineNum="113" parent="globals/DownloadedMenu" pc="268445754" symbol="titleWithSize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="135" lineNum="62" parent="globals/DownloadedMenu" pc="268445813" symbol="hasQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="135" lineNum="63" parent="globals/DownloadedMenu" pc="268445816" symbol="hasQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="135" lineNum="64" parent="globals/DownloadedMenu" pc="268445835" symbol="hasQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="135" lineNum="65" parent="globals/DownloadedMenu" pc="268445854" symbol="hasQueued"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="14" parent="globals/DownloadedMenu" pc="268445899" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="15" parent="globals/DownloadedMenu" pc="268445902" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="20" parent="globals/DownloadedMenu" pc="268445933" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="22" parent="globals/DownloadedMenu" pc="268446002" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="23" parent="globals/DownloadedMenu" pc="268446010" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="31" parent="globals/DownloadedMenu" pc="268446019" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="32" parent="globals/DownloadedMenu" pc="268446031" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="37" parent="globals/DownloadedMenu" pc="268446103" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="38" parent="globals/DownloadedMenu" pc="268446116" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="46" parent="globals/DownloadedMenu" pc="268446188" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="47" parent="globals/DownloadedMenu" pc="268446197" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="50" parent="globals/DownloadedMenu" pc="268446269" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="51" parent="globals/DownloadedMenu" pc="268446281" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="54" parent="globals/DownloadedMenu" pc="268446353" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="55" parent="globals/DownloadedMenu" pc="268446369" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="56" parent="globals/DownloadedMenu" pc="268446376" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="57" parent="globals/DownloadedMenu" pc="268446383" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="136" lineNum="58" parent="globals/DownloadedMenu" pc="268446433" symbol="initialize"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="71" parent="globals/DownloadedMenu" pc="268446488" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="72" parent="globals/DownloadedMenu" pc="268446491" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="73" parent="globals/DownloadedMenu" pc="268446510" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="73" parent="globals/DownloadedMenu" pc="268446516" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="75" parent="globals/DownloadedMenu" pc="268446523" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="76" parent="globals/DownloadedMenu" pc="268446527" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="77" parent="globals/DownloadedMenu" pc="268446536" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="78" parent="globals/DownloadedMenu" pc="268446552" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="79" parent="globals/DownloadedMenu" pc="268446562" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="80" parent="globals/DownloadedMenu" pc="268446572" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="80" parent="globals/DownloadedMenu" pc="268446578" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="82" parent="globals/DownloadedMenu" pc="268446588" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="83" parent="globals/DownloadedMenu" pc="268446595" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="84" parent="globals/DownloadedMenu" pc="268446601" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="85" parent="globals/DownloadedMenu" pc="268446631" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="87" parent="globals/DownloadedMenu" pc="268446641" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="137" lineNum="89" parent="globals/DownloadedMenu" pc="268446670" symbol="groupedBooks"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="94" parent="globals/DownloadedMenu" pc="268446673" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="95" parent="globals/DownloadedMenu" pc="268446676" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="96" parent="globals/DownloadedMenu" pc="268446704" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="97" parent="globals/DownloadedMenu" pc="268446720" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="98" parent="globals/DownloadedMenu" pc="268446755" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="100" parent="globals/DownloadedMenu" pc="268446772" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="100" parent="globals/DownloadedMenu" pc="268446784" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="101" parent="globals/DownloadedMenu" pc="268446796" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="101" parent="globals/DownloadedMenu" pc="268446808" symbol="bookTitle"/>
+        <entry filename="/Users/cbrooker/Code/ABS-Garmin/source/DownloadedMenu.mc" id="138" lineNum="102" parent="globals/DownloadedMenu" pc="268446820" symbol="bookTitle"/>
+    </pcToLineNum>
+    <symbolTable>
+        <entry id="8388639" module="true" symbol="Graphics"/>
+        <entry id="8390434" method="true" symbol="getSyncConfigurationView"/>
+        <entry id="49" method="true" symbol="typeToEncoding"/>
+        <entry id="17" object="true" symbol="DownloadedMenu"/>
+        <entry field="true" id="54" symbol="&lt;globals/GroupDelegate/&lt;&gt;mType&gt;"/>
+        <entry id="8390557" method="true" symbol="resetContentIterator"/>
+        <entry id="76" method="true" symbol="isConfigured"/>
+        <entry id="112" method="true" symbol="titleWithSize"/>
+        <entry id="8390211" module="true" symbol="Media"/>
+        <entry id="96" method="true" symbol="numOr"/>
+        <entry field="true" id="127" symbol="errItems"/>
+        <entry id="39" method="true" symbol="pushGroups"/>
+        <entry id="13" object="true" symbol="AbsProgressListener"/>
+        <entry id="28" object="true" symbol="LoginView"/>
+        <entry id="8388632" method="true" symbol="&lt;init&gt;"/>
+        <entry id="8390379" method="true" symbol="onThumbsUp"/>
+        <entry id="8390380" method="true" symbol="onThumbsDown"/>
+        <entry id="59" method="true" symbol="buildPlaylist"/>
+        <entry field="true" id="119" symbol="byAuthor"/>
+        <entry id="81" method="true" symbol="saveLogin"/>
+        <entry field="true" id="128" symbol="errLibraries"/>
+        <entry id="58" method="true" symbol="bookTitleOf"/>
+        <entry id="47" method="true" symbol="onOpDone"/>
+        <entry id="8390335" object="true" symbol="ContentIterator"/>
+        <entry field="true" id="144" symbol="settingApiKey"/>
+        <entry id="8388826" method="true" symbol="next"/>
+        <entry field="true" id="141" symbol="playDownloaded"/>
+        <entry field="true" id="87" symbol="mCallback"/>
+        <entry id="23" object="true" symbol="LibraryMenuDelegate"/>
+        <entry field="true" id="53" symbol="&lt;globals/GroupDelegate/&lt;&gt;mLib&gt;"/>
+        <entry id="94" method="true" symbol="expectedChunkCount"/>
+        <entry field="true" id="132" symbol="fieldServer"/>
+        <entry id="14" object="true" symbol="BookMenuDelegate"/>
+        <entry id="37" method="true" symbol="onCollections"/>
+        <entry field="true" id="61" symbol="&lt;globals/ContentIterator/&lt;&gt;mPlaylist&gt;"/>
+        <entry field="true" id="116" symbol="allBooks"/>
+        <entry field="true" id="143" symbol="queued"/>
+        <entry id="8390336" object="true" symbol="ContentDelegate"/>
+        <entry id="12" module="true" symbol="AbsApi"/>
+        <entry field="true" id="142" symbol="queueCleared"/>
+        <entry id="32" module="true" symbol="Versions"/>
+        <entry field="true" id="8388611" module="true" symbol="Toybox"/>
+        <entry field="true" id="45" symbol="&lt;globals/SyncDelegate/&lt;&gt;mSyncList&gt;"/>
+        <entry id="107" method="true" symbol="queueDelete"/>
+        <entry id="8390377" method="true" symbol="getContentIterator"/>
+        <entry id="8389108" method="true" symbol="onResponse"/>
+        <entry id="80" method="true" symbol="progressSeconds"/>
+        <entry id="74" method="true" symbol="getLibraries"/>
+        <entry field="true" id="137" symbol="loggingIn"/>
+        <entry field="true" id="42" symbol="&lt;globals/SyncDelegate/&lt;&gt;mDeleteList&gt;"/>
+        <entry id="8390373" method="true" symbol="shuffling"/>
+        <entry id="66" method="true" symbol="_noSlash"/>
+        <entry id="33" object="true" symbol="WatchShelfApp"/>
+        <entry field="true" id="115" symbol="AppName"/>
+        <entry id="8390440" symbol="contentType"/>
+        <entry id="8390459" method="true" symbol="onStopSync"/>
+        <entry id="7" module="true" symbol="globals/Rez/Strings"/>
+        <entry id="15" module="true" symbol="Browse"/>
+        <entry id="8389594" symbol="headers"/>
+        <entry field="true" id="108" symbol="&lt;globals/ErrorView/&lt;&gt;mMessage&gt;"/>
+        <entry field="true" id="138" symbol="loginFailed"/>
+        <entry field="true" id="100" symbol="&lt;globals/LoginView/&lt;&gt;mCreds&gt;"/>
+        <entry id="8390430" method="true" symbol="getContentDelegate"/>
+        <entry field="true" id="43" symbol="&lt;globals/SyncDelegate/&lt;&gt;mDone&gt;"/>
+        <entry id="92" method="true" symbol="onLibraries"/>
+        <entry field="true" id="131" symbol="fieldPass"/>
+        <entry id="8388648" module="true" symbol="WatchUi"/>
+        <entry id="8389081" method="true" symbol="onBack"/>
+        <entry field="true" id="133" symbol="fieldUser"/>
+        <entry field="true" id="55" symbol="&lt;globals/ContentDelegate/&lt;&gt;mIterator&gt;"/>
+        <entry id="11" module="true" symbol="globals/Versions"/>
+        <entry id="73" method="true" symbol="getGroups"/>
+        <entry id="5" module="true" symbol="globals/Rez"/>
+        <entry id="35" method="true" symbol="onAuthors"/>
+        <entry id="68" method="true" symbol="authToken"/>
+        <entry id="8388789" method="true" symbol="get"/>
+        <entry id="8390342" method="true" symbol="isSyncNeeded"/>
+        <entry field="true" id="126" symbol="errDetail"/>
+        <entry id="57" method="true" symbol="before"/>
+        <entry field="true" id="118" symbol="browseLibrary"/>
+        <entry id="8389124" method="true" symbol="onUpdate"/>
+        <entry field="true" id="102" symbol="&lt;globals/LoginView/&lt;&gt;mState&gt;"/>
+        <entry id="8390431" method="true" symbol="getSyncDelegate"/>
+        <entry id="24" object="true" symbol="LibraryView"/>
+        <entry id="65" method="true" symbol="toggleShuffle"/>
+        <entry field="true" id="8390516" symbol="mContext"/>
+        <entry id="63" method="true" symbol="objAt"/>
+        <entry id="8388771" module="true" object="true" symbol="Drawables"/>
+        <entry field="true" id="147" symbol="settingServerUrlPrompt"/>
+        <entry id="67" method="true" symbol="_prop"/>
+        <entry id="26" module="true" symbol="Login"/>
+        <entry id="8390433" method="true" symbol="getProviderIconInfo"/>
+        <entry id="48" method="true" symbol="onTrackDownloaded"/>
+        <entry id="4" module="true" symbol="globals/Login"/>
+        <entry field="true" id="139" symbol="pickBook"/>
+        <entry field="true" id="117" symbol="alreadyDownloaded"/>
+        <entry field="true" id="52" symbol="username"/>
+        <entry field="true" id="145" symbol="settingApiKeyPrompt"/>
+        <entry field="true" id="51" symbol="server"/>
+        <entry id="8390442" method="true" symbol="shuffle"/>
+        <entry field="true" id="62" symbol="&lt;globals/ContentIterator/&lt;&gt;mShuffling&gt;"/>
+        <entry id="8390337" object="true" symbol="SyncDelegate"/>
+        <entry id="104" method="true" symbol="onLogin"/>
+        <entry field="true" id="125" symbol="downloaded"/>
+        <entry id="30" module="true" symbol="Store"/>
+        <entry id="93" method="true" symbol="alreadyDownloadedCount"/>
+        <entry id="9" module="true" symbol="globals/Store"/>
+        <entry id="8388637" module="true" symbol="Communications"/>
+        <entry id="82" method="true" symbol="serverUrl"/>
+        <entry id="19" object="true" symbol="ErrorView"/>
+        <entry id="27" object="true" symbol="LoginCreds"/>
+        <entry id="6" module="true" symbol="globals/Rez/Drawables"/>
+        <entry id="8390371" method="true" symbol="peekNext"/>
+        <entry id="10" module="true" symbol="globals/TrackInfo"/>
+        <entry field="true" id="130" symbol="errNone"/>
+        <entry field="true" id="120" symbol="byCollection"/>
+        <entry id="8390372" method="true" symbol="peekPrevious"/>
+        <entry id="8389844" symbol="responseType"/>
+        <entry field="true" id="90" symbol="&lt;globals/LibraryView/&lt;&gt;mMessage&gt;"/>
+        <entry field="true" id="8392276" symbol="skipForwardTimeDelta"/>
+        <entry id="8392335" module="true" object="true" symbol="Settings"/>
+        <entry field="true" id="140" symbol="pickLibrary"/>
+        <entry id="36" method="true" symbol="onBooks"/>
+        <entry id="78" method="true" symbol="logout"/>
+        <entry id="8388786" method="true" symbol="method"/>
+        <entry id="105" method="true" symbol="openField"/>
+        <entry field="true" id="136" symbol="logOut"/>
+        <entry id="31" module="true" symbol="TrackInfo"/>
+        <entry id="8388644" module="true" symbol="System"/>
+        <entry id="8390382" method="true" symbol="onSong"/>
+        <entry id="77" method="true" symbol="login"/>
+        <entry field="true" id="101" symbol="&lt;globals/LoginView/&lt;&gt;mMessage&gt;"/>
+        <entry id="8389619" method="true" symbol="onSelect"/>
+        <entry id="8388769" module="true" object="true" symbol="Rez"/>
+        <entry field="true" id="34" symbol="&lt;globals/BrowseDelegate/&lt;&gt;mLib&gt;"/>
+        <entry field="true" id="50" symbol="password"/>
+        <entry field="true" id="44" symbol="&lt;globals/SyncDelegate/&lt;&gt;mKeys&gt;"/>
+        <entry id="20" object="true" symbol="ErrorViewDelegate"/>
+        <entry id="79" method="true" symbol="patchProgress"/>
+        <entry id="8389540" method="true" symbol="onTextEntered"/>
+        <entry id="8390432" method="true" symbol="getPlaybackConfigurationView"/>
+        <entry id="75" method="true" symbol="getSeries"/>
+        <entry id="89" method="true" symbol="showBooks"/>
+        <entry field="true" id="8392277" symbol="skipBackwardTimeDelta"/>
+        <entry field="true" id="86" symbol="&lt;globals/FieldDelegate/&lt;&gt;mView&gt;"/>
+        <entry id="8388640" module="true" symbol="Lang"/>
+        <entry field="true" id="146" symbol="settingServerUrl"/>
+        <entry id="98" method="true" symbol="cancelFlow"/>
+        <entry field="true" id="134" symbol="loading"/>
+        <entry id="18" object="true" symbol="DownloadedMenuDelegate"/>
+        <entry id="8390784" method="true" symbol="onRepeat"/>
+        <entry id="8390374" method="true" symbol="canSkip"/>
+        <entry field="true" id="103" symbol="&lt;globals/LoginView/&lt;&gt;mTimer&gt;"/>
+        <entry id="106" method="true" symbol="setField"/>
+        <entry id="8388610" symbol="statics"/>
+        <entry id="70" method="true" symbol="getBookList"/>
+        <entry id="8389123" method="true" symbol="onShow"/>
+        <entry id="8" module="true" symbol="globals/Settings"/>
+        <entry id="25" object="true" symbol="LibraryViewDelegate"/>
+        <entry id="21" object="true" symbol="FieldDelegate"/>
+        <entry id="8390369" method="true" symbol="getPlaybackProfile"/>
+        <entry id="8389835" method="true" symbol="makeWebRequest"/>
+        <entry id="8390370" method="true" symbol="previous"/>
+        <entry field="true" id="113" symbol="launcher"/>
+        <entry field="true" id="91" symbol="&lt;globals/LibraryView/&lt;&gt;mStarted&gt;"/>
+        <entry id="8389350" module="true" symbol="globals"/>
+        <entry field="true" id="122" symbol="clearQueue"/>
+        <entry id="8388770" module="true" object="true" symbol="Strings"/>
+        <entry id="16" object="true" symbol="BrowseDelegate"/>
+        <entry id="8388702" method="true" symbol="initialize"/>
+        <entry field="true" id="95" symbol="&lt;globals/BookMenuDelegate/&lt;&gt;mItemId&gt;"/>
+        <entry id="40" method="true" symbol="deleteQueued"/>
+        <entry field="true" id="135" symbol="logIn"/>
+        <entry id="64" method="true" symbol="startOf"/>
+        <entry field="true" id="124" symbol="deleting"/>
+        <entry id="29" object="true" symbol="RequestDelegate"/>
+        <entry id="41" method="true" symbol="downloadNext"/>
+        <entry id="2" module="true" symbol="globals/AbsApi"/>
+        <entry id="8388641" module="true" symbol="Math"/>
+        <entry id="8389541" method="true" symbol="onCancel"/>
+        <entry id="56" method="true" symbol="syncProgress"/>
+        <entry id="8390341" method="true" symbol="onStartSync"/>
+        <entry id="88" method="true" symbol="onWebResponse"/>
+        <entry id="69" method="true" symbol="getAuthors"/>
+        <entry field="true" id="46" symbol="&lt;globals/SyncDelegate/&lt;&gt;mTotal&gt;"/>
+        <entry id="97" method="true" symbol="onFiles"/>
+        <entry id="72" method="true" symbol="getFiles"/>
+        <entry id="84" method="true" symbol="sidecarChunkUrl"/>
+        <entry id="8388646" module="true" object="true" symbol="Timer"/>
+        <entry id="3" module="true" symbol="globals/Browse"/>
+        <entry id="83" method="true" symbol="sidecarBase"/>
+        <entry id="38" method="true" symbol="onSeries"/>
+        <entry field="true" id="129" symbol="errNoAudio"/>
+        <entry id="8388698" method="true" symbol="start"/>
+        <entry id="8390381" method="true" symbol="onShuffle"/>
+        <entry id="109" method="true" symbol="bookTitle"/>
+        <entry id="22" object="true" symbol="GroupDelegate"/>
+        <entry field="true" id="60" symbol="&lt;globals/ContentIterator/&lt;&gt;mIndex&gt;"/>
+        <entry id="8390441" object="true" symbol="mediaEncoding"/>
+        <entry id="111" method="true" symbol="hasQueued"/>
+        <entry field="true" id="121" symbol="bySeries"/>
+        <entry field="true" id="123" symbol="deleteAllDownloads"/>
+        <entry id="8389125" method="true" symbol="onHide"/>
+        <entry field="true" id="114" symbol="providerIcon"/>
+        <entry id="99" method="true" symbol="labelFor"/>
+        <entry id="110" method="true" symbol="groupedBooks"/>
+        <entry id="8388635" module="true" symbol="Application"/>
+        <entry field="true" id="8389642" symbol="title"/>
+        <entry field="true" id="85" symbol="&lt;globals/FieldDelegate/&lt;&gt;mField&gt;"/>
+        <entry id="71" method="true" symbol="getCollections"/>
+    </symbolTable>
+    <localVars>
+        <entry arg="true" endPc="268435697" name="code" stackId="1" startPc="268435672"/>
+        <entry arg="true" endPc="268435697" name="data" stackId="2" startPc="268435672"/>
+        <entry arg="true" endPc="268435741" name="code" stackId="1" startPc="268435716"/>
+        <entry arg="true" endPc="268435741" name="data" stackId="2" startPc="268435716"/>
+        <entry arg="true" endPc="268436108" name="code" stackId="1" startPc="268435742"/>
+        <entry arg="true" endPc="268436108" name="data" stackId="2" startPc="268435742"/>
+        <entry arg="true" endPc="268436108" name="key" stackId="3" startPc="268435742"/>
+        <entry arg="true" endPc="268436108" name="filterType" stackId="4" startPc="268435742"/>
+        <entry endPc="268436107" name="groups" stackId="5" startPc="268435745"/>
+        <entry endPc="268436107" name="m" stackId="6" startPc="268435745"/>
+        <entry endPc="268436065" name="i" stackId="7" startPc="268435960"/>
+        <entry endPc="268436055" name="g" stackId="8" startPc="268435960"/>
+        <entry endPc="268436055" name="sub" stackId="9" startPc="268435960"/>
+        <entry arg="true" endPc="268436128" name="code" stackId="1" startPc="268436109"/>
+        <entry arg="true" endPc="268436128" name="data" stackId="2" startPc="268436109"/>
+        <entry arg="true" endPc="268436154" name="code" stackId="1" startPc="268436129"/>
+        <entry arg="true" endPc="268436154" name="data" stackId="2" startPc="268436129"/>
+        <entry arg="true" endPc="268436178" name="libId" stackId="1" startPc="268436155"/>
+        <entry arg="true" endPc="268436377" name="item" stackId="1" startPc="268436179"/>
+        <entry endPc="268436376" name="mode" stackId="2" startPc="268436182"/>
+        <entry endPc="268436710" name="key" stackId="1" startPc="268436474"/>
+        <entry endPc="268436710" name="info" stackId="2" startPc="268436474"/>
+        <entry endPc="268436710" name="context" stackId="3" startPc="268436474"/>
+        <entry endPc="268436710" name="options" stackId="4" startPc="268436474"/>
+        <entry endPc="268436710" name="delegate" stackId="5" startPc="268436474"/>
+        <entry endPc="268436710" name="url" stackId="6" startPc="268436474"/>
+        <entry endPc="268436772" name="pct" stackId="1" startPc="268436715"/>
+        <entry endPc="268436953" name="tracks" stackId="1" startPc="268436777"/>
+        <entry endPc="268436906" name="i" stackId="2" startPc="268436829"/>
+        <entry endPc="268436896" name="refId" stackId="3" startPc="268436829"/>
+        <entry arg="true" endPc="268437163" name="code" stackId="1" startPc="268436955"/>
+        <entry arg="true" endPc="268437163" name="data" stackId="2" startPc="268436955"/>
+        <entry arg="true" endPc="268437163" name="context" stackId="3" startPc="268436955"/>
+        <entry endPc="268437132" name="refId" stackId="4" startPc="268436967"/>
+        <entry endPc="268437132" name="tracks" stackId="5" startPc="268436967"/>
+        <entry arg="true" endPc="268437287" name="type" stackId="1" startPc="268437192"/>
+        <entry arg="true" endPc="268437512" name="code" stackId="1" startPc="268437493"/>
+        <entry arg="true" endPc="268437512" name="data" stackId="2" startPc="268437493"/>
+        <entry arg="true" endPc="268437545" name="libId" stackId="1" startPc="268437513"/>
+        <entry arg="true" endPc="268437545" name="filterType" stackId="2" startPc="268437513"/>
+        <entry arg="true" endPc="268437591" name="item" stackId="1" startPc="268437546"/>
+        <entry arg="true" endPc="268437627" name="code" stackId="1" startPc="268437592"/>
+        <entry arg="true" endPc="268437627" name="data" stackId="2" startPc="268437592"/>
+        <entry arg="true" endPc="268437683" name="item" stackId="1" startPc="268437661"/>
+        <entry arg="true" endPc="268437802" name="args" stackId="1" startPc="268437782"/>
+        <entry endPc="268437908" name="version" stackId="1" startPc="268437827"/>
+        <entry arg="true" endPc="268438102" name="refId" stackId="1" startPc="268437982"/>
+        <entry arg="true" endPc="268438102" name="positionInChapter" stackId="2" startPc="268437982"/>
+        <entry endPc="268438101" name="tracks" stackId="3" startPc="268437985"/>
+        <entry endPc="268438101" name="info" stackId="4" startPc="268437985"/>
+        <entry endPc="268438101" name="start" stackId="5" startPc="268437985"/>
+        <entry endPc="268438101" name="absolute" stackId="6" startPc="268437985"/>
+        <entry arg="true" endPc="268438178" name="refId" stackId="1" startPc="268438128"/>
+        <entry arg="true" endPc="268438178" name="songEvent" stackId="2" startPc="268438128"/>
+        <entry arg="true" endPc="268438178" name="playbackPosition" stackId="3" startPc="268438128"/>
+        <entry arg="true" endPc="268438422" name="idx" stackId="1" startPc="268438274"/>
+        <entry endPc="268438412" name="e" stackId="2" startPc="268438355"/>
+        <entry arg="true" endPc="268438549" name="tracks" stackId="1" startPc="268438469"/>
+        <entry arg="true" endPc="268438549" name="refIdA" stackId="2" startPc="268438469"/>
+        <entry arg="true" endPc="268438549" name="refIdB" stackId="3" startPc="268438469"/>
+        <entry endPc="268438549" name="titleA" stackId="4" startPc="268438472"/>
+        <entry endPc="268438549" name="titleB" stackId="5" startPc="268438472"/>
+        <entry endPc="268438745" name="profile" stackId="1" startPc="268438620"/>
+        <entry arg="true" endPc="268438787" name="tracks" stackId="1" startPc="268438746"/>
+        <entry arg="true" endPc="268438787" name="refId" stackId="2" startPc="268438746"/>
+        <entry endPc="268438787" name="info" stackId="3" startPc="268438749"/>
+        <entry endPc="268438958" name="i" stackId="1" startPc="268438895"/>
+        <entry endPc="268438948" name="j" stackId="2" startPc="268438895"/>
+        <entry endPc="268438948" name="tmp" stackId="3" startPc="268438895"/>
+        <entry arg="true" endPc="268439013" name="tracks" stackId="1" startPc="268438968"/>
+        <entry arg="true" endPc="268439013" name="refId" stackId="2" startPc="268438968"/>
+        <entry endPc="268439013" name="info" stackId="3" startPc="268438971"/>
+        <entry endPc="268439375" name="tracks" stackId="1" startPc="268439017"/>
+        <entry endPc="268439375" name="refIds" stackId="2" startPc="268439017"/>
+        <entry endPc="268439375" name="iter" stackId="3" startPc="268439017"/>
+        <entry endPc="268439141" name="ref" stackId="4" startPc="268439095"/>
+        <entry endPc="268439367" name="i" stackId="5" startPc="268439161"/>
+        <entry endPc="268439357" name="refId" stackId="6" startPc="268439161"/>
+        <entry endPc="268439357" name="pos" stackId="7" startPc="268439161"/>
+        <entry endPc="268439243" name="j" stackId="8" startPc="268439201"/>
+        <entry endPc="268439357" name="rebuilt" stackId="9" startPc="268439161"/>
+        <entry endPc="268439294" name="k" stackId="10" startPc="268439272"/>
+        <entry endPc="268439348" name="k" stackId="11" startPc="268439323"/>
+        <entry endPc="268439534" name="v" stackId="1" startPc="268439489"/>
+        <entry arg="true" endPc="268439593" name="server" stackId="1" startPc="268439535"/>
+        <entry arg="true" endPc="268439593" name="token" stackId="2" startPc="268439535"/>
+        <entry arg="true" endPc="268439622" name="libId" stackId="1" startPc="268439594"/>
+        <entry arg="true" endPc="268439622" name="cb" stackId="2" startPc="268439594"/>
+        <entry arg="true" endPc="268439733" name="server" stackId="1" startPc="268439640"/>
+        <entry arg="true" endPc="268439733" name="username" stackId="2" startPc="268439640"/>
+        <entry arg="true" endPc="268439733" name="password" stackId="3" startPc="268439640"/>
+        <entry arg="true" endPc="268439733" name="cb" stackId="4" startPc="268439640"/>
+        <entry arg="true" endPc="268439816" name="itemId" stackId="1" startPc="268439734"/>
+        <entry arg="true" endPc="268439816" name="cb" stackId="2" startPc="268439734"/>
+        <entry arg="true" endPc="268439885" name="key" stackId="1" startPc="268439817"/>
+        <entry endPc="268439885" name="v" stackId="2" startPc="268439828"/>
+        <entry arg="true" endPc="268439995" name="libId" stackId="1" startPc="268439886"/>
+        <entry arg="true" endPc="268439995" name="filterType" stackId="2" startPc="268439886"/>
+        <entry arg="true" endPc="268439995" name="filterId" stackId="3" startPc="268439886"/>
+        <entry arg="true" endPc="268439995" name="cb" stackId="4" startPc="268439886"/>
+        <entry endPc="268439994" name="params" stackId="5" startPc="268439897"/>
+        <entry arg="true" endPc="268440196" name="itemId" stackId="1" startPc="268440043"/>
+        <entry arg="true" endPc="268440196" name="currentTimeSec" stackId="2" startPc="268440043"/>
+        <entry arg="true" endPc="268440196" name="durationSec" stackId="3" startPc="268440043"/>
+        <entry endPc="268440195" name="params" stackId="4" startPc="268440054"/>
+        <entry arg="true" endPc="268440225" name="libId" stackId="1" startPc="268440197"/>
+        <entry arg="true" endPc="268440225" name="cb" stackId="2" startPc="268440197"/>
+        <entry arg="true" endPc="268440278" name="detail" stackId="1" startPc="268440226"/>
+        <entry endPc="268440278" name="p" stackId="2" startPc="268440237"/>
+        <entry arg="true" endPc="268440307" name="libId" stackId="1" startPc="268440279"/>
+        <entry arg="true" endPc="268440307" name="cb" stackId="2" startPc="268440279"/>
+        <entry arg="true" endPc="268440383" name="itemId" stackId="1" startPc="268440308"/>
+        <entry arg="true" endPc="268440383" name="ino" stackId="2" startPc="268440308"/>
+        <entry arg="true" endPc="268440383" name="startSec" stackId="3" startPc="268440308"/>
+        <entry arg="true" endPc="268440383" name="endSec" stackId="4" startPc="268440308"/>
+        <entry arg="true" endPc="268440486" name="url" stackId="1" startPc="268440384"/>
+        <entry endPc="268440633" name="v" stackId="1" startPc="268440498"/>
+        <entry arg="true" endPc="268440708" name="callback" stackId="1" startPc="268440634"/>
+        <entry arg="true" endPc="268440788" name="path" stackId="1" startPc="268440709"/>
+        <entry arg="true" endPc="268440788" name="libId" stackId="2" startPc="268440709"/>
+        <entry arg="true" endPc="268440788" name="cb" stackId="3" startPc="268440709"/>
+        <entry arg="true" endPc="268440813" name="text" stackId="1" startPc="268440789"/>
+        <entry arg="true" endPc="268440813" name="changed" stackId="2" startPc="268440789"/>
+        <entry arg="true" endPc="268440862" name="view" stackId="1" startPc="268440830"/>
+        <entry arg="true" endPc="268440862" name="field" stackId="2" startPc="268440830"/>
+        <entry arg="true" endPc="268440897" name="url" stackId="1" startPc="268440863"/>
+        <entry arg="true" endPc="268440897" name="params" stackId="2" startPc="268440863"/>
+        <entry arg="true" endPc="268440897" name="options" stackId="3" startPc="268440863"/>
+        <entry arg="true" endPc="268440918" name="callback" stackId="1" startPc="268440898"/>
+        <entry arg="true" endPc="268440918" name="context" stackId="2" startPc="268440898"/>
+        <entry arg="true" endPc="268440944" name="code" stackId="1" startPc="268440919"/>
+        <entry arg="true" endPc="268440944" name="data" stackId="2" startPc="268440919"/>
+        <entry arg="true" endPc="268441343" name="libId" stackId="1" startPc="268440945"/>
+        <entry endPc="268441342" name="m" stackId="2" startPc="268440956"/>
+        <entry arg="true" endPc="268441715" name="code" stackId="1" startPc="268441344"/>
+        <entry arg="true" endPc="268441715" name="data" stackId="2" startPc="268441344"/>
+        <entry endPc="268441714" name="books" stackId="3" startPc="268441355"/>
+        <entry endPc="268441714" name="m" stackId="4" startPc="268441355"/>
+        <entry endPc="268441675" name="i" stackId="5" startPc="268441602"/>
+        <entry endPc="268441665" name="b" stackId="6" startPc="268441602"/>
+        <entry arg="true" endPc="268442046" name="code" stackId="1" startPc="268441716"/>
+        <entry arg="true" endPc="268442046" name="data" stackId="2" startPc="268441716"/>
+        <entry endPc="268441978" name="libs" stackId="3" startPc="268441746"/>
+        <entry endPc="268441978" name="menu" stackId="4" startPc="268441746"/>
+        <entry endPc="268441943" name="i" stackId="5" startPc="268441838"/>
+        <entry endPc="268441933" name="lib" stackId="6" startPc="268441838"/>
+        <entry arg="true" endPc="268442263" name="dc" stackId="1" startPc="268442186"/>
+        <entry endPc="268442451" name="tracks" stackId="1" startPc="268442319"/>
+        <entry endPc="268442451" name="count" stackId="2" startPc="268442319"/>
+        <entry endPc="268442451" name="refIds" stackId="3" startPc="268442319"/>
+        <entry endPc="268442448" name="i" stackId="4" startPc="268442377"/>
+        <entry endPc="268442438" name="info" stackId="5" startPc="268442377"/>
+        <entry arg="true" endPc="268443283" name="code" stackId="1" startPc="268442475"/>
+        <entry arg="true" endPc="268443283" name="data" stackId="2" startPc="268442475"/>
+        <entry endPc="268443282" name="chunk" stackId="3" startPc="268442478"/>
+        <entry endPc="268443282" name="firstChunk" stackId="4" startPc="268442478"/>
+        <entry endPc="268443282" name="files" stackId="5" startPc="268442478"/>
+        <entry endPc="268443282" name="title" stackId="6" startPc="268442478"/>
+        <entry endPc="268443282" name="expected" stackId="7" startPc="268442478"/>
+        <entry endPc="268443282" name="syncList" stackId="8" startPc="268442478"/>
+        <entry endPc="268443282" name="bookOffset" stackId="9" startPc="268442478"/>
+        <entry endPc="268443282" name="idx" stackId="10" startPc="268442478"/>
+        <entry endPc="268443076" name="f" stackId="11" startPc="268442845"/>
+        <entry endPc="268443066" name="ino" stackId="12" startPc="268442845"/>
+        <entry endPc="268443066" name="dur" stackId="13" startPc="268442845"/>
+        <entry endPc="268443066" name="pos" stackId="14" startPc="268442845"/>
+        <entry endPc="268443056" name="size" stackId="15" startPc="268442910"/>
+        <entry endPc="268443056" name="end" stackId="16" startPc="268442910"/>
+        <entry arg="true" endPc="268443300" name="v" stackId="1" startPc="268443284"/>
+        <entry arg="true" endPc="268443300" name="dflt" stackId="2" startPc="268443284"/>
+        <entry arg="true" endPc="268443439" name="files" stackId="1" startPc="268443301"/>
+        <entry arg="true" endPc="268443439" name="chunk" stackId="2" startPc="268443301"/>
+        <entry arg="true" endPc="268443439" name="firstChunk" stackId="3" startPc="268443301"/>
+        <entry endPc="268443439" name="count" stackId="4" startPc="268443304"/>
+        <entry endPc="268443436" name="f" stackId="5" startPc="268443323"/>
+        <entry endPc="268443426" name="dur" stackId="6" startPc="268443323"/>
+        <entry endPc="268443426" name="pos" stackId="7" startPc="268443323"/>
+        <entry endPc="268443423" name="size" stackId="8" startPc="268443375"/>
+        <entry endPc="268443423" name="end" stackId="9" startPc="268443375"/>
+        <entry arg="true" endPc="268443487" name="item" stackId="1" startPc="268443440"/>
+        <entry arg="true" endPc="268443699" name="code" stackId="1" startPc="268443488"/>
+        <entry arg="true" endPc="268443699" name="data" stackId="2" startPc="268443488"/>
+        <entry arg="true" endPc="268443818" name="state" stackId="1" startPc="268443700"/>
+        <entry arg="true" endPc="268443904" name="field" stackId="1" startPc="268443819"/>
+        <entry arg="true" endPc="268443904" name="text" stackId="2" startPc="268443819"/>
+        <entry endPc="268444558" name="s" stackId="1" startPc="268444455"/>
+        <entry arg="true" endPc="268444672" name="dc" stackId="1" startPc="268444595"/>
+        <entry arg="true" endPc="268444878" name="refIds" stackId="1" startPc="268444673"/>
+        <entry endPc="268444877" name="deleteList" stackId="2" startPc="268444676"/>
+        <entry endPc="268444764" name="i" stackId="3" startPc="268444740"/>
+        <entry arg="true" endPc="268445555" name="item" stackId="1" startPc="268444912"/>
+        <entry endPc="268445554" name="id" stackId="2" startPc="268444915"/>
+        <entry endPc="268445402" name="tracks" stackId="3" startPc="268445354"/>
+        <entry endPc="268445554" name="tracks" stackId="4" startPc="268444915"/>
+        <entry endPc="268445554" name="refIds" stackId="5" startPc="268444915"/>
+        <entry endPc="268445554" name="toDelete" stackId="6" startPc="268444915"/>
+        <entry endPc="268445543" name="i" stackId="7" startPc="268445467"/>
+        <entry endPc="268445533" name="info" stackId="8" startPc="268445467"/>
+        <entry arg="true" endPc="268445613" name="message" stackId="1" startPc="268445590"/>
+        <entry arg="true" endPc="268445691" name="dc" stackId="1" startPc="268445614"/>
+        <entry endPc="268445812" name="stats" stackId="1" startPc="268445695"/>
+        <entry endPc="268445812" name="used" stackId="2" startPc="268445695"/>
+        <entry endPc="268445812" name="mb" stackId="3" startPc="268445695"/>
+        <entry endPc="268445898" name="syncList" stackId="1" startPc="268445816"/>
+        <entry endPc="268445898" name="deleteList" stackId="2" startPc="268445816"/>
+        <entry endPc="268446486" name="books" stackId="1" startPc="268445902"/>
+        <entry endPc="268446486" name="itemIds" stackId="2" startPc="268445902"/>
+        <entry endPc="268446486" name="i" stackId="3" startPc="268446369"/>
+        <entry endPc="268446476" name="itemId" stackId="4" startPc="268446369"/>
+        <entry endPc="268446476" name="book" stackId="5" startPc="268446369"/>
+        <entry endPc="268446476" name="sub" stackId="6" startPc="268446369"/>
+        <entry endPc="268446672" name="tracks" stackId="1" startPc="268446491"/>
+        <entry endPc="268446672" name="books" stackId="2" startPc="268446491"/>
+        <entry endPc="268446672" name="refIds" stackId="3" startPc="268446491"/>
+        <entry endPc="268446669" name="i" stackId="4" startPc="268446552"/>
+        <entry endPc="268446659" name="info" stackId="5" startPc="268446552"/>
+        <entry endPc="268446659" name="itemId" stackId="6" startPc="268446552"/>
+        <entry endPc="268446659" name="book" stackId="7" startPc="268446552"/>
+        <entry arg="true" endPc="268446825" name="refId" stackId="1" startPc="268446673"/>
+        <entry arg="true" endPc="268446825" name="info" stackId="2" startPc="268446673"/>
+        <entry endPc="268446825" name="ref" stackId="3" startPc="268446676"/>
+        <entry endPc="268446825" name="obj" stackId="4" startPc="268446676"/>
+    </localVars>
+    <deviceInfo deviceVersion="e6263c2a80ff43933f83afa71f1f6645dc2cb4a3" partNumber="006-B4533-00"/>
+    <annotations>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="queued"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="fieldServer"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="byAuthor"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="errNone"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="AppName"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="errNoAudio"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="deleteAllDownloads"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="settingApiKeyPrompt"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="fieldUser"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="settingServerUrlPrompt"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="loggingIn"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="settingServerUrl"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="deleting"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="errItems"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="fieldPass"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="settingApiKey"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="clearQueue"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="logIn"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="browseLibrary"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="pickBook"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="alreadyDownloaded"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="bySeries"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="loginFailed"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="byCollection"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="errLibraries"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="pickLibrary"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="playDownloaded"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="loading"/>
+        <annotationEntry annotation="initialized" class="Drawables" module="globals/Rez" symbol="providerIcon"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="errDetail"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="allBooks"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="logOut"/>
+        <annotationEntry annotation="initialized" class="Drawables" module="globals/Rez" symbol="launcher"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="downloaded"/>
+        <annotationEntry annotation="initialized" class="Strings" module="globals/Rez" symbol="queueCleared"/>
+    </annotations>
+    <dataEntryOffsetMappings>
+        <dataEntry label="globals" offset="112" parentId="" symbolId="globals" type="module"/>
+        <dataEntry label="globals/BrowseDelegate" offset="386" parentId="globals" symbolId="BrowseDelegate" type="class"/>
+        <dataEntry label="globals/SyncDelegate" offset="502" parentId="globals" symbolId="SyncDelegate" type="class"/>
+        <dataEntry label="globals/Rez" offset="663" parentId="globals" symbolId="Rez" type="module"/>
+        <dataEntry label="globals/LoginCreds" offset="707" parentId="globals" symbolId="LoginCreds" type="class"/>
+        <dataEntry label="globals/GroupDelegate" offset="778" parentId="globals" symbolId="GroupDelegate" type="class"/>
+        <dataEntry label="globals/Store" offset="867" parentId="globals" symbolId="Store" type="module"/>
+        <dataEntry label="globals/AbsProgressListener" offset="893" parentId="globals" symbolId="AbsProgressListener" type="class"/>
+        <dataEntry label="globals/TrackInfo" offset="946" parentId="globals" symbolId="TrackInfo" type="module"/>
+        <dataEntry label="globals/LibraryMenuDelegate" offset="972" parentId="globals" symbolId="LibraryMenuDelegate" type="class"/>
+        <dataEntry label="globals/WatchShelfApp" offset="1034" parentId="globals" symbolId="WatchShelfApp" type="class"/>
+        <dataEntry label="globals/Settings" offset="1123" parentId="globals" symbolId="Settings" type="module"/>
+        <dataEntry label="globals/ContentDelegate" offset="1149" parentId="globals" symbolId="ContentDelegate" type="class"/>
+        <dataEntry label="globals/ContentIterator" offset="1274" parentId="globals" symbolId="ContentIterator" type="class"/>
+        <dataEntry label="globals/Login" offset="1480" parentId="globals" symbolId="Login" type="module"/>
+        <dataEntry label="globals/AbsApi" offset="1515" parentId="globals" symbolId="AbsApi" type="module"/>
+        <dataEntry label="globals/FieldDelegate" offset="1712" parentId="globals" symbolId="FieldDelegate" type="class"/>
+        <dataEntry label="globals/RequestDelegate" offset="1792" parentId="globals" symbolId="RequestDelegate" type="class"/>
+        <dataEntry label="globals/Browse" offset="1872" parentId="globals" symbolId="Browse" type="module"/>
+        <dataEntry label="globals/Versions" offset="1916" parentId="globals" symbolId="Versions" type="module"/>
+        <dataEntry label="globals/LibraryView" offset="1942" parentId="globals" symbolId="LibraryView" type="class"/>
+        <dataEntry label="globals/LibraryViewDelegate" offset="2031" parentId="globals" symbolId="LibraryViewDelegate" type="class"/>
+        <dataEntry label="globals/BookMenuDelegate" offset="2084" parentId="globals" symbolId="BookMenuDelegate" type="class"/>
+        <dataEntry label="globals/LoginView" offset="2191" parentId="globals" symbolId="LoginView" type="class"/>
+        <dataEntry label="globals/DownloadedMenuDelegate" offset="2343" parentId="globals" symbolId="DownloadedMenuDelegate" type="class"/>
+        <dataEntry label="globals/ErrorViewDelegate" offset="2414" parentId="globals" symbolId="ErrorViewDelegate" type="class"/>
+        <dataEntry label="globals/ErrorView" offset="2467" parentId="globals" symbolId="ErrorView" type="class"/>
+        <dataEntry label="globals/DownloadedMenu" offset="2529" parentId="globals" symbolId="DownloadedMenu" type="class"/>
+        <dataEntry label="globals/Rez/Drawables" offset="2609" parentId="Rez" symbolId="Drawables" type="module"/>
+        <dataEntry label="globals/Rez/Strings" offset="2653" parentId="Rez" symbolId="Strings" type="module"/>
+    </dataEntryOffsetMappings>
+    <functions>
+        <functionEntry accessMode="public" endPc="268435471" name="&lt;init&gt;" parent="BrowseDelegate" startPc="268435460">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435483" name="&lt;init&gt;" parent="SyncDelegate" startPc="268435472">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435503" name="&lt;init&gt;" parent="Rez" startPc="268435484">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="LoginCreds">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435515" name="&lt;init&gt;" parent="GroupDelegate" startPc="268435504">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Store">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="AbsProgressListener">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="TrackInfo">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435527" name="&lt;init&gt;" parent="LibraryMenuDelegate" startPc="268435516">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435539" name="&lt;init&gt;" parent="WatchShelfApp" startPc="268435528">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Settings">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435551" name="&lt;init&gt;" parent="ContentDelegate" startPc="268435540">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435563" name="&lt;init&gt;" parent="ContentIterator" startPc="268435552">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Login">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="AbsApi">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435575" name="&lt;init&gt;" parent="FieldDelegate" startPc="268435564">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="RequestDelegate">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Browse">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Versions">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435587" name="&lt;init&gt;" parent="LibraryView" startPc="268435576">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435599" name="&lt;init&gt;" parent="LibraryViewDelegate" startPc="268435588">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435611" name="&lt;init&gt;" parent="BookMenuDelegate" startPc="268435600">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435623" name="&lt;init&gt;" parent="LoginView" startPc="268435612">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435635" name="&lt;init&gt;" parent="DownloadedMenuDelegate" startPc="268435624">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435647" name="&lt;init&gt;" parent="ErrorViewDelegate" startPc="268435636">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435659" name="&lt;init&gt;" parent="ErrorView" startPc="268435648">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435671" name="&lt;init&gt;" parent="DownloadedMenu" startPc="268435660">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435697" name="onSeries" parent="BrowseDelegate" startPc="268435672">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435715" name="onBack" parent="BrowseDelegate" startPc="268435698">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268435741" name="onAuthors" parent="BrowseDelegate" startPc="268435716">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436108" name="pushGroups" parent="BrowseDelegate" startPc="268435742">
+            <param id="code"/>
+            <param id="data"/>
+            <param id="key"/>
+            <param id="filterType"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436128" name="onBooks" parent="BrowseDelegate" startPc="268436109">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436154" name="onCollections" parent="BrowseDelegate" startPc="268436129">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436178" name="initialize" parent="BrowseDelegate" startPc="268436155">
+            <param id="libId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436377" name="onSelect" parent="BrowseDelegate" startPc="268436179">
+            <param id="item"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436470" name="onStartSync" parent="SyncDelegate" startPc="268436378">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436711" name="downloadNext" parent="SyncDelegate" startPc="268436471">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436773" name="onOpDone" parent="SyncDelegate" startPc="268436712">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268436954" name="deleteQueued" parent="SyncDelegate" startPc="268436774">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437163" name="onTrackDownloaded" parent="SyncDelegate" startPc="268436955">
+            <param id="code"/>
+            <param id="data"/>
+            <param id="context"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437191" name="onStopSync" parent="SyncDelegate" startPc="268437164">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437287" name="typeToEncoding" parent="SyncDelegate" startPc="268437192">
+            <param id="type"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437400" name="initialize" parent="SyncDelegate" startPc="268437288">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437435" name="isSyncNeeded" parent="SyncDelegate" startPc="268437401">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Drawables">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="&lt;init&gt;" parent="Strings">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437474" name="initialize" parent="LoginCreds" startPc="268437436">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437492" name="onBack" parent="GroupDelegate" startPc="268437475">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437512" name="onBooks" parent="GroupDelegate" startPc="268437493">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437545" name="initialize" parent="GroupDelegate" startPc="268437513">
+            <param id="libId"/>
+            <param id="filterType"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437591" name="onSelect" parent="GroupDelegate" startPc="268437546">
+            <param id="item"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437627" name="onResponse" parent="AbsProgressListener" startPc="268437592">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="initialize" parent="AbsProgressListener">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437645" name="onBack" parent="LibraryMenuDelegate" startPc="268437628">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437660" name="initialize" parent="LibraryMenuDelegate" startPc="268437646">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437683" name="onSelect" parent="LibraryMenuDelegate" startPc="268437661">
+            <param id="item"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437732" name="getProviderIconInfo" parent="WatchShelfApp" startPc="268437684">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437781" name="getPlaybackConfigurationView" parent="WatchShelfApp" startPc="268437733">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437802" name="getContentDelegate" parent="WatchShelfApp" startPc="268437782">
+            <param id="args"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437823" name="getSyncDelegate" parent="WatchShelfApp" startPc="268437803">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437909" name="initialize" parent="WatchShelfApp" startPc="268437824">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437958" name="getSyncConfigurationView" parent="WatchShelfApp" startPc="268437910">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437973" name="onShuffle" parent="ContentDelegate" startPc="268437959">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268437981" name="getContentIterator" parent="ContentDelegate" startPc="268437974">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438102" name="syncProgress" parent="ContentDelegate" startPc="268437982">
+            <param id="refId"/>
+            <param id="positionInChapter"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438105" name="onThumbsUp" parent="ContentDelegate" startPc="268438103">
+            <param id="refId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438127" name="initialize" parent="ContentDelegate" startPc="268438106">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438178" name="onSong" parent="ContentDelegate" startPc="268438128">
+            <param id="refId"/>
+            <param id="songEvent"/>
+            <param id="playbackPosition"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" name="onRepeat" parent="ContentDelegate">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438211" name="resetContentIterator" parent="ContentDelegate" startPc="268438179">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438214" name="onThumbsDown" parent="ContentDelegate" startPc="268438212">
+            <param id="refId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438273" name="next" parent="ContentIterator" startPc="268438215">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438422" name="objAt" parent="ContentIterator" startPc="268438274">
+            <param id="idx"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438468" name="previous" parent="ContentIterator" startPc="268438423">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438549" name="before" parent="ContentIterator" startPc="268438469">
+            <param id="tracks"/>
+            <param id="refIdA"/>
+            <param id="refIdB"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438568" name="peekPrevious" parent="ContentIterator" startPc="268438550">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438572" name="canSkip" parent="ContentIterator" startPc="268438569">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438616" name="toggleShuffle" parent="ContentIterator" startPc="268438573">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438745" name="getPlaybackProfile" parent="ContentIterator" startPc="268438617">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438787" name="startOf" parent="ContentIterator" startPc="268438746">
+            <param id="tracks"/>
+            <param id="refId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438806" name="peekNext" parent="ContentIterator" startPc="268438788">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438822" name="get" parent="ContentIterator" startPc="268438807">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438830" name="shuffling" parent="ContentIterator" startPc="268438823">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438868" name="initialize" parent="ContentIterator" startPc="268438831">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268438967" name="shuffle" parent="ContentIterator" startPc="268438869">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439013" name="bookTitleOf" parent="ContentIterator" startPc="268438968">
+            <param id="tracks"/>
+            <param id="refId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439376" name="buildPlaylist" parent="ContentIterator" startPc="268439014">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439446" name="start" parent="Login" startPc="268439377">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439477" name="isConfigured" parent="AbsApi" startPc="268439447">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439534" name="authToken" parent="AbsApi" startPc="268439478">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439593" name="saveLogin" parent="AbsApi" startPc="268439535">
+            <param id="server"/>
+            <param id="token"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439622" name="getCollections" parent="AbsApi" startPc="268439594">
+            <param id="libId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439639" name="sidecarBase" parent="AbsApi" startPc="268439623">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439733" name="login" parent="AbsApi" startPc="268439640">
+            <param id="server"/>
+            <param id="username"/>
+            <param id="password"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439816" name="getFiles" parent="AbsApi" startPc="268439734">
+            <param id="itemId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439885" name="_prop" parent="AbsApi" startPc="268439817">
+            <param id="key"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268439995" name="getBookList" parent="AbsApi" startPc="268439886">
+            <param id="libId"/>
+            <param id="filterType"/>
+            <param id="filterId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440042" name="logout" parent="AbsApi" startPc="268439996">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440196" name="patchProgress" parent="AbsApi" startPc="268440043">
+            <param id="itemId"/>
+            <param id="currentTimeSec"/>
+            <param id="durationSec"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440225" name="getSeries" parent="AbsApi" startPc="268440197">
+            <param id="libId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440278" name="progressSeconds" parent="AbsApi" startPc="268440226">
+            <param id="detail"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440307" name="getAuthors" parent="AbsApi" startPc="268440279">
+            <param id="libId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440383" name="sidecarChunkUrl" parent="AbsApi" startPc="268440308">
+            <param id="itemId"/>
+            <param id="ino"/>
+            <param id="startSec"/>
+            <param id="endSec"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440486" name="_noSlash" parent="AbsApi" startPc="268440384">
+            <param id="url"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440633" name="serverUrl" parent="AbsApi" startPc="268440487">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440708" name="getLibraries" parent="AbsApi" startPc="268440634">
+            <param id="callback"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440788" name="getGroups" parent="AbsApi" startPc="268440709">
+            <param id="path"/>
+            <param id="libId"/>
+            <param id="cb"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440813" name="onTextEntered" parent="FieldDelegate" startPc="268440789">
+            <param id="text"/>
+            <param id="changed"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440829" name="onCancel" parent="FieldDelegate" startPc="268440814">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440862" name="initialize" parent="FieldDelegate" startPc="268440830">
+            <param id="view"/>
+            <param id="field"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440897" name="makeWebRequest" parent="RequestDelegate" startPc="268440863">
+            <param id="url"/>
+            <param id="params"/>
+            <param id="options"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440918" name="initialize" parent="RequestDelegate" startPc="268440898">
+            <param id="callback"/>
+            <param id="context"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268440944" name="onWebResponse" parent="RequestDelegate" startPc="268440919">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268441343" name="start" parent="Browse" startPc="268440945">
+            <param id="libId"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268441715" name="showBooks" parent="Browse" startPc="268441344">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442046" name="onLibraries" parent="LibraryView" startPc="268441716">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442124" name="onShow" parent="LibraryView" startPc="268442047">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442185" name="initialize" parent="LibraryView" startPc="268442125">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442263" name="onUpdate" parent="LibraryView" startPc="268442186">
+            <param id="dc"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442282" name="onBack" parent="LibraryViewDelegate" startPc="268442264">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442297" name="initialize" parent="LibraryViewDelegate" startPc="268442283">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442315" name="onBack" parent="BookMenuDelegate" startPc="268442298">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442451" name="alreadyDownloadedCount" parent="BookMenuDelegate" startPc="268442316">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268442474" name="initialize" parent="BookMenuDelegate" startPc="268442452">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443283" name="onFiles" parent="BookMenuDelegate" startPc="268442475">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443300" name="numOr" parent="BookMenuDelegate" startPc="268443284">
+            <param id="v"/>
+            <param id="dflt"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443439" name="expectedChunkCount" parent="BookMenuDelegate" startPc="268443301">
+            <param id="files"/>
+            <param id="chunk"/>
+            <param id="firstChunk"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443487" name="onSelect" parent="BookMenuDelegate" startPc="268443440">
+            <param id="item"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443699" name="onLogin" parent="LoginView" startPc="268443488">
+            <param id="code"/>
+            <param id="data"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443818" name="labelFor" parent="LoginView" startPc="268443700">
+            <param id="state"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268443904" name="setField" parent="LoginView" startPc="268443819">
+            <param id="field"/>
+            <param id="text"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444140" name="onShow" parent="LoginView" startPc="268443905">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444201" name="cancelFlow" parent="LoginView" startPc="268444141">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444451" name="openField" parent="LoginView" startPc="268444202">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444559" name="initialize" parent="LoginView" startPc="268444452">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444594" name="onHide" parent="LoginView" startPc="268444560">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444672" name="onUpdate" parent="LoginView" startPc="268444595">
+            <param id="dc"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444878" name="queueDelete" parent="DownloadedMenuDelegate" startPc="268444673">
+            <param id="refIds"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444896" name="onBack" parent="DownloadedMenuDelegate" startPc="268444879">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268444911" name="initialize" parent="DownloadedMenuDelegate" startPc="268444897">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445555" name="onSelect" parent="DownloadedMenuDelegate" startPc="268444912">
+            <param id="item"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445574" name="onBack" parent="ErrorViewDelegate" startPc="268445556">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445589" name="initialize" parent="ErrorViewDelegate" startPc="268445575">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445613" name="initialize" parent="ErrorView" startPc="268445590">
+            <param id="message"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445691" name="onUpdate" parent="ErrorView" startPc="268445614">
+            <param id="dc"/>
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445812" name="titleWithSize" parent="DownloadedMenu" startPc="268445692">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268445898" name="hasQueued" parent="DownloadedMenu" startPc="268445813">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268446487" name="initialize" parent="DownloadedMenu" startPc="268445899">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268446672" name="groupedBooks" parent="DownloadedMenu" startPc="268446488">
+            <documentation/>
+        </functionEntry>
+        <functionEntry accessMode="public" endPc="268446825" name="bookTitle" parent="DownloadedMenu" startPc="268446673">
+            <param id="refId"/>
+            <param id="info"/>
+            <documentation/>
+        </functionEntry>
+    </functions>
+</debugInfo>

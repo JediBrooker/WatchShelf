@@ -60,9 +60,8 @@ class DownloadedMenu extends WatchUi.Menu2 {
     }
 
     function hasQueued() {
-        var jobs = Application.Storage.getValue(Store.SYNC_JOBS);
         var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
-        return ((jobs != null) && (jobs.size() > 0))
+        return (JobStore.list().size() > 0)
             || ((deleteList != null) && (deleteList.size() > 0));
     }
 

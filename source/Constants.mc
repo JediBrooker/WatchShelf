@@ -18,13 +18,12 @@ using Toybox.Application;
 // module, and per-chunk refIds live in one small per-book value.
 // ---------------------------------------------------------------------------
 module Store {
-    // { itemId => { "inos" => [str], "durs" => [num], "title" => str,
-    //   "done" => num } } - one small job per QUEUED book; chunk boundaries
-    // derived on the fly, "done" is the resume cursor. ALWAYS read fresh and
-    // read-modify-written per event, never held across events: a long-lived
-    // in-memory snapshot persisted wholesale silently clobbers queue writes
-    // made while a (background) sync is running.
-    const SYNC_JOBS   = "syncJobs";
+    // Queued download jobs live in JobStore (one job per key + a small
+    // index) - O(files) inos/durs arrays per job must not share one value.
+    // ALWAYS read queue state fresh per event, never held across events: a
+    // long-lived in-memory snapshot persisted wholesale silently clobbers
+    // queue writes made while a (background) sync is running.
+    //
     // [ itemId, ... ] - books queued for DELETION (whole books only; the UI
     // has no per-chunk delete).
     const DELETE_LIST = "deleteList";
@@ -49,10 +48,11 @@ module Settings {
 module Versions {
     enum {
         V1 = 0,
-        V2 = 1   // per-chunk SYNC_LIST/TRACKS dicts -> per-book jobs + BookStore
+        V2 = 1,  // per-chunk SYNC_LIST/TRACKS dicts -> per-book jobs + BookStore
+        V3 = 2   // single SYNC_JOBS dict -> JobStore (one job per key + index)
     }
-    const current = V2;
+    const current = V3;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b26";
+    const tag = "b27";
 }
