@@ -26,10 +26,16 @@ the sidecar**:
 - `/login` + `/progress` proxy to ABS, so **Audiobookshelf itself never has to be
   exposed to the internet** — it can stay fully private.
 
-You expose the **sidecar** at any HTTPS URL and enter *that* URL on the watch. A
-plain, step-by-step guide — including *why* the sidecar is needed at all — for each
-of **Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik** is in
-[sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
+You expose the **sidecar** at any HTTPS URL and enter *that* URL on the watch. One
+command installs the sidecar and walks you through exposing it:
+
+```
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/JediBrooker/WatchShelf/main/sidecar/install.sh)"
+```
+
+Or do it by hand — a plain, step-by-step guide (including *why* the sidecar is
+needed at all) for each of **Cloudflare Tunnel, nginx, Apache, Caddy, and
+Traefik** is in [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 
 ## How it works
 

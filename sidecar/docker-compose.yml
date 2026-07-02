@@ -2,18 +2,25 @@
 # It only needs ABS_URL - the address of your Audiobookshelf server AS SEEN FROM THIS
 # CONTAINER. With this setup the WATCH only ever talks to the sidecar, so ABS itself
 # can stay fully private/internal - it never needs to be exposed to the internet.
+#
+# ABS_URL is read from a ".env" file next to this one (docker compose loads it
+# automatically) - copy .env.example to .env and edit it, or let install.sh do
+# that for you. Pick ONE value for ABS_URL, whichever this container can reach:
+#   http://host.docker.internal:13378   # ABS runs on the host, not in Docker
+#   http://audiobookshelf:13378         # ABS is another compose service (join its network below)
+#   https://books.example.com           # ABS is already public (works too; the sidecar sends a UA)
 services:
   watchshelf-sidecar:
     build: .
     container_name: watchshelf-sidecar
     environment:
-      # Pick ONE that this container can reach:
-      #   http://host.docker.internal:13378   # ABS runs on the host (Docker Desktop / recent Docker)
-      #   http://audiobookshelf:13378         # ABS is another compose service (join its network below)
-      #   https://books.example.com           # ABS is already public (works too; the sidecar sends a UA)
-      - ABS_URL=http://host.docker.internal:13378
+      - ABS_URL=${ABS_URL:-http://host.docker.internal:13378}
       - BIND=0.0.0.0
       - PORT=8081
+    extra_hosts:
+      # Makes host.docker.internal resolve on native Linux Docker too, not just
+      # Docker Desktop (Mac/Windows) - harmless if you don't use that address.
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:8081:8081"    # exposed to localhost only; your reverse proxy fronts it
     restart: unless-stopped

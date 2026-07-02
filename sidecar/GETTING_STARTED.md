@@ -43,6 +43,17 @@ You're doing three things, in order:
 
 That's it. Let's go.
 
+> **Shortcut:** there's a single command that does everything below for you -
+> installs the sidecar, asks where Audiobookshelf runs, and then walks you
+> interactively through Step 2 for whichever proxy you use:
+> ```
+> bash -c "$(curl -fsSL https://raw.githubusercontent.com/JediBrooker/WatchShelf/main/sidecar/install.sh)"
+> ```
+> It's safe to re-run, and for nginx/Apache/Caddy it always asks before touching
+> anything and only ever creates a *new*, separate file - it never edits your
+> existing Audiobookshelf config. Keep reading if you'd rather do it by hand, or
+> want to understand what each step actually does first.
+
 ## Step 1 — Install the sidecar
 
 This part is the same no matter which proxy tool you use below.
