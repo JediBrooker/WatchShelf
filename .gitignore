@@ -18,6 +18,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+docker-compose.override.yml
 
 # OS
 .DS_Store

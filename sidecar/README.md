@@ -21,7 +21,23 @@ is `ABS_URL` — Audiobookshelf's address *as seen from this container/host* (an
 internal address is fine and preferred, since the sidecar is now the only thing that
 needs to be public).
 
-## Deploy (Docker, ~2 min)
+## Deploy — one command
+
+```
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/JediBrooker/WatchShelf/main/sidecar/install.sh)"
+```
+
+This clones the repo, asks where Audiobookshelf runs, starts the sidecar with
+Docker, and then walks you through exposing it over HTTPS with whichever reverse
+proxy you already use (Cloudflare Tunnel / nginx / Apache / Caddy / Traefik) —
+for nginx/Apache/Caddy it creates a **new, separate** config file and always
+asks before touching anything; your existing Audiobookshelf config is never
+edited. Safe to re-run.
+
+Prefer to do it by hand, or want to understand each step first? See
+[GETTING_STARTED.md](GETTING_STARTED.md) — the same steps, explained.
+
+## Deploy — by hand (Docker, ~2 min)
 
 1. In `docker-compose.yml`, set `ABS_URL` to ABS's address as seen from this
    container (`http://host.docker.internal:13378` if ABS runs on the host, or the
