@@ -49,7 +49,15 @@ function ffArgs(srcUrl, token, fmt, start, end) {
   // error surfaced to the app. -id3v2_version 0 additionally suppresses ffmpeg's
   // own default encoder tag, so the mp3 output carries no ID3 tag at all.
   a.push('-map_metadata', '-1', '-id3v2_version', '0');
-  if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'copy', '-f', 'adts', 'pipe:1'); }
+  // Always TRANSCODE to AAC/ADTS (not stream-copy) regardless of source codec -
+  // matches the same "always re-encode to a known-good target" approach as the
+  // mp3 branch below, and lets any book (mp3-sourced or aac-sourced) test this
+  // format, not just already-AAC ones. Testing whether MP3 itself - not any
+  // particular MP3 parameter - is what a real device's decoder has trouble
+  // with, after 22050Hz/64kbps and 44100Hz/96kbps mp3 both failed identically
+  // and immediately on real hardware despite both being independently verified
+  // as valid, complete, standard MP3 files.
+  if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-f', 'adts', 'pipe:1'); }
   // 44100Hz/96kbps instead of the original 22050Hz/64kbps: the file itself was
   // independently verified valid, complete, standard MP3 (clean full decode,
   // correct headers) - but 22050Hz mono is a much less common combination than

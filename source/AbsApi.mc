@@ -74,10 +74,12 @@ module AbsApi {
             cb);
     }
 
-    // One CHUNK of a file as a small mp3 the watch can download.
+    // One CHUNK of a file as a small AAC/ADTS chunk the watch can download.
+    // fmt=m4a on the sidecar produces ADTS, not mp3 - see BookMenuDelegate.mc
+    // for why (testing whether MP3 itself is what real hardware struggles with).
     function sidecarChunkUrl(itemId, ino, startSec, endSec) {
         return sidecarBase() + "/transcode?item=" + itemId + "&file=" + ino
-            + "&fmt=mp3&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&fmt=m4a&start=" + startSec.toString() + "&end=" + endSec.toString()
             + "&token=" + authToken();
     }
 
