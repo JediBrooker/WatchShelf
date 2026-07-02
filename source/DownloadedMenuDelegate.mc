@@ -31,6 +31,18 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Clear queue" -> abandon anything pending (a crashed/interrupted sync
+        // can leave entries behind, since they're only cleared as each finishes)
+        // WITHOUT starting a sync - we want to drop them, not process them.
+        // Same push-a-confirmation pattern as the delete-a-track case below;
+        // re-entering this menu afterward re-evaluates hasQueued() fresh.
+        if ((refId instanceof Toybox.Lang.String) && refId.equals("clearqueue")) {
+            Application.Storage.setValue(Store.SYNC_LIST, {});
+            Application.Storage.setValue(Store.DELETE_LIST, []);
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queueCleared)), null, WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
         if (deleteList == null) { deleteList = []; }
         deleteList.add(refId);
