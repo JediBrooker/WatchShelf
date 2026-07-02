@@ -50,14 +50,15 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
                 var end = pos + chunk;
                 if (end > dur) { end = dur; }
                 syncList[mItemId + ":" + idx] = {
-                    TrackInfo.ITEM_ID  => mItemId,
-                    TrackInfo.INO      => ino,
-                    TrackInfo.CSTART   => pos,
-                    TrackInfo.CEND     => end,
-                    TrackInfo.START    => bookOffset + pos,
-                    TrackInfo.TITLE    => title + " " + (idx + 1),
-                    TrackInfo.TYPE     => "mp3",
-                    TrackInfo.CAN_SKIP => true
+                    TrackInfo.ITEM_ID    => mItemId,
+                    TrackInfo.INO        => ino,
+                    TrackInfo.CSTART     => pos,
+                    TrackInfo.CEND       => end,
+                    TrackInfo.START      => bookOffset + pos,
+                    TrackInfo.TITLE      => title + " " + (idx + 1),
+                    TrackInfo.BOOK_TITLE => title,
+                    TrackInfo.TYPE       => "mp3",
+                    TrackInfo.CAN_SKIP   => true
                 };
                 idx += 1;
                 pos = end;

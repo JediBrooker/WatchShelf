@@ -8,9 +8,9 @@
     <string id="downloaded">Downloaded</string>
     <string id="queued">Queued.\nSyncing...</string>
     <string id="deleting">Removing...</string>
-    <string id="tapToDelete">Tap to remove</string>
     <string id="clearQueue">Clear queue</string>
     <string id="queueCleared">Queue cleared</string>
+    <string id="deleteAllDownloads">Delete all downloads</string>
 
     <!-- errors -->
     <string id="errLibraries">Could not load libraries</string>

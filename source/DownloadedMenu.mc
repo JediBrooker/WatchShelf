@@ -2,8 +2,10 @@ using Toybox.Application;
 using Toybox.Media;
 using Toybox.WatchUi;
 
-// Lists every downloaded chapter track. Selecting an item removes it; the native
-// player is what actually plays the ContentIterator's set.
+// Lists downloaded books (grouped from their individual chunk tracks - a book is
+// ~3-min chunks, so a long audiobook can be 100+ tracks; showing each one
+// individually would make this screen unusable). Selecting a book removes ALL of
+// its chunks; the native player is what actually plays the ContentIterator's set.
 class DownloadedMenu extends WatchUi.Menu2 {
 
     function initialize() {
@@ -29,14 +31,18 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.clearQueue), null, "clearqueue", null));
         }
 
-        var tracks = Application.Storage.getValue(Store.TRACKS);
-        if (tracks == null) { tracks = {}; }
+        var books = groupedBooks();
+        var itemIds = books.keys();
 
-        var refIds = tracks.keys();
-        for (var i = 0; i < refIds.size(); ++i) {
-            var refId = refIds[i];
-            var name = trackTitle(refId, tracks);
-            addItem(new WatchUi.MenuItem(name, WatchUi.loadResource(Rez.Strings.tapToDelete), refId, null));
+        if (itemIds.size() > 0) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteAllDownloads), null, "deleteall", null));
+        }
+
+        for (var i = 0; i < itemIds.size(); ++i) {
+            var itemId = itemIds[i];
+            var book = books[itemId];
+            var sub = book["count"].toString() + " part" + ((book["count"] == 1) ? "" : "s");
+            addItem(new WatchUi.MenuItem(book["title"], sub, itemId, null));
         }
     }
 
@@ -47,16 +53,40 @@ class DownloadedMenu extends WatchUi.Menu2 {
             || ((deleteList != null) && (deleteList.size() > 0));
     }
 
-    // Prefer the cached media's own metadata title; fall back to stored TrackInfo.
-    function trackTitle(refId, tracks) {
+    // { itemId => { "title" => bookTitle, "count" => Number } } - one entry per
+    // book, folding every chunk that shares the same TrackInfo.ITEM_ID together.
+    function groupedBooks() {
+        var tracks = Application.Storage.getValue(Store.TRACKS);
+        if (tracks == null) { tracks = {}; }
+
+        var books = {};
+        var refIds = tracks.keys();
+        for (var i = 0; i < refIds.size(); ++i) {
+            var info = tracks[refIds[i]];
+            var itemId = info[TrackInfo.ITEM_ID];
+            if (itemId == null) { itemId = "unknown"; }
+
+            var book = books[itemId];
+            if (book == null) {
+                book = { "title" => bookTitle(refIds[i], info), "count" => 0 };
+                books[itemId] = book;
+            }
+            book["count"] = book["count"] + 1;
+        }
+        return books;
+    }
+
+    // Prefer the cached media's own metadata title (whole-file, no chunk suffix);
+    // fall back to stored BOOK_TITLE, then the per-chunk TITLE, then "Book".
+    function bookTitle(refId, info) {
         var ref = new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO);
         var obj = Media.getCachedContentObj(ref);
         if (obj != null && obj.getMetadata() != null && obj.getMetadata().title != null) {
             return obj.getMetadata().title;
         }
-        var info = tracks[refId];
-        if (info != null && info[TrackInfo.TITLE] != null) { return info[TrackInfo.TITLE]; }
-        return "Track";
+        if (info[TrackInfo.BOOK_TITLE] != null) { return info[TrackInfo.BOOK_TITLE]; }
+        if (info[TrackInfo.TITLE] != null) { return info[TrackInfo.TITLE]; }
+        return "Book";
     }
 
     // Show used cache space in the menu title. CacheStatistics exposes `size`
