@@ -17,7 +17,7 @@ module Browse {
     function showBooks(code, data) {
         if (code != 200 || data == null || data["books"] == null || data["books"].size() == 0) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errItems) + "\n(" + code + ")"),
-                null, WatchUi.SLIDE_LEFT);
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
         var books = data["books"];
@@ -47,7 +47,7 @@ class BrowseDelegate extends WatchUi.Menu2InputDelegate {
 
     function pushGroups(code, data, key, filterType) {
         if (code != 200 || data == null || data[key] == null || data[key].size() == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNone)), null, WatchUi.SLIDE_LEFT);
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNone)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
         var groups = data[key];

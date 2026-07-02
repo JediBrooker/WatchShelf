@@ -23,7 +23,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     function onFiles(code, data) {
         if (code != 200 || data == null || data["files"] == null || data["files"].size() == 0) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
-                null, WatchUi.SLIDE_LEFT);
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
@@ -42,7 +42,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         var expected = expectedChunkCount(files, chunk);
         if ((expected > 0) && (alreadyDownloadedCount() >= expected)) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.alreadyDownloaded)),
-                null, WatchUi.SLIDE_LEFT);
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
@@ -77,12 +77,12 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
 
         if (idx == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNoAudio)), null, WatchUi.SLIDE_LEFT);
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNoAudio)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
         Application.Storage.setValue(Store.SYNC_LIST, syncList);
-        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queued)), null, WatchUi.SLIDE_LEFT);
+        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queued)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
         Communications.startSync();
     }
 

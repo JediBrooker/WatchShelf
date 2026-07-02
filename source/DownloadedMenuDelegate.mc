@@ -48,7 +48,7 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         if ((id instanceof Toybox.Lang.String) && id.equals("clearqueue")) {
             Application.Storage.setValue(Store.SYNC_LIST, {});
             Application.Storage.setValue(Store.DELETE_LIST, []);
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queueCleared)), null, WatchUi.SLIDE_LEFT);
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.queueCleared)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
@@ -90,7 +90,7 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         Application.Storage.setValue(Store.DELETE_LIST, deleteList);
 
         Communications.startSync();
-        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.deleting)), null, WatchUi.SLIDE_LEFT);
+        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.deleting)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
     }
 
     function onBack() {
