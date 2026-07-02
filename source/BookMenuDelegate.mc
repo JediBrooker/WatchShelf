@@ -36,6 +36,16 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         var title = data["title"];
         if (title == null) { title = "Book"; }
 
+        // Re-selecting an already-fully-downloaded book must not silently queue
+        // a full re-download of every chunk - tell the user it's already there
+        // instead of burning battery/data re-syncing the same book.
+        var expected = expectedChunkCount(files, chunk);
+        if ((expected > 0) && (alreadyDownloadedCount() >= expected)) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.alreadyDownloaded)),
+                null, WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         var syncList = Application.Storage.getValue(Store.SYNC_LIST);
         if (syncList == null) { syncList = {}; }
 
@@ -79,6 +89,38 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     function numOr(v, dflt) {
         if (v == null) { return dflt; }
         return v;
+    }
+
+    // Mirrors the chunking loop above exactly (count only, no allocation) so it
+    // can never disagree with how many chunks a book actually splits into.
+    function expectedChunkCount(files, chunk) {
+        var count = 0;
+        for (var f = 0; f < files.size(); ++f) {
+            var dur = numOr(files[f]["duration"], 0).toNumber();
+            if (dur <= 0) { continue; }
+            var pos = 0;
+            while (pos < dur) {
+                var end = pos + chunk;
+                if (end > dur) { end = dur; }
+                count += 1;
+                pos = end;
+            }
+        }
+        return count;
+    }
+
+    function alreadyDownloadedCount() {
+        var tracks = Application.Storage.getValue(Store.TRACKS);
+        if (tracks == null) { return 0; }
+        var count = 0;
+        var refIds = tracks.keys();
+        for (var i = 0; i < refIds.size(); ++i) {
+            var info = tracks[refIds[i]];
+            if ((info != null) && (info[TrackInfo.ITEM_ID] != null) && info[TrackInfo.ITEM_ID].equals(mItemId)) {
+                count += 1;
+            }
+        }
+        return count;
     }
 
     function onBack() {
