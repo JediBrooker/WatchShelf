@@ -54,5 +54,5 @@ module Versions {
     const current = V3;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b27";
+    const tag = "b28";
 }
