@@ -229,7 +229,12 @@ const server = http.createServer((req, res) => {
   let p = u.pathname;
   if (BASE_PATH && p.startsWith(BASE_PATH)) { p = p.slice(BASE_PATH.length) || '/'; }
   const g = req.method === 'GET';
-  if (p === '/health') { res.writeHead(200).end('ok'); return; }
+  // CONTRACT: the watch's login preflight requires status 200, Content-Type
+  // text/plain, and a body of EXACTLY "ok" (no newline) - it is how the app
+  // distinguishes a WatchShelf sidecar from anything else (e.g. the ABS
+  // server itself) before sending credentials anywhere. Don't change any of
+  // the three without updating Login.mc.
+  if (p === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; }
   if (p === '/login'       && req.method === 'POST') { login(req, res); return; }
   if (p === '/libraries'   && g) { libraries(req, res, u); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }

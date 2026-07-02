@@ -51,9 +51,23 @@ class LoginView extends WatchUi.View {
             mState = 4;
             mMessage = WatchUi.loadResource(Rez.Strings.loggingIn);
             WatchUi.requestUpdate();
-            AbsApi.login(mCreds.server, mCreds.username, mCreds.password, method(:onLogin));
+            // Preflight the URL before sending credentials anywhere: ABS's own
+            // /login would happily accept them and return a token, and the
+            // mistake would only surface later as an opaque -400. /health
+            // answering exactly "ok" is the sidecar's fingerprint.
+            AbsApi.checkHealth(mCreds.server, method(:onHealth));
         }
         // state 4 (waiting) / 99 (error): message already set, do nothing.
+    }
+
+    function onHealth(code, data) {
+        if (code == 200 && (data instanceof Toybox.Lang.String) && data.equals("ok")) {
+            AbsApi.login(mCreds.server, mCreds.username, mCreds.password, method(:onLogin));
+        } else {
+            mState = 99;
+            mMessage = WatchUi.loadResource(Rez.Strings.errNotWatchShelf) + "\n(" + code + ")";
+            WatchUi.requestUpdate();
+        }
     }
 
     function onHide() {

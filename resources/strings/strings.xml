@@ -21,6 +21,7 @@
     <string id="errItems">Could not load books</string>
     <string id="errDetail">Could not load book</string>
     <string id="errNoAudio">No audio in this book</string>
+    <string id="errNotWatchShelf">Not a WatchShelf URL.\nUse your WatchShelf\naddress, not ABS.</string>
 
     <!-- settings labels (shown in Garmin Connect Mobile / Express) -->
     <string id="settingServerUrl">WatchShelf URL</string>

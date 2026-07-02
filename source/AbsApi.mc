@@ -134,6 +134,22 @@ module AbsApi {
     }
 
     // ---- on-watch login ----------------------------------------------------
+
+    // Preflight: is this URL actually a WatchShelf sidecar? Its /health
+    // returns exactly "ok" (text/plain). Logging into the ABS server's own
+    // URL by mistake is otherwise indistinguishable at login time - ABS has
+    // its OWN /login that succeeds and returns a token, and every call after
+    // that gets an HTML page the watch reports as an opaque -400. Verified
+    // end-to-end in the simulator: correct sidecar URL -> library loads;
+    // ABS URL -> caught here before credentials are sent.
+    function checkHealth(server, cb) {
+        Communications.makeWebRequest(
+            _noSlash(server) + "/health", null,
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN },
+            cb);
+    }
+
     function login(server, username, password, cb) {
         Communications.makeWebRequest(
             _noSlash(server) + "/login",
