@@ -34,7 +34,7 @@ module Versions {
     const current = V1;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b15";
+    const tag = "b16";
 }
 
 // Keys for a TrackInfo dict (one downloaded/queued CHAPTER = one Media track).
@@ -42,12 +42,13 @@ module TrackInfo {
     // We store the chunk PARAMETERS (not the full URL) so hundreds of chunks stay
     // small in Storage - the download URL (which embeds the long token) is rebuilt
     // at download time via AbsApi.sidecarChunkUrl().
-    const TITLE    = "title";      // display title
-    const TYPE     = "type";       // "mp3" -> Media.ENCODING_*
-    const ITEM_ID  = "itemId";     // ABS libraryItemId
-    const INO      = "ino";        // audio file inode
-    const CSTART   = "cstart";     // chunk start within the file (seconds)
-    const CEND     = "cend";       // chunk end within the file (seconds)
-    const START    = "start";      // book-absolute start (seconds) for progress
-    const CAN_SKIP = "canSkip";
+    const TITLE      = "title";      // display title (this CHUNK - "Book Name 7")
+    const BOOK_TITLE = "bookTitle";  // display title of the BOOK this chunk belongs to
+    const TYPE       = "type";       // "mp3" -> Media.ENCODING_*
+    const ITEM_ID    = "itemId";     // ABS libraryItemId - groups a book's chunks together
+    const INO        = "ino";        // audio file inode
+    const CSTART     = "cstart";     // chunk start within the file (seconds)
+    const CEND       = "cend";       // chunk end within the file (seconds)
+    const START      = "start";      // book-absolute start (seconds) for progress
+    const CAN_SKIP   = "canSkip";
 }
