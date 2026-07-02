@@ -13,6 +13,27 @@ module Chunks {
     const FIRST = 15;    // seconds, global chunk 0 only
     const LEN   = 180;   // seconds, every other chunk
 
+    // Cap on TOTAL chunks on the watch (downloaded + queued, all books).
+    // Playback builds O(total chunks) lookup structures inside the 512KB
+    // audioContentProvider ceiling - validated safe at 1200 chunks in the
+    // simulator; ~2500+ would re-approach the ceiling and resurrect the
+    // uncatchable OOM this design exists to kill. 1500 chunks ~= 75 hours of
+    // audio, plenty for a watch.
+    const MAX_TOTAL = 1500;
+
+    // True if two per-file duration arrays describe the same audio. Used to
+    // detect server-side duration drift on a partially-downloaded book -
+    // resumed chunk boundaries derive from the NEW durs while recorded start
+    // offsets derive from the OLD ones, so a drifted book must restart clean.
+    function same(dursA, dursB) {
+        if ((dursA == null) || (dursB == null)) { return dursA == dursB; }
+        if (dursA.size() != dursB.size()) { return false; }
+        for (var i = 0; i < dursA.size(); ++i) {
+            if (dursA[i] != dursB[i]) { return false; }
+        }
+        return true;
+    }
+
     // Total chunk count across a book's files. durs = [seconds, ...].
     function total(durs) {
         var n = 0;

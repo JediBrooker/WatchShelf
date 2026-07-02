@@ -4,13 +4,13 @@ using Toybox.Media;
 
 // Downloads queued books to the device media cache, one derived chunk at a
 // time. One chunk == one Media track, so the native player gives real chapter
-// navigation. Works from the per-book jobs in Store.SYNC_JOBS - chunk
-// boundaries come from Chunks.at(), and each downloaded refId is recorded via
+// navigation. Works from the per-book jobs in JobStore - chunk boundaries
+// come from Chunks.at(), and each downloaded refId is recorded via
 // BookStore.saveChunk (position == chunk index, overwrite-safe). Nothing here
-// is ever O(chunks) in a single Storage value (see Constants.mc for the OOM
-// post-mortem).
+// is ever O(chunks) - or O(queued books x files) - in a single Storage value
+// (see Constants.mc for the OOM post-mortem).
 //
-// STORAGE DISCIPLINE: Store.SYNC_JOBS is read FRESH at every step and only
+// STORAGE DISCIPLINE: queue state is read FRESH at every step and only
 // read-modify-written - never held in a long-lived field and persisted
 // wholesale. A snapshot design silently clobbered any queue change made while
 // a sync was running (book queued mid-sync erased after "Queued!" was shown;
@@ -37,11 +37,6 @@ class SyncDelegate extends Communications.SyncDelegate {
         mDone = 0;
     }
 
-    function jobs() {
-        var j = Application.Storage.getValue(Store.SYNC_JOBS);
-        return (j == null) ? {} : j;
-    }
-
     function deletes() {
         var d = Application.Storage.getValue(Store.DELETE_LIST);
         return (d == null) ? [] : d;
@@ -49,7 +44,7 @@ class SyncDelegate extends Communications.SyncDelegate {
 
     // The system only starts a sync when this is true.
     function isSyncNeeded() {
-        return (jobs().size() != 0) || (deletes().size() != 0);
+        return (JobStore.list().size() != 0) || (deletes().size() != 0);
     }
 
     function onStartSync() {
@@ -58,25 +53,22 @@ class SyncDelegate extends Communications.SyncDelegate {
         // Cancel any queued job for a book being deleted BEFORE counting or
         // downloading anything - otherwise the very sync that deletes the book
         // resumes its job and resurrects it missing its head chunks.
-        if (toDelete.size() > 0) {
-            var j = jobs();
-            var changed = false;
-            for (var i = 0; i < toDelete.size(); ++i) {
-                if (j[toDelete[i]] != null) {
-                    j.remove(toDelete[i]);
-                    changed = true;
-                }
-            }
-            if (changed) {
-                Application.Storage.setValue(Store.SYNC_JOBS, j);
-            }
+        for (var i = 0; i < toDelete.size(); ++i) {
+            JobStore.remove(toDelete[i]);
         }
 
-        var remaining = jobs();
         mTotal = toDelete.size();
-        var itemIds = remaining.keys();
-        for (var i = 0; i < itemIds.size(); ++i) {
-            var job = remaining[itemIds[i]];
+        var jobIds = JobStore.list();
+        for (var i = 0; i < jobIds.size(); ++i) {
+            var job = JobStore.get(jobIds[i]);
+            if (job == null) {
+                // Stray index entry (crash window) - heal HERE too, not just
+                // in downloadNext: a queue of only strays makes mTotal 0 and
+                // returns before downloadNext ever runs, leaving
+                // isSyncNeeded() true forever (endless no-op syncs).
+                JobStore.remove(jobIds[i]);
+                continue;
+            }
             var left = Chunks.total(job["durs"]) - job["done"];
             if (left > 0) { mTotal += left; }
         }
@@ -97,15 +89,12 @@ class SyncDelegate extends Communications.SyncDelegate {
     }
 
     // Delete every queued BOOK: BookStore evicts its cached chunks and drops
-    // its records; then remove it from the menu index. If nothing downloaded
-    // remains at all afterwards, sweep the whole media cache too - that
-    // reclaims any orphaned cache items a crash window may have left behind
-    // (cached but never recorded), which no per-book path can reach.
+    // its records; then remove it from the menu index.
     function deleteQueued(toDelete) {
         if (toDelete.size() == 0) { return; }
         for (var i = 0; i < toDelete.size(); ++i) {
             BookStore.deleteBook(toDelete[i]);
-            removeFromIndex(toDelete[i]);
+            BookStore.removeFromIndex(toDelete[i]);
             onOpDone();
         }
 
@@ -122,11 +111,6 @@ class SyncDelegate extends Communications.SyncDelegate {
         } else {
             Application.Storage.deleteValue(Store.DELETE_LIST);
         }
-
-        var index = Application.Storage.getValue(Store.BOOK_INDEX);
-        if (((index == null) || (index.size() == 0)) && (jobs().size() == 0)) {
-            Media.resetContentCache();
-        }
     }
 
     function containsId(arr, itemId) {
@@ -139,31 +123,36 @@ class SyncDelegate extends Communications.SyncDelegate {
     // Download the next chunk of the first queued book. Reads the queue fresh
     // so mid-sync queue changes (new book, clear queue, delete) take effect.
     function downloadNext() {
-        var j = jobs();
-        var itemIds = j.keys();
-        if (itemIds.size() == 0) {
+        var jobIds = JobStore.list();
+        if (jobIds.size() == 0) {
+            sweepOrphans();
             Communications.notifySyncComplete(null);
             return;
         }
 
-        var itemId = itemIds[0];
+        var itemId = jobIds[0];
 
         // Honor a delete queued mid-sync: stop downloading the doomed book
         // now (its actual deletion runs at the next sync start) instead of
         // pouring hundreds more chunks into a book the user already deleted.
         if (containsId(deletes(), itemId)) {
-            j.remove(itemId);
-            Application.Storage.setValue(Store.SYNC_JOBS, j);
+            JobStore.remove(itemId);
             downloadNext();
             return;
         }
 
-        var job = j[itemId];
+        var job = JobStore.get(itemId);
+        if (job == null) {
+            // Stray index entry (crash window) - self-heal and move on.
+            JobStore.remove(itemId);
+            downloadNext();
+            return;
+        }
+
         var c = Chunks.at(job["durs"], job["done"]);
         if (c == null) {
             // Book finished (or cursor out of range) - drop the job, move on.
-            j.remove(itemId);
-            Application.Storage.setValue(Store.SYNC_JOBS, j);
+            JobStore.remove(itemId);
             downloadNext();
             return;
         }
@@ -176,7 +165,13 @@ class SyncDelegate extends Communications.SyncDelegate {
             :mediaEncoding => Media.ENCODING_ADTS
         };
 
-        var context = { "item" => itemId };
+        // "k" pins WHICH chunk this request is for and "gen" pins WHICH job
+        // generation dispatched it: if the cursor moved, or the job was
+        // replaced wholesale by a re-queue (gen bumps on every re-queue, so
+        // even a same-cursor-value collision like 0==0 is caught), recording
+        // the stale bytes would put the wrong audio at the wrong position -
+        // the callback validates and discards instead.
+        var context = { "item" => itemId, "k" => job["done"], "gen" => job["gen"] };
         var delegate = new RequestDelegate(method(:onTrackDownloaded), context);
         var url = AbsApi.sidecarChunkUrl(itemId, job["inos"][c["file"]],
                                         c["cstart"], c["cend"]);
@@ -195,12 +190,13 @@ class SyncDelegate extends Communications.SyncDelegate {
         var itemId = context["item"];
         var refId = data.getId();
 
-        var j = jobs();
-        var job = j[itemId];
-        if (job == null) {
-            // The job was cancelled (cleared/deleted) while this chunk was in
-            // flight - evict the now-ownerless cached item and carry on with
-            // whatever the queue holds now.
+        var job = JobStore.get(itemId);
+        if ((job == null) || (context["gen"] != job["gen"]) || (context["k"] != job["done"])) {
+            // The job was cancelled (cleared/deleted), replaced by a re-queue
+            // (generation mismatch), or its cursor moved while this chunk was
+            // in flight - these bytes no longer have a valid slot. Evict the
+            // now-ownerless cached item and carry on with whatever the queue
+            // holds now.
             Media.deleteCachedItem(new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO));
             downloadNext();
             return;
@@ -209,39 +205,57 @@ class SyncDelegate extends Communications.SyncDelegate {
         var k = job["done"];
         BookStore.ensureMeta(itemId, job["title"], job["durs"]);
         BookStore.saveChunk(itemId, k, refId);
-        addToIndex(itemId);
+        BookStore.addToIndex(itemId);
 
         // Advance + persist the cursor so a crash won't re-fetch. saveChunk is
         // overwrite-by-position, so even a crash between these writes can only
         // cause a harmless re-download, never a duplicate or a skipped chunk.
         job["done"] = k + 1;
         if (job["done"] >= Chunks.total(job["durs"])) {
-            j.remove(itemId);
+            JobStore.remove(itemId);
+        } else {
+            JobStore.put(itemId, job);
         }
-        Application.Storage.setValue(Store.SYNC_JOBS, j);
 
         onOpDone();
         downloadNext();
     }
 
-    function addToIndex(itemId) {
+    // Evict cached audio the OS holds that no book's records claim. Orphans
+    // come from crash windows (item cached, callback never recorded it) and
+    // would otherwise eat media-cache space forever - the cache outlives the
+    // app's own bookkeeping. Runs at the end of every sync; bounded by
+    // Chunks.MAX_TOTAL known refIds. Orphans are collected first, then
+    // evicted - never delete while walking the OS iterator.
+    function sweepOrphans() {
+        var known = {};
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
-        for (var i = 0; i < index.size(); ++i) {
-            if (index[i].equals(itemId)) { return; }
+        for (var b = 0; b < index.size(); ++b) {
+            BookStore.addRefIds(index[b], known);
         }
-        index.add(itemId);
-        Application.Storage.setValue(Store.BOOK_INDEX, index);
-    }
+        // Queued books may have recorded chunks that aren't indexed yet
+        // (crash between saveChunk and addToIndex) - their pages are still
+        // authoritative, so count them as known too.
+        var jobIds = JobStore.list();
+        for (var i = 0; i < jobIds.size(); ++i) {
+            if (!containsId(index, jobIds[i])) {
+                BookStore.addRefIds(jobIds[i], known);
+            }
+        }
 
-    function removeFromIndex(itemId) {
-        var index = Application.Storage.getValue(Store.BOOK_INDEX);
-        if (index == null) { return; }
-        var out = [];
-        for (var i = 0; i < index.size(); ++i) {
-            if (!index[i].equals(itemId)) { out.add(index[i]); }
+        var orphans = [];
+        var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
+        if (iter != null) {
+            var ref = iter.next();
+            while (ref != null) {
+                if (known[ref.getId()] == null) { orphans.add(ref.getId()); }
+                ref = iter.next();
+            }
         }
-        Application.Storage.setValue(Store.BOOK_INDEX, out);
+        for (var i = 0; i < orphans.size(); ++i) {
+            Media.deleteCachedItem(new Media.ContentRef(orphans[i], Media.CONTENT_TYPE_AUDIO));
+        }
     }
 
     function onOpDone() {
