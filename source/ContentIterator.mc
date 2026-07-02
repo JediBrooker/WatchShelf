@@ -3,13 +3,18 @@ using Toybox.Math;
 using Toybox.Media;
 using Toybox.System;
 
-// Yields cached chapter tracks to the player. Order = the TRACKS map grouped by
-// book (alphabetical by BOOK_TITLE), then sorted within each book by chapter
-// START offset - so with more than one book downloaded, playback finishes one
-// book before starting the next rather than interleaving their chapters (START
-// resets to 0 for every book independently, so sorting by START alone would mix
-// different books' chapters together in lockstep). Shuffle is available but off
-// by default (nobody shuffles an audiobook).
+// Yields cached chapter tracks to the player, grouped by book (alphabetical by
+// title), sorted within each book by absolute start offset - so with more than
+// one book downloaded, playback finishes one book before starting the next.
+// Shuffle is available but off by default (nobody shuffles an audiobook).
+//
+// MEMORY: this runs in the playback context, which shares the 512KB
+// audioContentProvider ceiling with the native player itself. Everything here
+// stays O(cached chunks) in small parallel arrays - the per-book BookStore
+// values hold only { refId => startSeconds }, and sorting is done in place
+// with swaps (no per-insert array rebuilds). The old design deserialized one
+// 9-field dict per chunk here and died with an uncatchable Out Of Memory
+// Error the moment the player screen opened ("Media Error Occurred").
 class ContentIterator extends Media.ContentIterator {
 
     private var mIndex;
@@ -112,71 +117,72 @@ class ContentIterator extends Media.ContentIterator {
         return null;
     }
 
-    // Build the ordered playlist from the OS's OWN content cache, never our own
-    // Storage bookkeeping - mirrors MonkeyMusic's initializePlaylist() exactly.
-    // Store.TRACKS can drift out of sync with what the OS actually has cached
-    // (a stale/removed entry, or a key that doesn't round-trip identically
-    // through Storage's persistence layer); handing the OS back one of ITS OWN
-    // ids is the only way to guarantee Media.getCachedContentObj() resolves it.
-    // Store.TRACKS is used ONLY for sort metadata (bookTitle, chapterStart)
-    // below, never as the id source. Insertion sort by (bookTitle,
-    // chapterStart), plain statements (no fluent slice().add().addAll()
-    // chaining, which relies on Array.add/addAll returning the array - they
-    // return Void).
+    // Build the ordered playlist. Ids come from the OS's OWN content cache
+    // (Media.getContentRefIter - mirrors MonkeyMusic), never our bookkeeping;
+    // BookStore supplies only sort metadata (book order, chunk start). A
+    // cached id BookStore doesn't know is SKIPPED - it's an orphan from a
+    // crash window (cached but never recorded), not playable content we can
+    // name or order. Sorted in place by (bookOrder, start) with parallel
+    // arrays and swaps - NUMERIC keys only. Never sort on title strings:
+    // Monkey C String has no relational operators at runtime (throws
+    // UnexpectedTypeException, invisible at typecheck=0 - empirically
+    // confirmed in the simulator), and identical titles would interleave two
+    // books chunk-by-chunk.
     function buildPlaylist() {
         mPlaylist = [];
-        var tracks = Application.Storage.getValue(Store.TRACKS);
-        if (tracks == null) { tracks = {}; }
+        var orders = [];
+        var starts = [];
 
-        var refIds = [];
+        // One { refId => [bookOrder, start] } lookup across every downloaded
+        // book; bookOrder = the book's BOOK_INDEX position.
+        var lookup = {};
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { index = []; }
+        for (var b = 0; b < index.size(); ++b) {
+            BookStore.addLookup(index[b], b, lookup);
+        }
+
         var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
         if (iter != null) {
             var ref = iter.next();
             while (ref != null) {
-                refIds.add(ref.getId());
+                var refId = ref.getId();
+                var info = lookup[refId];
+                if (info != null) {
+                    mPlaylist.add(refId);
+                    orders.add(info[0]);
+                    starts.add(info[1]);
+                }
                 ref = iter.next();
             }
         }
 
-        for (var i = 0; i < refIds.size(); ++i) {
-            var refId = refIds[i];
-
-            var pos = mPlaylist.size();
-            for (var j = 0; j < mPlaylist.size(); ++j) {
-                if (before(tracks, refId, mPlaylist[j])) { pos = j; break; }
+        // In-place insertion sort on the three parallel arrays: stable, no
+        // allocations, numeric compares only. Chunks download (and cache) in
+        // playlist order, so the input is near-sorted and this stays ~O(n).
+        for (var i = 1; i < mPlaylist.size(); ++i) {
+            var j = i;
+            while (j > 0 && after(orders[j - 1], starts[j - 1], orders[j], starts[j])) {
+                swap(mPlaylist, j); swap(orders, j); swap(starts, j);
+                --j;
             }
-
-            // Insert refId at pos by rebuilding the array in one pass.
-            var rebuilt = new [mPlaylist.size() + 1];
-            for (var k = 0; k < pos; ++k) { rebuilt[k] = mPlaylist[k]; }
-            rebuilt[pos] = refId;
-            for (var k = pos; k < mPlaylist.size(); ++k) { rebuilt[k + 1] = mPlaylist[k]; }
-            mPlaylist = rebuilt;
         }
         mIndex = 0;
     }
 
-    // True if refIdA sorts before refIdB: by book title first (so one book's
-    // chapters never interleave with another's), then by chapter start.
-    function before(tracks, refIdA, refIdB) {
-        var titleA = bookTitleOf(tracks, refIdA);
-        var titleB = bookTitleOf(tracks, refIdB);
-        if (!titleA.equals(titleB)) {
-            return titleA < titleB;
+    // True if (orderA, startA) sorts AFTER (orderB, startB): by book first
+    // (one book's chapters never interleave with another's), then start.
+    function after(orderA, startA, orderB, startB) {
+        if (orderA != orderB) {
+            return orderA > orderB;
         }
-        return startOf(tracks, refIdA) < startOf(tracks, refIdB);
+        return startA > startB;
     }
 
-    function bookTitleOf(tracks, refId) {
-        var info = tracks[refId];
-        if ((info != null) && (info[TrackInfo.BOOK_TITLE] != null)) { return info[TrackInfo.BOOK_TITLE]; }
-        return "";
-    }
-
-    function startOf(tracks, refId) {
-        var info = tracks[refId];
-        if ((info != null) && (info[TrackInfo.START] != null)) { return info[TrackInfo.START]; }
-        return 0;
+    function swap(arr, j) {
+        var tmp = arr[j];
+        arr[j] = arr[j - 1];
+        arr[j - 1] = tmp;
     }
 
     function shuffle() {

@@ -7,11 +7,18 @@ using Toybox.Media;
 class WatchShelfApp extends Application.AudioContentProviderApp {
 
     function initialize() {
-        // Reset caches if the stored data shape changed between versions.
+        // Reset caches if the stored data shape changed between versions -
+        // but carry the login (server/token) across: it isn't shape-versioned
+        // data, and clearValues() would otherwise silently log the user out
+        // on every upgrade.
         var version = Application.Storage.getValue(Store.APP_VERSION);
         if (version != Versions.current) {
+            var server = Application.Storage.getValue(Store.SERVER);
+            var token = Application.Storage.getValue(Store.TOKEN);
             Application.Storage.clearValues();
             Media.resetContentCache();
+            if (server != null) { Application.Storage.setValue(Store.SERVER, server); }
+            if (token != null) { Application.Storage.setValue(Store.TOKEN, token); }
             Application.Storage.setValue(Store.APP_VERSION, Versions.current);
         }
         // NOTE: MonkeyMusic hardcoded a fake auth token here. WatchShelf does NOT:
