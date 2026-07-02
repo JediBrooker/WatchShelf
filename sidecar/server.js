@@ -50,7 +50,15 @@ function ffArgs(srcUrl, token, fmt, start, end) {
   // own default encoder tag, so the mp3 output carries no ID3 tag at all.
   a.push('-map_metadata', '-1', '-id3v2_version', '0');
   if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'copy', '-f', 'adts', 'pipe:1'); }
-  else { a.push('-map', '0:a:0', '-c:a', 'libmp3lame', '-b:a', '64k', '-ac', '1', '-ar', '22050', '-f', 'mp3', 'pipe:1'); }
+  // 44100Hz/96kbps instead of the original 22050Hz/64kbps: the file itself was
+  // independently verified valid, complete, standard MP3 (clean full decode,
+  // correct headers) - but 22050Hz mono is a much less common combination than
+  // typical commercial audio, a plausible edge case for Garmin's specific
+  // hardware decoder to not handle even though it's fully spec-compliant.
+  // Mono is kept (legitimate, common for spoken word, and halves file size vs
+  // stereo for no perceptual benefit on speech) - only sample rate/bitrate move
+  // to more mainstream values.
+  else { a.push('-map', '0:a:0', '-c:a', 'libmp3lame', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-f', 'mp3', 'pipe:1'); }
   return a;
 }
 
