@@ -14,6 +14,12 @@ class DownloadedMenu extends WatchUi.Menu2 {
         // logs the user in first if they aren't configured yet.
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.browseLibrary), null, "browse", null));
 
+        // Only offer to log out if actually logged in - avoids a pointless item
+        // on a fresh, unconfigured install.
+        if (AbsApi.isConfigured()) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.logOut), null, "logout", null));
+        }
+
         var tracks = Application.Storage.getValue(Store.TRACKS);
         if (tracks == null) { tracks = {}; }
 
