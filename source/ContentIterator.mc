@@ -1,6 +1,7 @@
 using Toybox.Application;
 using Toybox.Math;
 using Toybox.Media;
+using Toybox.System;
 
 // Yields cached chapter tracks to the player. Order = the TRACKS map grouped by
 // book (alphabetical by BOOK_TITLE), then sorted within each book by chapter
@@ -97,22 +98,46 @@ class ContentIterator extends Media.ContentIterator {
 
     function objAt(idx) {
         if ((idx >= 0) && (idx < mPlaylist.size())) {
-            return Media.getCachedContentObj(new Media.ContentRef(mPlaylist[idx], Media.CONTENT_TYPE_AUDIO));
+            try {
+                return Media.getCachedContentObj(new Media.ContentRef(mPlaylist[idx], Media.CONTENT_TYPE_AUDIO));
+            } catch (e) {
+                // Media.getCachedContentObj is documented to throw if the id
+                // isn't a Lang.String the OS recognizes - fall back to null
+                // (a sanctioned return value) instead of an uncaught exception
+                // reaching the native player.
+                System.println("objAt failed for " + mPlaylist[idx] + ": " + e.getErrorMessage());
+                return null;
+            }
         }
         return null;
     }
 
-    // Build the ordered playlist from Storage TRACKS: insertion sort by
-    // (bookTitle, chapterStart) so every book's chapters stay contiguous and in
-    // order, and different books don't interleave. Uses plain statements (no
-    // fluent slice().add().addAll() chaining, which relies on Array.add/addAll
-    // returning the array - they return Void).
+    // Build the ordered playlist from the OS's OWN content cache, never our own
+    // Storage bookkeeping - mirrors MonkeyMusic's initializePlaylist() exactly.
+    // Store.TRACKS can drift out of sync with what the OS actually has cached
+    // (a stale/removed entry, or a key that doesn't round-trip identically
+    // through Storage's persistence layer); handing the OS back one of ITS OWN
+    // ids is the only way to guarantee Media.getCachedContentObj() resolves it.
+    // Store.TRACKS is used ONLY for sort metadata (bookTitle, chapterStart)
+    // below, never as the id source. Insertion sort by (bookTitle,
+    // chapterStart), plain statements (no fluent slice().add().addAll()
+    // chaining, which relies on Array.add/addAll returning the array - they
+    // return Void).
     function buildPlaylist() {
         mPlaylist = [];
         var tracks = Application.Storage.getValue(Store.TRACKS);
-        if (tracks == null) { mIndex = 0; return; }
+        if (tracks == null) { tracks = {}; }
 
-        var refIds = tracks.keys();
+        var refIds = [];
+        var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
+        if (iter != null) {
+            var ref = iter.next();
+            while (ref != null) {
+                refIds.add(ref.getId());
+                ref = iter.next();
+            }
+        }
+
         for (var i = 0; i < refIds.size(); ++i) {
             var refId = refIds[i];
 
