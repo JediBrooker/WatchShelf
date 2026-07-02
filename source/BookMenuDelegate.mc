@@ -27,7 +27,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // Song-length chunks (~3 min, ~1.4MB at 64kbps mono) - matching how real,
+        // Song-length chunks (~3 min, ~2MB at 96kbps mono) - matching how real,
         // proven-working ACP apps like Spotify actually download audio (individual
         // songs, a few MB each), not the originally-assumed 30-min/~14MB chunks,
         // which failed immediately on real hardware ("Media Error Occurred").
@@ -67,7 +67,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
                     TrackInfo.START      => bookOffset + pos,
                     TrackInfo.TITLE      => title + " " + (idx + 1),
                     TrackInfo.BOOK_TITLE => title,
-                    TrackInfo.TYPE       => "mp3",
+                    TrackInfo.TYPE       => "adts",
                     TrackInfo.CAN_SKIP   => true
                 };
                 idx += 1;
