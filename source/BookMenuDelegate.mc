@@ -3,9 +3,10 @@ using Toybox.Communications;
 using Toybox.WatchUi;
 
 // Picked a book -> get its lean file list from the sidecar, split each file into
-// 15-minute downloadable chunks, queue them (as small param sets, not full URLs),
-// and run a background sync. Everything goes through the sidecar because most
-// books here are single 200MB-1GB files the watch cannot download whole.
+// song-length downloadable chunks (a short one first, then ~3-min ones), queue
+// them (as small param sets, not full URLs), and run a background sync.
+// Everything goes through the sidecar because most books here are single
+// 200MB-1GB files the watch cannot download whole.
 class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     private var mItemId;
@@ -31,7 +32,12 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // proven-working ACP apps like Spotify actually download audio (individual
         // songs, a few MB each), not the originally-assumed 30-min/~14MB chunks,
         // which failed immediately on real hardware ("Media Error Occurred").
+        // The very FIRST chunk of a book is deliberately much shorter - while
+        // this is still an open on-device debugging question, there's something
+        // to test playback with almost immediately rather than waiting for a
+        // full 3-min chunk (let alone a whole book).
         var chunk = 180;
+        var firstChunk = 15;
         var files = data["files"];
         var title = data["title"];
         if (title == null) { title = "Book"; }
@@ -39,7 +45,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // Re-selecting an already-fully-downloaded book must not silently queue
         // a full re-download of every chunk - tell the user it's already there
         // instead of burning battery/data re-syncing the same book.
-        var expected = expectedChunkCount(files, chunk);
+        var expected = expectedChunkCount(files, chunk, firstChunk);
         if ((expected > 0) && (alreadyDownloadedCount() >= expected)) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.alreadyDownloaded)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
@@ -57,7 +63,8 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             if (dur <= 0) { continue; }
             var pos = 0;
             while (pos < dur) {
-                var end = pos + chunk;
+                var size = (idx == 0) ? firstChunk : chunk;
+                var end = pos + size;
                 if (end > dur) { end = dur; }
                 syncList[mItemId + ":" + idx] = {
                     TrackInfo.ITEM_ID    => mItemId,
@@ -93,14 +100,15 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     // Mirrors the chunking loop above exactly (count only, no allocation) so it
     // can never disagree with how many chunks a book actually splits into.
-    function expectedChunkCount(files, chunk) {
+    function expectedChunkCount(files, chunk, firstChunk) {
         var count = 0;
         for (var f = 0; f < files.size(); ++f) {
             var dur = numOr(files[f]["duration"], 0).toNumber();
             if (dur <= 0) { continue; }
             var pos = 0;
             while (pos < dur) {
-                var end = pos + chunk;
+                var size = (count == 0) ? firstChunk : chunk;
+                var end = pos + size;
                 if (end > dur) { end = dur; }
                 count += 1;
                 pos = end;
