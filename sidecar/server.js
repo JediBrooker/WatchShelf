@@ -20,6 +20,10 @@ import { pipeline } from 'node:stream/promises';
 
 const ABS  = (process.env.ABS_URL || '').replace(/\/+$/, '');
 const PORT = Number(process.env.PORT || 8081);
+// Mount prefix. cloudflared (and some proxies) forward it unchanged; we strip it so
+// routes match. A prefix-stripping proxy (Caddy handle_path) sends bare /list, which
+// also works. Set BASE_PATH='' to disable if your proxy already strips.
+const BASE_PATH = (process.env.BASE_PATH ?? '/watchshelf-transcode').replace(/\/+$/, '');
 const UA   = 'WatchShelf-sidecar';
 if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); process.exit(1); }
 
@@ -136,7 +140,9 @@ function progress(req, res, u) {
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
-  const p = u.pathname, g = req.method === 'GET';
+  let p = u.pathname;
+  if (BASE_PATH && p.startsWith(BASE_PATH)) { p = p.slice(BASE_PATH.length) || '/'; }
+  const g = req.method === 'GET';
   if (p === '/health') { res.writeHead(200).end('ok'); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }
   if (p === '/authors'     && g) { authors(req, res, u); return; }
