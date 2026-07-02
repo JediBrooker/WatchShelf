@@ -2,9 +2,13 @@ using Toybox.Application;
 using Toybox.Math;
 using Toybox.Media;
 
-// Yields cached chapter tracks to the player. Order = the TRACKS map sorted by
-// each track's chapter START offset so chapters play in book order. Shuffle is
-// available but off by default (nobody shuffles an audiobook).
+// Yields cached chapter tracks to the player. Order = the TRACKS map grouped by
+// book (alphabetical by BOOK_TITLE), then sorted within each book by chapter
+// START offset - so with more than one book downloaded, playback finishes one
+// book before starting the next rather than interleaving their chapters (START
+// resets to 0 for every book independently, so sorting by START alone would mix
+// different books' chapters together in lockstep). Shuffle is available but off
+// by default (nobody shuffles an audiobook).
 class ContentIterator extends Media.ContentIterator {
 
     private var mIndex;
@@ -98,23 +102,23 @@ class ContentIterator extends Media.ContentIterator {
         return null;
     }
 
-    // Build the ordered playlist from Storage TRACKS, sorted by chapter start.
-    // Uses plain statements (no fluent slice().add().addAll() chaining, which
-    // relies on Array.add/addAll returning the array - they return Void).
+    // Build the ordered playlist from Storage TRACKS: insertion sort by
+    // (bookTitle, chapterStart) so every book's chapters stay contiguous and in
+    // order, and different books don't interleave. Uses plain statements (no
+    // fluent slice().add().addAll() chaining, which relies on Array.add/addAll
+    // returning the array - they return Void).
     function buildPlaylist() {
         mPlaylist = [];
         var tracks = Application.Storage.getValue(Store.TRACKS);
         if (tracks == null) { mIndex = 0; return; }
 
         var refIds = tracks.keys();
-        // Simple insertion sort by TrackInfo.START (small N = chapters of a book).
         for (var i = 0; i < refIds.size(); ++i) {
             var refId = refIds[i];
-            var start = startOf(tracks, refId);
 
             var pos = mPlaylist.size();
             for (var j = 0; j < mPlaylist.size(); ++j) {
-                if (start < startOf(tracks, mPlaylist[j])) { pos = j; break; }
+                if (before(tracks, refId, mPlaylist[j])) { pos = j; break; }
             }
 
             // Insert refId at pos by rebuilding the array in one pass.
@@ -125,6 +129,23 @@ class ContentIterator extends Media.ContentIterator {
             mPlaylist = rebuilt;
         }
         mIndex = 0;
+    }
+
+    // True if refIdA sorts before refIdB: by book title first (so one book's
+    // chapters never interleave with another's), then by chapter start.
+    function before(tracks, refIdA, refIdB) {
+        var titleA = bookTitleOf(tracks, refIdA);
+        var titleB = bookTitleOf(tracks, refIdB);
+        if (!titleA.equals(titleB)) {
+            return titleA < titleB;
+        }
+        return startOf(tracks, refIdA) < startOf(tracks, refIdB);
+    }
+
+    function bookTitleOf(tracks, refId) {
+        var info = tracks[refId];
+        if ((info != null) && (info[TrackInfo.BOOK_TITLE] != null)) { return info[TrackInfo.BOOK_TITLE]; }
+        return "";
     }
 
     function startOf(tracks, refId) {
