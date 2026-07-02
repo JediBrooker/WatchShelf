@@ -123,7 +123,12 @@ Before you start, you need two things already in place (if you're not sure, chec
    - **Domain**: pick your own domain from the dropdown (this is the domain you already own and manage in Cloudflare — see the prerequisite note above if nothing appears here)
    - **Path**: leave this blank
    - **Type**: `HTTP`
-   - **URL**: `127.0.0.1:8081` (this is the sidecar's address on your server — not ABS's own port, the sidecar's)
+   - **URL**: `127.0.0.1:8081` in almost every case — **except** if `cloudflared` itself runs in
+     its *own* Docker container (rather than directly on the server), in which case
+     `127.0.0.1` means "inside the cloudflared container," not your server, and can't
+     reach the sidecar. If that's your setup, use the server's own LAN IP instead
+     (e.g. `192.168.1.50:8081` — find yours with `ip a` on the server, look under the
+     network interface that isn't `lo`).
 
 4. Click **Save**. Cloudflare automatically does two things for you in the background: it issues an **HTTPS certificate** (this is what makes your address start with `https://` and show as secure, instead of the unencrypted `http://`), and it creates a **DNS record** (this is the internet's phonebook entry that points `watchshelf.<your-domain>` at your Cloudflare tunnel). You don't need to do anything for either of these — no YAML file to touch, no server restart needed. It can take a minute or two for this to fully take effect, so wait about a minute before testing in the next step.
 
@@ -133,7 +138,7 @@ Before you start, you need two things already in place (if you're not sure, chec
    ```
    You can also just open `https://watchshelf.<your-domain>/health` in a browser. (This `/health` address is a built-in check that the sidecar you already installed responds to automatically — you don't need to set anything up for it.)
    - **Success**: the output is exactly `ok`.
-   - **Failure** (timeout or error page): first, if it's only been a few seconds since you clicked Save in step 4, wait a minute and try again — the certificate/DNS setup needs a short time to finish. If it still fails after that, the two most common causes are the Public Hostname pointing at the wrong port (it must be `8081`, the sidecar — not ABS's own port) or the tunnel's status dot showing grey/not connected in the dashboard.
+   - **Failure** (timeout or error page): first, if it's only been a few seconds since you clicked Save in step 4, wait a minute and try again — the certificate/DNS setup needs a short time to finish. If it still fails after that, the most common causes are: the Public Hostname pointing at the wrong port (it must be `8081`, the sidecar — not ABS's own port); the tunnel's status dot showing grey/not connected in the dashboard; or — if you used your server's LAN IP in step 3 because `cloudflared` runs in its own container — an out-of-date sidecar still only listening on `127.0.0.1`. If it's the last one: on the server, run `docker compose up -d` again in the `sidecar` folder to pick up the current config, which listens on all interfaces.
 
 Once you see `ok`, type `https://watchshelf.<your-domain>` into your watch app and you're done.
 
