@@ -23,6 +23,7 @@
     <string id="settingApiKeyPrompt">Long-lived ABS API key (Bearer)</string>
     <string id="browseLibrary">Browse library</string>
     <string id="logIn">Log in</string>
+    <string id="logOut">Log out</string>
     <string id="loggingIn">Logging in...</string>
     <string id="loginFailed">Login failed</string>
     <string id="fieldServer">WatchShelf URL</string>

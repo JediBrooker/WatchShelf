@@ -22,6 +22,15 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Log out" -> clear the stored server/token and go straight to a fresh
+        // on-watch login (switchToView, not push, so Back doesn't return to a
+        // stale pre-logout menu - matches how LoginView.onLogin returns on success).
+        if ((refId instanceof Toybox.Lang.String) && refId.equals("logout")) {
+            AbsApi.logout();
+            WatchUi.switchToView(new LoginView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
         if (deleteList == null) { deleteList = []; }
         deleteList.add(refId);
