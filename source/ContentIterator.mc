@@ -34,11 +34,15 @@ class ContentIterator extends Media.ContentIterator {
         buildPlaylist();
     }
 
-    // Audiobook-tuned controls: play/pause, prev/next chapter, 30s skip fwd/back.
+    // Audiobook-tuned controls: prev/next chapter, 30s skip fwd/back. NOTE we
+    // do NOT list PLAYBACK_CONTROL_PLAYBACK: the native media player already
+    // draws its own play/pause button, so including it here rendered a SECOND,
+    // redundant pause button next to the first (confirmed on fenix8solar51mm).
+    // playbackControls is for the AUXILIARY buttons around that built-in
+    // play/pause, not the play/pause itself.
     function getPlaybackProfile() {
         var profile = new Media.PlaybackProfile();
         profile.playbackControls = [
-            Media.PLAYBACK_CONTROL_PLAYBACK,
             Media.PLAYBACK_CONTROL_PREVIOUS,
             Media.PLAYBACK_CONTROL_NEXT,
             Media.PLAYBACK_CONTROL_SKIP_FORWARD,
