@@ -2,7 +2,9 @@
 // this cuts small on-demand chunks with ffmpeg (via HTTP Range - it never pulls
 // the whole file), and serves lean lists (books, authors, series, collections,
 // per-book files) so nothing overflows the watch. Auth = the watch's own ABS
-// token (?token=). Only required env: ABS_URL.
+// token (?token=), OR - to stop the watch's ~1h login token from expiring and
+// forcing re-login - a long-lived ABS_API_KEY held here (see below). Only
+// required env: ABS_URL.
 //
 // Routes:
 //   GET /health
@@ -34,6 +36,18 @@ const PORT = Number(process.env.PORT || 8081);
 // also works. Set BASE_PATH='' to disable if your proxy already strips.
 const BASE_PATH = (process.env.BASE_PATH ?? '/watchshelf-transcode').replace(/\/+$/, '');
 const UA   = 'WatchShelf-sidecar';
+// STOP PERIODIC RE-LOGIN. ABS >= 2.26 issues a SHORT-LIVED (~1h) accessToken at
+// login; once it expires every watch call fails (surfaces as -400) until the
+// user logs in again. If ABS_API_KEY is set (a long-lived, revocable ABS API
+// key - Settings > API Keys), the sidecar uses IT for every ABS call and
+// ignores the watch's expiring token entirely, so the watch never needs to log
+// in again. Left empty => unchanged behaviour (forward the watch's token).
+// Because the watch token is then no longer the thing ABS validates, WATCH_SECRET
+// (if set) gates the sidecar so the URL isn't an open proxy: the watch must send
+// ?token=<WATCH_SECRET> (login() hands it back that value to store). Left empty
+// => no gate (unchanged).
+const ABS_API_KEY  = process.env.ABS_API_KEY || '';
+const WATCH_SECRET = process.env.WATCH_SECRET || '';
 if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); process.exit(1); }
 
 // fmt values double as the watch/sidecar PROTOCOL VERSION guard: the watch
@@ -45,6 +59,12 @@ const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4' };
 const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
+// The bearer the sidecar uses against ABS: the long-lived API key when set,
+// else the watch's per-request token (legacy behaviour). Single choke point.
+const absAuth = (reqToken) => ABS_API_KEY || reqToken;
+// URL gate: when WATCH_SECRET is set the watch's ?token= must equal it; when
+// unset, accept anything (unchanged).
+const gateOk = (t) => !WATCH_SECRET || t === WATCH_SECRET;
 const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 // Error responses on JSON endpoints must BE JSON: the watch declares a JSON
 // responseType, and a plain-text/HTML error body surfaces on-device as the
@@ -101,6 +121,7 @@ function transcode(req, res, u) {
   const token = u.searchParams.get('token');
   if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file)) { res.writeHead(400).end('bad params'); return; }
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
+  const tok = absAuth(token);   // API key when set, else the watch's token
   const src = `${ABS}/api/items/${encodeURIComponent(item)}/file/${encodeURIComponent(file)}/download`;
 
   // m4a writes a REAL MP4 container to a temp file (the mp4 muxer needs
@@ -114,7 +135,7 @@ function transcode(req, res, u) {
   if (fmt === 'm4a2') {
     const out = join(tmpdir(), `watchshelf-${randomUUID()}.m4a`);
     const drop = () => unlink(out).catch(() => {});
-    const ff = spawn('ffmpeg', ffArgs(src, token, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'inherit'] });
+    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'inherit'] });
     let done = false;
     req.on('close', () => { if (!done) { done = true; ff.kill('SIGKILL'); drop(); } });
     ff.on('error', () => {
@@ -139,7 +160,7 @@ function transcode(req, res, u) {
     return;
   }
 
-  const ff = spawn('ffmpeg', ffArgs(src, token, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'inherit'] });
+  const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'inherit'] });
   const parts = [];
   let done = false;
   ff.stdout.on('data', (c) => parts.push(c));
@@ -179,7 +200,7 @@ async function cover(req, res, u) {
   if (!Number.isFinite(w) || w < 16) { w = 96; }
   if (w > 256) { w = 256; }   // hard cap - never hand the watch a big image to decode
   try {
-    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(token) });
+    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(absAuth(token)) });
     if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502).end('ABS ' + r.status); return; }
     const src = Buffer.from(await r.arrayBuffer());
     // Downscale to w px wide (aspect preserved), re-encode as a small JPEG.
@@ -211,7 +232,7 @@ const bookOf = (it) => ({
 });
 
 async function absJson(path, token) {
-  const r = await fetch(`${ABS}${path}`, { headers: bearer(token) });
+  const r = await fetch(`${ABS}${path}`, { headers: bearer(absAuth(token)) });
   if (!r.ok) { const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
   return r.json();
 }
@@ -266,12 +287,7 @@ async function files(req, res, u) {
     const out = (all.length > MAX_FILES)
       ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true }
       : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })) };
-    const body = JSON.stringify(out);
-    // Diagnostic: how many audio files, how big the response, and the shape of
-    // the first entry - tells us if the /files crash is too-many-files (memory)
-    // or a bad value (e.g. a non-numeric duration) the watch chokes on.
-    console.log(`  /files -> audioFiles=${all.length} bytes=${body.length}${out.tooManyFiles ? ' TOOMANY' : ''} first=${JSON.stringify((out.files || [])[0] || null)}`);
-    res.writeHead(200, jsonHead).end(body);
+    res.writeHead(200, jsonHead).end(JSON.stringify(out));
   } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 
@@ -291,7 +307,7 @@ function progress(req, res, u) {
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
-        { method: 'PATCH', headers: { ...bearer(token), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        { method: 'PATCH', headers: { ...bearer(absAuth(token)), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
@@ -315,7 +331,12 @@ function login(req, res) {
       // calls even though login still echoes it - the watch then 401s on its
       // very first call after a "successful" login. Prefer the new token,
       // fall back to the legacy field for older servers.
-      const token = u.accessToken || u.token;
+      // With WATCH_SECRET set, hand the watch the SECRET as its token (after
+      // ABS validated the real credentials above), so the watch stores + resends
+      // it and passes the gate - and the expiring accessToken never matters. No
+      // watch code change: it just stores whatever token we return. Without
+      // WATCH_SECRET, return the ABS token exactly as before.
+      const token = WATCH_SECRET || u.accessToken || u.token;
       if (!token) { fail(res, 502, 'no token'); return; }
       res.writeHead(200, jsonHead).end(JSON.stringify({ user: { token } }));
     } catch (e) { fail(res, 502, 'ABS unreachable'); }
@@ -338,17 +359,6 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   let p = u.pathname;
   if (BASE_PATH && p.startsWith(BASE_PATH)) { p = p.slice(BASE_PATH.length) || '/'; }
-  // Lightweight request trace (path + safe params only - NEVER the token) so a
-  // download crash can be pinpointed from `docker compose logs`: the LAST line
-  // before the watch dies names the phase - /files (file list), /cover (art),
-  // or /transcode (an audio chunk, with which chunk).
-  if (p !== '/health') {
-    const q = u.searchParams;
-    const extra = p === '/transcode'
-      ? ` item=${q.get('item')} file=${q.get('file')} start=${q.get('start')} end=${q.get('end')}`
-      : (q.get('item') ? ` item=${q.get('item')}` : '');
-    console.log(`${req.method} ${p}${extra}`);
-  }
   const g = req.method === 'GET';
   // CONTRACT: the watch's login preflight requires status 200, Content-Type
   // text/plain, and a body of EXACTLY "ok" (no newline) - it is how the app
@@ -357,6 +367,11 @@ const server = http.createServer((req, res) => {
   // the three without updating Login.mc.
   if (p === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; }
   if (p === '/login'       && req.method === 'POST') { login(req, res); return; }
+  // URL gate: once ABS_API_KEY is the credential ABS validates, the watch's
+  // ?token= proves nothing to ABS - so if WATCH_SECRET is set, require it here
+  // so the sidecar isn't an open proxy to the library. JSON error (not -400).
+  // No-op when WATCH_SECRET is unset (legacy behaviour).
+  if (!gateOk(u.searchParams.get('token'))) { fail(res, 401, 'unauthorized'); return; }
   if (p === '/libraries'   && g) { libraries(req, res, u); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }
   if (p === '/authors'     && g) { authors(req, res, u); return; }
