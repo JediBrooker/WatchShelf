@@ -28,7 +28,8 @@ module Progress {
 
     function all() {
         var m = Application.Storage.getValue(Store.PROGRESS);
-        return (m == null) ? {} : m;
+        if (m == null) { return {}; }
+        return m;
     }
 
     function save(m) {
