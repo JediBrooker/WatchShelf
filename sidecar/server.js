@@ -266,7 +266,12 @@ async function files(req, res, u) {
     const out = (all.length > MAX_FILES)
       ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true }
       : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })) };
-    res.writeHead(200, jsonHead).end(JSON.stringify(out));
+    const body = JSON.stringify(out);
+    // Diagnostic: how many audio files, how big the response, and the shape of
+    // the first entry - tells us if the /files crash is too-many-files (memory)
+    // or a bad value (e.g. a non-numeric duration) the watch chokes on.
+    console.log(`  /files -> audioFiles=${all.length} bytes=${body.length}${out.tooManyFiles ? ' TOOMANY' : ''} first=${JSON.stringify((out.files || [])[0] || null)}`);
+    res.writeHead(200, jsonHead).end(body);
   } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
 
