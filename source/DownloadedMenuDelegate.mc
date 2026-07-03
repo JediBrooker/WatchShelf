@@ -33,6 +33,19 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Sync now" -> force a one-shot sync so the two-way progress exchange
+        // runs even with no download/delete queued. The FORCE_SYNC flag makes
+        // isSyncNeeded() true (onStartSync clears it), and startSync() kicks the
+        // system sync that carries it out. Whether it can actually reach ABS
+        // depends on connectivity right now (phone in range / WiFi) - the same
+        // constraint every sidecar call has.
+        if ((id instanceof Toybox.Lang.String) && id.equals("syncnow")) {
+            Application.Storage.setValue(Store.FORCE_SYNC, true);
+            Communications.startSync();
+            Notify.flash(Rez.Strings.syncing);
+            return;
+        }
+
         // "Log out" -> clear the stored server/token and go straight to a fresh
         // on-watch login (switchToView, not push, so Back doesn't return to a
         // stale pre-logout menu - matches how LoginView.onLogin returns on success).

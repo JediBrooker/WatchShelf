@@ -77,9 +77,17 @@ class ContentDelegate extends Media.ContentDelegate {
         var hit = mProgressLookup[refId];
         if (hit == null) { return; }
         var absolute = hit[1] + positionInChapter;
-        // The book's total duration lets ABS compute a progress fraction;
-        // null (older record without durations) keeps ABS's stored duration.
-        AbsApi.patchProgress(hit[0], absolute, hit[2]);
+        // Persist the position LOCALLY first (survives being offline, and even
+        // an app kill mid-listen). The live push then clears the dirty flag if
+        // it reaches ABS; if it doesn't (phoneless run), it stays queued and the
+        // next sync flushes it. Same timestamp is used for both so the flush and
+        // the eventual cross-device merge agree on when this was played.
+        var ts = Progress.nowSec();
+        Progress.record(hit[0], absolute, ts);
+        // The book's total duration (hit[2]) lets ABS compute a progress
+        // fraction; null (older record without durations) keeps ABS's stored
+        // duration.
+        AbsApi.patchProgress(hit[0], absolute, hit[2], ts);
     }
 
     // A track started: put its book's cover on the native player screen

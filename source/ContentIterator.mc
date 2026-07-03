@@ -236,6 +236,42 @@ class ContentIterator extends Media.ContentIterator {
             }
         }
         mIndex = 0;
+        applyResume();
+    }
+
+    // Start the cursor at the resume point synced from ABS, instead of the very
+    // first chunk. We pick the CHUNK that contains the saved position (the
+    // native player has no seek-into-a-track hook from here, so resume lands at
+    // that chunk's start - at most one chunk / ~3 min early). Best-effort: any
+    // problem falls back to mIndex = 0 (play from the beginning), never a crash.
+    function applyResume() {
+        try {
+            var r = Progress.bestResume(); // [itemId, positionSec] or null
+            if (r == null) { return; }
+            var index = Application.Storage.getValue(Store.BOOK_INDEX);
+            if (index == null) { return; }
+            var slot = -1;
+            for (var i = 0; i < index.size(); ++i) {
+                if (index[i].equals(r[0])) { slot = i; break; }
+            }
+            if (slot < 0) { return; } // resumed book isn't downloaded - ignore
+            var target = r[1];
+            // A book's chunks are contiguous and ascending in the sorted
+            // playlist: walk this book's run, taking the last chunk that starts
+            // at or before the target, then stop.
+            var pick = -1;
+            for (var i = 0; i < mPlaylist.size(); ++i) {
+                if (mOrders[i] == slot) {
+                    if (mStarts[i] <= target) { pick = i; } else { break; }
+                } else if (pick >= 0) {
+                    break;
+                }
+            }
+            if (pick >= 0) { mIndex = pick; }
+        } catch (e) {
+            System.println("applyResume failed: " + e.getErrorMessage());
+            mIndex = 0;
+        }
     }
 
     // True if (orderA, startA) sorts AFTER (orderB, startB): by book first

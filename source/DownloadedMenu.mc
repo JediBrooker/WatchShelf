@@ -31,6 +31,16 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.playDownloaded), null, "play", null));
         }
 
+        // "Sync now" - force an on-demand two-way progress exchange with ABS
+        // (push our listens, pull other devices'). The value at a device handoff:
+        // the OS only auto-syncs on its own schedule (roughly, on the charger),
+        // which won't have fired in the minute between finishing on the watch and
+        // picking up in the car - and there is no wake-on-reconnect event to make
+        // it instant. This is the deterministic "sync before I switch" control.
+        if (AbsApi.isConfigured() && (index.size() > 0)) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.syncNow), null, "syncnow", null));
+        }
+
         // Only offer to log out if actually logged in - avoids a pointless item
         // on a fresh, unconfigured install.
         if (AbsApi.isConfigured()) {

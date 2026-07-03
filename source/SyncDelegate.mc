@@ -28,8 +28,9 @@ using Toybox.Media;
 // persisted), and was reverted.
 class SyncDelegate extends Communications.SyncDelegate {
 
-    private var mTotal;      // ops planned at sync start (downloads + deletes)
-    private var mDone;       // ops completed
+    private var mTotal;         // ops planned at sync start (downloads + deletes)
+    private var mDone;          // ops completed
+    private var mProgressSync;  // held so its async chain isn't GC'd mid-flight
 
     function initialize() {
         SyncDelegate.initialize();
@@ -42,12 +43,31 @@ class SyncDelegate extends Communications.SyncDelegate {
         return (d == null) ? [] : d;
     }
 
-    // The system only starts a sync when this is true.
+    // The system only starts a sync when this is true. Besides queued downloads
+    // and deletes, a sync is needed when we have an unflushed local listen to
+    // push (Progress.hasDirty), or when the user tapped "Sync now" (the one-shot
+    // FORCE_SYNC flag, cleared at the top of onStartSync so it can't loop).
     function isSyncNeeded() {
-        return (JobStore.list().size() != 0) || (deletes().size() != 0);
+        return (JobStore.list().size() != 0)
+            || (deletes().size() != 0)
+            || Progress.hasDirty()
+            || (Application.Storage.getValue(Store.FORCE_SYNC) != null);
     }
 
     function onStartSync() {
+        // Consume the one-shot "Sync now" flag immediately so this sync can't be
+        // re-triggered by it forever.
+        Application.Storage.deleteValue(Store.FORCE_SYNC);
+        // Exchange play progress with ABS FIRST (pull other devices' positions,
+        // then push our offline listens), THEN run downloads/deletes. The
+        // continuation always fires, even if a progress request fails, so the
+        // download path is never blocked by progress.
+        mProgressSync = new ProgressSync();
+        mProgressSync.start(method(:runDownloads));
+    }
+
+    // The download/delete engine, gated behind the progress exchange above.
+    function runDownloads() {
         var toDelete = deletes();
 
         // Cancel any queued job for a book being deleted BEFORE counting or

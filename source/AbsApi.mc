@@ -120,30 +120,56 @@ module AbsApi {
             callback);
     }
 
-    // ---- progress sync -----------------------------------------------------
+    // ---- progress sync (two-way) -------------------------------------------
 
-    // Read saved position (seconds) from an item-detail response, or 0.
-    function progressSeconds(detail) {
-        var p = detail["userMediaProgress"];
-        if ((p != null) && (p["currentTime"] != null)) {
-            return p["currentTime"];
-        }
-        return 0;
-    }
-
-    // Progress sync via the sidecar (Monkey C has no PATCH; ABS ignores
-    // X-HTTP-Method-Override). The watch POSTs; the sidecar PATCHes ABS with the
-    // same token. Fire-and-forget.
-    function patchProgress(itemId, currentTimeSec, durationSec) {
+    // WRITE: push a position to ABS via the sidecar (Monkey C has no PATCH; ABS
+    // ignores X-HTTP-Method-Override, so the watch POSTs and the sidecar PATCHes
+    // with the same token). `lastUpdateSec` is the watch's listen time in epoch
+    // SECONDS; the sidecar converts it to ABS's millisecond lastUpdate so
+    // cross-device last-write-wins orders correctly - even for an offline listen
+    // flushed much later. `cb` receives (code, data): the live playback path
+    // passes a mark-clean listener; the sync flush passes its own step callback.
+    function postProgress(itemId, currentTimeSec, durationSec, lastUpdateSec, cb) {
         var params = { "itemId" => itemId, "currentTime" => currentTimeSec };
         if (durationSec != null) { params["duration"] = durationSec; }
+        if (lastUpdateSec != null) { params["lastUpdateSec"] = lastUpdateSec; }
         Communications.makeWebRequest(
             sidecarBase() + "/progress?token=" + authToken(),
             params,
             { :method => Communications.HTTP_REQUEST_METHOD_POST,
               :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
-            new AbsProgressListener().method(:onResponse));
+            cb);
+    }
+
+    // Live playback push: fire, and clear the book's dirty flag on a confirmed
+    // 200 (so an online listen never needs a later flush; an offline one stays
+    // dirty and gets flushed on the next sync).
+    function patchProgress(itemId, currentTimeSec, durationSec, lastUpdateSec) {
+        postProgress(itemId, currentTimeSec, durationSec, lastUpdateSec,
+            new AbsProgressListener(itemId, lastUpdateSec).method(:onResponse));
+    }
+
+    // READ: GET the saved position for one book from the sidecar (which reads
+    // ABS item detail with ?include=progress). Response is the slim shape
+    // { currentTime, duration, lastUpdate, isFinished } in SECONDS, or {} when
+    // ABS has no progress for this item. `cb` receives (code, data).
+    function getProgress(itemId, cb) {
+        Communications.makeWebRequest(
+            sidecarBase() + "/progress",
+            { "item" => itemId, "token" => authToken() },
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
+    // Parse a getProgress() response into [positionSec, lastUpdateSec], or null
+    // when the book has no server progress (empty {} or missing fields).
+    function readProgress(data) {
+        if ((data == null) || (data["currentTime"] == null) || (data["lastUpdate"] == null)) {
+            return null;
+        }
+        return [data["currentTime"], data["lastUpdate"]];
     }
 
     // ---- on-watch login ----------------------------------------------------
@@ -188,14 +214,23 @@ module AbsApi {
     }
 }
 
-// Owns the fire-and-forget progress-update callback. AbsApi is a module (no
+// Owns the live-playback progress-update callback. AbsApi is a module (no
 // `self`), so `method(:...)` cannot resolve inside it; a class instance can. The
 // instance stays alive while the request is in flight because makeWebRequest
-// holds a reference to the Method it is given.
+// holds a reference to the Method it is given. On a confirmed 200 it clears the
+// book's dirty flag (markClean guards against clobbering a newer in-flight
+// write); a failure leaves it dirty for the next sync's flush.
 class AbsProgressListener {
-    function initialize() {}
+    private var mItemId;
+    private var mTsSec;
+    function initialize(itemId, tsSec) {
+        mItemId = itemId;
+        mTsSec = tsSec;
+    }
     function onResponse(code, data) {
-        if (code != 200) {
+        if (code == 200) {
+            Progress.markClean(mItemId, mTsSec);
+        } else {
             System.println("ABS progress update failed: " + code);
         }
     }

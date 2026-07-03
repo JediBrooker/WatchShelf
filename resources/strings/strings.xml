@@ -14,6 +14,8 @@
     <string id="queueCleared">Queue cleared</string>
     <string id="deleteAllDownloads">Delete all downloads</string>
     <string id="playDownloaded">Play downloaded</string>
+    <string id="syncNow">Sync now</string>
+    <string id="syncing">Syncing...</string>
     <string id="alreadyDownloaded">Already downloaded.\nSee "Downloaded".</string>
 
     <!-- errors -->

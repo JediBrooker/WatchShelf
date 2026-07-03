@@ -21,7 +21,10 @@
 //   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
 //   GET /cover?item&token[&w]    -> the book's cover, hard-resized by us to a
 //                                   small JPEG (the watch decodes it in 512KB)
-//   POST /progress?token  {itemId,currentTime,duration} -> real PATCH to ABS
+//   GET  /progress?item&token -> {currentTime,duration,lastUpdate,isFinished}
+//                                (seconds) or {} - saved position for resume
+//   POST /progress?token  {itemId,currentTime,duration,lastUpdateSec}
+//                                -> real PATCH to ABS (lastUpdateSec -> ms)
 
 import http from 'node:http';
 import { spawn } from 'node:child_process';
@@ -343,6 +346,23 @@ function readJson(req, cb) {
   req.on('error', () => cb(null));
 }
 
+// Slim a full ABS userMediaProgress down to what the watch needs, converting
+// lastUpdate from epoch MILLISECONDS to epoch SECONDS - the watch stores time in
+// a 32-bit Number, which an ms value overflows (and JSON-decodes lossily).
+function slimProgress(p) {
+  return {
+    currentTime: p.currentTime || 0,
+    duration: p.duration || 0,
+    lastUpdate: Math.floor((p.lastUpdate || 0) / 1000),
+    isFinished: !!p.isFinished,
+  };
+}
+
+// POST /progress?token {itemId,currentTime,duration,lastUpdateSec} -> PATCH ABS.
+// lastUpdateSec (epoch seconds, the watch's listen time) becomes ABS's
+// lastUpdate (ms). ABS honors a client-supplied lastUpdate ("for local sync"),
+// so an offline listen flushed later still orders correctly against other
+// devices instead of looking like it happened at flush time.
 function progress(req, res, u) {
   const token = u.searchParams.get('token');
   if (!token) { fail(res, 400, 'bad params'); return; }
@@ -352,12 +372,27 @@ function progress(req, res, u) {
     if (!access) { fail(res, 401, 'unauthorized'); return; }
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
+    if (typeof body.lastUpdateSec === 'number' && body.lastUpdateSec > 0) { payload.lastUpdate = Math.round(body.lastUpdateSec * 1000); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
         { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
+}
+
+// GET /progress?item&token -> the item's saved position for cross-device resume,
+// as {currentTime,duration,lastUpdate,isFinished} (seconds), or {} if ABS has
+// none. ABS only attaches userMediaProgress to item detail when expanded=1 AND
+// include contains 'progress'.
+async function progressRead(req, res, u) {
+  const item = u.searchParams.get('item'), token = u.searchParams.get('token');
+  if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
+  try {
+    const d = await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1&include=progress`, token);
+    const p = d.userMediaProgress;
+    res.writeHead(200, jsonHead).end(JSON.stringify(p ? slimProgress(p) : {}));
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
 // POST /login {username,password} -> proxy to ABS /login, return a slim {user:{token}}.
@@ -425,6 +460,7 @@ const server = http.createServer((req, res) => {
   if (p === '/files'       && g) { files(req, res, u); return; }
   if (p === '/transcode'   && g) { transcode(req, res, u); return; }
   if (p === '/cover'       && g) { cover(req, res, u); return; }
+  if (p === '/progress'    && g) { progressRead(req, res, u); return; }
   if (p === '/progress'    && req.method === 'POST') { progress(req, res, u); return; }
   res.writeHead(404).end();
 });
