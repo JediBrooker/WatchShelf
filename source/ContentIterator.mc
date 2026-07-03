@@ -26,6 +26,8 @@ class ContentIterator extends Media.ContentIterator {
     private var mBookTitles;  // [ title, ... ]  indexed by BOOK_INDEX slot (O(books))
     private var mBookAuthors; // [ author or null, ... ] same indexing
     private var mShuffling;
+    private var mResumeRefId;  // the ONE chunk to start partway in (or null)
+    private var mResumeOffset; // seconds into that chunk (Number); 0 = none
 
     function initialize() {
         ContentIterator.initialize();
@@ -67,6 +69,7 @@ class ContentIterator extends Media.ContentIterator {
     function next() {
         if (mIndex < (mPlaylist.size() - 1)) {
             ++mIndex;
+            clearResume(); // the mid-chunk offset applies only to the first chunk
             return objAt(mIndex);
         }
         return null;
@@ -75,6 +78,7 @@ class ContentIterator extends Media.ContentIterator {
     function previous() {
         if (mIndex > 0) {
             --mIndex;
+            clearResume();
             return objAt(mIndex);
         }
         return null;
@@ -111,7 +115,21 @@ class ContentIterator extends Media.ContentIterator {
     function objAt(idx) {
         if ((idx >= 0) && (idx < mPlaylist.size())) {
             try {
-                var obj = Media.getCachedContentObj(new Media.ContentRef(mPlaylist[idx], Media.CONTENT_TYPE_AUDIO));
+                var refId = mPlaylist[idx];
+                var ref = new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO);
+                // Precise resume: this ONE chunk starts partway in. ActiveContent
+                // (API 3.0.0+) carries a start position in seconds, so the native
+                // player begins there instead of at 0. If it's unsupported on this
+                // device or throws, fall through to the plain cached obj - playback
+                // then resumes at the chunk's start (~offset early), never crashes.
+                if ((mResumeRefId != null) && refId.equals(mResumeRefId) && (mResumeOffset > 0)) {
+                    try {
+                        return new Media.ActiveContent(ref, resumeMetadata(idx), mResumeOffset);
+                    } catch (e2) {
+                        System.println("ActiveContent resume failed: " + e2.getErrorMessage());
+                    }
+                }
+                var obj = Media.getCachedContentObj(ref);
                 if (obj != null) { decorate(obj, idx); }
                 return obj;
             } catch (e) {
@@ -156,6 +174,21 @@ class ContentIterator extends Media.ContentIterator {
         }
     }
 
+    // Fresh ContentMetadata for a chunk, used for the ActiveContent resume path
+    // (which takes metadata at construction, unlike the cached-obj path that
+    // decorates in place). Cached chunks carry no tags - the sidecar strips them
+    // - so building fresh loses nothing. Mirrors decorate()'s captioning.
+    function resumeMetadata(idx) {
+        var meta = new Media.ContentMetadata();
+        var title = mBookTitles[mOrders[idx]];
+        meta.title = title + " - " + fmtTime(mStarts[idx]);
+        meta.album = title;
+        var author = mBookAuthors[mOrders[idx]];
+        if (author != null) { meta.artist = author; }
+        if (!mShuffling) { meta.trackNumber = trackNo(idx); }
+        return meta;
+    }
+
     // 1-based position of chunk idx within its book (chunks of one book are
     // contiguous in the sorted playlist; the backward scan is a few hundred
     // integer compares at worst, once per track hand-off).
@@ -190,6 +223,7 @@ class ContentIterator extends Media.ContentIterator {
     // confirmed in the simulator), and identical titles would interleave two
     // books chunk-by-chunk.
     function buildPlaylist() {
+        clearResume();
         mPlaylist = [];
         mOrders = [];
         mStarts = [];
@@ -239,11 +273,11 @@ class ContentIterator extends Media.ContentIterator {
         applyResume();
     }
 
-    // Start the cursor at the resume point synced from ABS, instead of the very
-    // first chunk. We pick the CHUNK that contains the saved position (the
-    // native player has no seek-into-a-track hook from here, so resume lands at
-    // that chunk's start - at most one chunk / ~3 min early). Best-effort: any
-    // problem falls back to mIndex = 0 (play from the beginning), never a crash.
+    // Start the cursor at the resume point synced from ABS instead of the very
+    // first chunk. We pick the CHUNK that contains the saved position, then start
+    // that chunk PARTWAY IN via ActiveContent (see objAt) so resume is exact, not
+    // just chunk-aligned. Best-effort throughout: any problem leaves the cursor
+    // at 0 / the chunk start, never a crash.
     function applyResume() {
         try {
             var r = Progress.bestResume(); // [itemId, positionSec] or null
@@ -267,11 +301,31 @@ class ContentIterator extends Media.ContentIterator {
                     break;
                 }
             }
-            if (pick >= 0) { mIndex = pick; }
+            if (pick >= 0) {
+                mIndex = pick;
+                var off = (target - mStarts[pick]).toNumber(); // seconds into chunk
+                if (off > 0) {
+                    mResumeRefId = mPlaylist[pick];
+                    mResumeOffset = off;
+                }
+            }
         } catch (e) {
             System.println("applyResume failed: " + e.getErrorMessage());
             mIndex = 0;
         }
+    }
+
+    // Resume offset (seconds) to add for `refId`, else 0. ContentDelegate needs
+    // it because ActiveContent reports onSong playbackPosition RELATIVE to the
+    // configured start, so the true in-chunk offset is start + position.
+    function resumeOffsetFor(refId) {
+        if ((mResumeRefId != null) && refId.equals(mResumeRefId)) { return mResumeOffset; }
+        return 0;
+    }
+
+    function clearResume() {
+        mResumeRefId = null;
+        mResumeOffset = 0;
     }
 
     // True if (orderA, startA) sorts AFTER (orderB, startB): by book first
@@ -300,6 +354,7 @@ class ContentIterator extends Media.ContentIterator {
             swapAt(mStarts, i, j);
         }
         mIndex = 0;
+        clearResume(); // shuffled playback doesn't mid-chunk resume
     }
 
     function swapAt(arr, i, j) {

@@ -76,7 +76,11 @@ class ContentDelegate extends Media.ContentDelegate {
         ensureLookup();
         var hit = mProgressLookup[refId];
         if (hit == null) { return; }
-        var absolute = hit[1] + positionInChapter;
+        // If this chunk was resumed partway in via ActiveContent, onSong reports
+        // playbackPosition RELATIVE to that start offset, so add it back to get
+        // the true book-absolute position (0 for every normally-started chunk).
+        var startOff = (mIterator != null) ? mIterator.resumeOffsetFor(refId) : 0;
+        var absolute = hit[1] + startOff + positionInChapter;
         // Persist the position LOCALLY first (survives being offline, and even
         // an app kill mid-listen). The live push then clears the dirty flag if
         // it reaches ABS; if it doesn't (phoneless run), it stays queued and the
