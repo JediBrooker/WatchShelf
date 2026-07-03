@@ -1,9 +1,10 @@
 // WatchShelf sidecar. The watch can't download giant audiobook files whole, so
 // this cuts small on-demand chunks with ffmpeg (via HTTP Range - it never pulls
 // the whole file), and serves lean lists (books, authors, series, collections,
-// per-book files) so nothing overflows the watch. Auth = the watch's own ABS
-// token (?token=), OR - to stop the watch's ~1h login token from expiring and
-// forcing re-login - a long-lived ABS_API_KEY held here (see below). Only
+// per-book files) so nothing overflows the watch. Auth: the watch logs in once
+// and stores an opaque sessionId; the sidecar holds each user's ABS refresh
+// token and silently renews their access token, so nobody has to re-login and
+// each user keeps their own identity (see the session block below). Only
 // required env: ABS_URL.
 //
 // Routes:
@@ -28,6 +29,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { readFile, readdir, unlink } from 'node:fs/promises';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const ABS  = (process.env.ABS_URL || '').replace(/\/+$/, '');
 const PORT = Number(process.env.PORT || 8081);
@@ -36,18 +38,27 @@ const PORT = Number(process.env.PORT || 8081);
 // also works. Set BASE_PATH='' to disable if your proxy already strips.
 const BASE_PATH = (process.env.BASE_PATH ?? '/watchshelf-transcode').replace(/\/+$/, '');
 const UA   = 'WatchShelf-sidecar';
-// STOP PERIODIC RE-LOGIN. ABS >= 2.26 issues a SHORT-LIVED (~1h) accessToken at
-// login; once it expires every watch call fails (surfaces as -400) until the
-// user logs in again. If ABS_API_KEY is set (a long-lived, revocable ABS API
-// key - Settings > API Keys), the sidecar uses IT for every ABS call and
-// ignores the watch's expiring token entirely, so the watch never needs to log
-// in again. Left empty => unchanged behaviour (forward the watch's token).
-// Because the watch token is then no longer the thing ABS validates, WATCH_SECRET
-// (if set) gates the sidecar so the URL isn't an open proxy: the watch must send
-// ?token=<WATCH_SECRET> (login() hands it back that value to store). Left empty
-// => no gate (unchanged).
-const ABS_API_KEY  = process.env.ABS_API_KEY || '';
-const WATCH_SECRET = process.env.WATCH_SECRET || '';
+// STOP PERIODIC RE-LOGIN - per user, keeping each user's own identity.
+// ABS >= 2.26 hands out a SHORT-LIVED (~1h) accessToken + a LONG-LIVED (~30d,
+// rotating) refreshToken at login; once the accessToken expires every watch
+// call fails (surfaces as -400) until the user logs in again. So we keep EACH
+// user's refreshToken HERE and silently renew THAT user's accessToken. The
+// watch stores an opaque sessionId (never an ABS token); progress etc. still go
+// out under each user's OWN token, so multiple users on the same ABS server
+// keep separate identities. The sessionId is unguessable, so it also gates the
+// URL (unknown session -> 401). Set SESSIONS_FILE (on a mounted volume) to
+// persist sessions across container restarts so a redeploy doesn't force
+// everyone to log in again; unset = in-memory (survives token expiry, not a
+// full restart).
+const SESSIONS_FILE = process.env.SESSIONS_FILE || '';
+let sessions = {};   // sessionId -> { access, refresh, user }
+if (SESSIONS_FILE) { try { sessions = JSON.parse(readFileSync(SESSIONS_FILE, 'utf8')); } catch (e) { /* first run / unreadable - start empty */ } }
+function saveSessions() {
+  if (!SESSIONS_FILE) { return; }
+  try { writeFileSync(SESSIONS_FILE, JSON.stringify(sessions)); } catch (e) { console.error('session persist failed:', e.message); }
+}
+// exp (unix seconds) from a JWT's payload, or 0 if not decodable.
+const jwtExp = (t) => { try { return JSON.parse(Buffer.from(String(t).split('.')[1], 'base64url').toString()).exp || 0; } catch (e) { return 0; } };
 if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); process.exit(1); }
 
 // fmt values double as the watch/sidecar PROTOCOL VERSION guard: the watch
@@ -59,12 +70,34 @@ const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4' };
 const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
-// The bearer the sidecar uses against ABS: the long-lived API key when set,
-// else the watch's per-request token (legacy behaviour). Single choke point.
-const absAuth = (reqToken) => ABS_API_KEY || reqToken;
-// URL gate: when WATCH_SECRET is set the watch's ?token= must equal it; when
-// unset, accept anything (unchanged).
-const gateOk = (t) => !WATCH_SECRET || t === WATCH_SECRET;
+// Renew one session's accessToken using its (rotating) refreshToken. ABS
+// invalidates the old refreshToken and returns a NEW pair, so we MUST keep the
+// new one or the next refresh 401s.
+async function refreshSession(sid) {
+  const s = sessions[sid];
+  if (!s || !s.refresh) { return false; }
+  try {
+    const r = await fetch(`${ABS}/auth/refresh`, { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA } });
+    if (!r.ok) { return false; }
+    const u = (((await r.json()) || {}).user || {});
+    if (!u.accessToken) { return false; }
+    s.access = u.accessToken;
+    if (u.refreshToken) { s.refresh = u.refreshToken; }   // rotation - keep the NEW one
+    saveSessions();
+    return true;
+  } catch (e) { return false; }
+}
+// A currently-valid accessToken for this session, refreshing PROACTIVELY when
+// the current one is within 60s of expiry (or already gone). null => no session
+// or the refresh token itself is dead (user must log in again - rare, ~30d idle).
+async function freshAccess(sid) {
+  const s = sessions[sid];
+  if (!s) { return null; }
+  if (jwtExp(s.access) - Math.floor(Date.now() / 1000) < 60) {
+    if (!(await refreshSession(sid))) { return null; }
+  }
+  return sessions[sid] ? sessions[sid].access : null;
+}
 const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 // Error responses on JSON endpoints must BE JSON: the watch declares a JSON
 // responseType, and a plain-text/HTML error body surfaces on-device as the
@@ -114,14 +147,17 @@ function ffArgs(srcUrl, token, fmt, start, end, out) {
   return a;
 }
 
-function transcode(req, res, u) {
+async function transcode(req, res, u) {
   const item = u.searchParams.get('item'), file = u.searchParams.get('file');
   const fmt = (u.searchParams.get('fmt') || 'mp3').toLowerCase();
   const start = u.searchParams.get('start'), end = u.searchParams.get('end');
   const token = u.searchParams.get('token');
   if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file)) { res.writeHead(400).end('bad params'); return; }
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
-  const tok = absAuth(token);   // API key when set, else the watch's token
+  // Fresh token BEFORE ffmpeg fetches (ffmpeg's internal request can't refresh
+  // itself; over a long download the accessToken would otherwise expire mid-book).
+  const tok = await freshAccess(token);
+  if (!tok) { res.writeHead(401).end('unauthorized'); return; }
   const src = `${ABS}/api/items/${encodeURIComponent(item)}/file/${encodeURIComponent(file)}/download`;
 
   // m4a writes a REAL MP4 container to a temp file (the mp4 muxer needs
@@ -199,8 +235,10 @@ async function cover(req, res, u) {
   if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
   if (!Number.isFinite(w) || w < 16) { w = 96; }
   if (w > 256) { w = 256; }   // hard cap - never hand the watch a big image to decode
+  const access = await freshAccess(token);
+  if (!access) { res.writeHead(401).end('unauthorized'); return; }
   try {
-    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(absAuth(token)) });
+    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(access) });
     if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502).end('ABS ' + r.status); return; }
     const src = Buffer.from(await r.arrayBuffer());
     // Downscale to w px wide (aspect preserved), re-encode as a small JPEG.
@@ -231,8 +269,15 @@ const bookOf = (it) => ({
   author: ((it.media || {}).metadata || {}).authorName || '',
 });
 
-async function absJson(path, token) {
-  const r = await fetch(`${ABS}${path}`, { headers: bearer(absAuth(token)) });
+// `sid` is the watch's session id. Resolve it to a fresh accessToken, and if
+// ABS still 401s (token died early), refresh once and retry before giving up.
+async function absJson(path, sid) {
+  const access = await freshAccess(sid);
+  if (!access) { const e = new Error('unauthorized'); e.status = 401; throw e; }
+  let r = await fetch(`${ABS}${path}`, { headers: bearer(access) });
+  if (r.status === 401 && (await refreshSession(sid))) {
+    r = await fetch(`${ABS}${path}`, { headers: bearer(sessions[sid].access) });
+  }
   if (!r.ok) { const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
   return r.json();
 }
@@ -252,7 +297,7 @@ async function list(req, res, u) {
       books = ((await absJson(`/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title${filter}`, token)).results || []).map(bookOf);
     }
     res.writeHead(200, jsonHead).end(JSON.stringify({ books }));
-  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
 async function groups(req, res, u, path, map) {
@@ -261,7 +306,7 @@ async function groups(req, res, u, path, map) {
   try {
     const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/${path}`, token);
     res.writeHead(200, jsonHead).end(JSON.stringify(map(d)));
-  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 const authors     = (q, s, u) => groups(q, s, u, 'authors', (d) => ({ authors: (d.authors || []).map((a) => ({ id: a.id, name: a.name, count: a.numBooks })).sort((x, y) => String(x.name).localeCompare(String(y.name))) }));
 const series      = (q, s, u) => groups(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }));
@@ -288,7 +333,7 @@ async function files(req, res, u) {
       ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true }
       : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })) };
     res.writeHead(200, jsonHead).end(JSON.stringify(out));
-  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
 function readJson(req, cb) {
@@ -303,11 +348,13 @@ function progress(req, res, u) {
   if (!token) { fail(res, 400, 'bad params'); return; }
   readJson(req, async (body) => {
     if (!body || typeof body.itemId !== 'string' || !IDRE.test(body.itemId) || typeof body.currentTime !== 'number') { fail(res, 400, 'bad body'); return; }
+    const access = await freshAccess(token);
+    if (!access) { fail(res, 401, 'unauthorized'); return; }
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
-        { method: 'PATCH', headers: { ...bearer(absAuth(token)), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
@@ -319,26 +366,29 @@ function login(req, res) {
   readJson(req, async (body) => {
     if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') { fail(res, 400, 'bad body'); return; }
     try {
+      // x-return-tokens: true makes ABS put the refreshToken in the JSON body
+      // (for browsers it's an httpOnly cookie); we need it in the body to keep
+      // it here and refresh silently.
       const r = await fetch(`${ABS}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': UA, 'x-return-tokens': 'true' },
         body: JSON.stringify({ username: body.username, password: body.password }),
       });
       if (!r.ok) { fail(res, r.status === 401 ? 401 : 502, 'login ' + r.status); return; }
       const u = (((await r.json()) || {}).user || {});
-      // ABS >= 2.26 issues a JWT accessToken at login; the legacy static
-      // user.token is deprecated there and updated servers REJECT it for API
-      // calls even though login still echoes it - the watch then 401s on its
-      // very first call after a "successful" login. Prefer the new token,
-      // fall back to the legacy field for older servers.
-      // With WATCH_SECRET set, hand the watch the SECRET as its token (after
-      // ABS validated the real credentials above), so the watch stores + resends
-      // it and passes the gate - and the expiring accessToken never matters. No
-      // watch code change: it just stores whatever token we return. Without
-      // WATCH_SECRET, return the ABS token exactly as before.
-      const token = WATCH_SECRET || u.accessToken || u.token;
-      if (!token) { fail(res, 502, 'no token'); return; }
-      res.writeHead(200, jsonHead).end(JSON.stringify({ user: { token } }));
+      // Prefer the JWT accessToken (legacy user.token is rejected for API calls
+      // on ABS >= 2.26). Store the refreshToken so we can renew it silently.
+      const access = u.accessToken || u.token;
+      if (!access) { fail(res, 502, 'no token'); return; }
+      // The watch stores this opaque sessionId, NOT an ABS token - so its token
+      // can never "expire" from the watch's point of view, and each user's real
+      // tokens live here, per-session. If ABS returned no refreshToken (older
+      // server), the accessToken will still expire and the old re-login
+      // behaviour applies for that user only.
+      const sid = randomUUID();
+      sessions[sid] = { access, refresh: u.refreshToken || null, user: u.username || u.id || '' };
+      saveSessions();
+      res.writeHead(200, jsonHead).end(JSON.stringify({ user: { token: sid } }));
     } catch (e) { fail(res, 502, 'ABS unreachable'); }
   });
 }
@@ -352,7 +402,7 @@ async function libraries(req, res, u) {
   try {
     const d = await absJson('/api/libraries', token);
     res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name, mediaType: l.mediaType })) }));
-  } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
 const server = http.createServer((req, res) => {
@@ -367,11 +417,6 @@ const server = http.createServer((req, res) => {
   // the three without updating Login.mc.
   if (p === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; }
   if (p === '/login'       && req.method === 'POST') { login(req, res); return; }
-  // URL gate: once ABS_API_KEY is the credential ABS validates, the watch's
-  // ?token= proves nothing to ABS - so if WATCH_SECRET is set, require it here
-  // so the sidecar isn't an open proxy to the library. JSON error (not -400).
-  // No-op when WATCH_SECRET is unset (legacy behaviour).
-  if (!gateOk(u.searchParams.get('token'))) { fail(res, 401, 'unauthorized'); return; }
   if (p === '/libraries'   && g) { libraries(req, res, u); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }
   if (p === '/authors'     && g) { authors(req, res, u); return; }
