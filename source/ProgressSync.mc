@@ -13,10 +13,11 @@ using Toybox.System;
 //      order it correctly.
 //
 // One request at a time - same discipline as the download engine - so it never
-// stacks requests into the 512KB sync heap. When the chain finishes (or on any
-// error) it invokes the continuation exactly once, so downloads/deletes always
-// run even if a progress request failed. Nothing here is load-bearing for the
-// download path; it only front-runs it.
+// stacks requests into the 512KB sync heap. It runs as the FINAL step of a sync
+// (SyncDelegate.finishSync), AFTER downloads/deletes are done, and invokes its
+// continuation exactly once when the chain ends - even on a request error - so
+// the sync always reaches notifySyncComplete. Nothing here is load-bearing for
+// the download path: by the time it runs, downloads have already finished.
 class ProgressSync {
 
     private var mPulls;    // [ itemId, ... ] downloaded books to pull

@@ -58,16 +58,13 @@ class SyncDelegate extends Communications.SyncDelegate {
         // Consume the one-shot "Sync now" flag immediately so this sync can't be
         // re-triggered by it forever.
         Application.Storage.deleteValue(Store.FORCE_SYNC);
-        // Exchange play progress with ABS FIRST (pull other devices' positions,
-        // then push our offline listens), THEN run downloads/deletes. The
-        // continuation always fires, even if a progress request fails, so the
-        // download path is never blocked by progress.
-        mProgressSync = new ProgressSync();
-        mProgressSync.start(method(:runDownloads));
-    }
-
-    // The download/delete engine, gated behind the progress exchange above.
-    function runDownloads() {
+        // Downloads/deletes run FIRST and drive the sync; the two-way progress
+        // exchange runs at the very END (finishSync). It is deliberately NOT put
+        // in front of downloads: progress must never gate, delay, or - worst
+        // case - regress the historically crash-prone download path. By the time
+        // progress runs the downloads are already done, so any progress-request
+        // failure is harmless. finishSync is reached from BOTH success paths
+        // (nothing-to-download here, and all-downloads-done in downloadNext).
         var toDelete = deletes();
 
         // Cancel any queued job for a book being deleted BEFORE counting or
@@ -95,12 +92,26 @@ class SyncDelegate extends Communications.SyncDelegate {
             if (left > 0) { mTotal += left; }
         }
         if (mTotal == 0) {
-            Communications.notifySyncComplete(null);
+            finishSync();
             return;
         }
 
         deleteQueued(toDelete);
         downloadNext();
+    }
+
+    // Final, DECOUPLED step of every successful sync: exchange play progress
+    // with ABS (pull other devices' positions + merge, then push our offline
+    // listens), then complete. ProgressSync always invokes its continuation -
+    // even if a request errors - so the sync always reaches notifySyncComplete.
+    // Kept separate from the download engine on purpose (see onStartSync).
+    function finishSync() {
+        mProgressSync = new ProgressSync();
+        mProgressSync.start(method(:onProgressDone));
+    }
+
+    function onProgressDone() {
+        Communications.notifySyncComplete(null);
     }
 
     // System-initiated cancel: stop cleanly. In-flight request is abandoned;
@@ -148,7 +159,7 @@ class SyncDelegate extends Communications.SyncDelegate {
         var jobIds = JobStore.list();
         if (jobIds.size() == 0) {
             sweepOrphans();
-            Communications.notifySyncComplete(null);
+            finishSync();
             return;
         }
 
