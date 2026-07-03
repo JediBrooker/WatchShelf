@@ -12,7 +12,9 @@
 //   GET /authors?lib&token       -> {authors:[{id,name,count}]}
 //   GET /series?lib&token        -> {series:[{id,name,count}]}
 //   GET /collections?lib&token   -> {collections:[{id,name}]}
-//   GET /files?item&token        -> {title,author,files:[{ino,duration,size,codec}]}
+//   GET /files?item&token        -> {title,author,files:[{ino,duration}]}
+//                                   (or {..,files:[],fileCount,tooManyFiles:true}
+//                                    when the book has > MAX_FILES audio files)
 //   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
 //   GET /cover?item&token[&w]    -> the book's cover image (JPEG, resized by ABS)
 //   POST /progress?token  {itemId,currentTime,duration} -> real PATCH to ABS
@@ -222,11 +224,21 @@ async function files(req, res, u) {
   if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
   try {
     const m = (await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1`, token)).media || {};
-    const out = {
-      title: (m.metadata || {}).title || 'Book',
-      author: (m.metadata || {}).authorName || '',
-      files: (m.audioFiles || []).map((a) => ({ ino: a.ino, duration: a.duration, size: (a.metadata || {}).size || a.size || 0, codec: a.codec })),
-    };
+    const meta = m.metadata || {};
+    const all = m.audioFiles || [];
+    // Ship ONLY the two fields the watch actually uses: ino + duration (it
+    // derives chunk boundaries itself). The old response also carried size +
+    // codec - dead weight the watch ignored, but for a heavily chapterized book
+    // (hundreds of audio files) that bloat roughly doubled the JSON, and the
+    // watch's makeWebRequest OOM'd its 512KB heap while parsing it - surfacing
+    // on-device as "Media Error Occurred" the moment the book was selected. A
+    // book with more files than the watch can hold gets NO file list at all
+    // (just the count + a flag) so the watch rejects it cleanly instead of
+    // being handed a huge array to parse to death.
+    const MAX_FILES = 600;
+    const out = (all.length > MAX_FILES)
+      ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true }
+      : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })) };
     res.writeHead(200, jsonHead).end(JSON.stringify(out));
   } catch (e) { fail(res, 502, String(e.message || 'ABS')); }
 }
