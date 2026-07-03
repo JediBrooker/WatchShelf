@@ -24,15 +24,45 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onFiles(code, data) {
-        if (code != 200 || data == null || data["files"] == null || data["files"].size() == 0) {
+        if (code != 200 || data == null) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        // Book has more audio files than the watch can hold. The sidecar
+        // deliberately sent NO file list (shipping hundreds of entries would
+        // OOM the watch's 512KB heap while parsing) - just a flag. Reject
+        // cleanly instead of the old "Media Error Occurred" crash.
+        if (data["tooManyFiles"] == true) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errTooManyFiles)),
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        if (data["files"] == null || data["files"].size() == 0) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
         var files = data["files"];
+
+        // Gate on file count BEFORE building the O(files) inos/durs arrays
+        // below (a stale sidecar that doesn't cap could still hand us a big
+        // list). Job values are O(files); past ~600 files the single job value
+        // approaches the 32KB Storage cap (long inode strings included).
+        if (files.size() > JobStore.MAX_FILES) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errTooManyFiles)),
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
         var title = data["title"];
         if (title == null) { title = "Book"; }
+        // Author rides along for player metadata (artist line). Older sidecars
+        // don't send it - null is fine everywhere downstream.
+        var author = data["author"];
 
         var inos = [];
         var durs = [];
@@ -50,20 +80,13 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
 
         // GATE ORDER MATTERS: every early-return gate below runs BEFORE the
-        // destructive drift wipe. Wiping first and then rejecting (e.g. on
-        // the cap) would strand a live job pointing at deleted pages - the
-        // sync then resumes it mid-book, pads the missing head with nulls,
-        // and the book "completes" with silent holes (or, past page 0, its
-        // fresh downloads get orphan-swept and its pages leak). Nothing is
-        // destroyed until this selection is definitely going to queue.
-
-        // Job values are O(files); past ~600 files the single job value
-        // approaches the 32KB Storage cap (long inode strings included).
-        if (inos.size() > JobStore.MAX_FILES) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errTooManyFiles)),
-                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
-            return;
-        }
+        // destructive drift wipe. Wiping first and then rejecting would strand
+        // a live job pointing at deleted pages - the sync then resumes it
+        // mid-book, pads the missing head with nulls, and the book "completes"
+        // with silent holes (or, past page 0, its fresh downloads get
+        // orphan-swept and its pages leak). Nothing is destroyed until this
+        // selection is definitely going to queue. (The file-count cap is
+        // enforced above, before the inos/durs arrays are even built.)
 
         // Duration drift: this book was downloaded (fully or partly) against
         // DIFFERENT per-file durations (server re-transcoded/replaced files),
@@ -135,11 +158,12 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // recorded into the new one, even at the same cursor value.
         var have = drifted ? 0 : BookStore.count(mItemId);
         JobStore.put(mItemId, {
-            "inos"  => inos,
-            "durs"  => durs,
-            "title" => title,
-            "done"  => have,
-            "gen"   => gen
+            "inos"   => inos,
+            "durs"   => durs,
+            "title"  => title,
+            "author" => author,
+            "done"   => have,
+            "gen"    => gen
         });
 
         Notify.flash(Rez.Strings.queued);

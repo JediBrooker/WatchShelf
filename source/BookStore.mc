@@ -1,12 +1,20 @@
 using Toybox.Application;
 using Toybox.Media;
+using Toybox.System;
 
 // Persistent store for DOWNLOADED books. Owns the media-cache lifecycle of
 // every recorded chunk. Layout (see Constants.mc for the OOM post-mortem that
 // forced O(books) storage):
 //
-//   "trk:"  + itemId          => { "title" => str, "durs" => [num, ...] }
+//   "trk:"  + itemId          => { "title" => str, "author" => str, "durs" => [num, ...] }
 //   "trkc:" + itemId + ":" + p => [ refId, ... ]   (page p, PAGE_SIZE entries)
+//   "arta:" + itemId          => BitmapResource (player album art, ~ART_PX px)
+//   "arti:" + itemId          => BitmapResource (menu icon, ~ICON_PX px)
+//
+// BitmapResource is a documented legal Storage value type (since CIQ 3.0.0).
+// Art sizes are chosen to stay well under the 32KB-per-value cap even at
+// 16bpp: 96px^2 * 2B ~= 18KB, 48px^2 * 2B ~= 4.6KB. Art is best-effort
+// everywhere - a missing/failed bitmap must never break sync or playback.
 //
 // Chunks are stored as ARRAYS indexed by chunk number, in pages:
 //  - position == chunk index, so re-recording a chunk after a crash/resume
@@ -19,22 +27,74 @@ module BookStore {
 
     const PAGE_SIZE = 256;
 
+    // Cover art pixel sizes (requested from the sidecar AND given to
+    // makeImageRequest as :maxWidth/:maxHeight). Sized for the 32KB Storage
+    // value cap - see the header comment.
+    const ART_PX  = 96;
+    const ICON_PX = 48;
+
     function key(itemId) {
         return "trk:" + itemId;
     }
     function pageKey(itemId, p) {
         return "trkc:" + itemId + ":" + p;
     }
+    function artKey(itemId) {
+        return "arta:" + itemId;
+    }
+    function iconKey(itemId) {
+        return "arti:" + itemId;
+    }
 
-    // Book metadata { "title", "durs" }, or null if nothing recorded yet.
+    // Book metadata { "title", "author", "durs" }, or null if nothing recorded
+    // yet. "author" may be absent/null on records written by older builds.
     function get(itemId) {
         return Application.Storage.getValue(key(itemId));
     }
 
-    function ensureMeta(itemId, title, durs) {
+    function ensureMeta(itemId, title, author, durs) {
         if (get(itemId) == null) {
-            Application.Storage.setValue(key(itemId), { "title" => title, "durs" => durs });
+            Application.Storage.setValue(key(itemId),
+                { "title" => title, "author" => author, "durs" => durs });
         }
+    }
+
+    // ---- cover art (best-effort, never load-bearing) -----------------------
+
+    // Player-size album art / menu icon for a book, or null.
+    function art(itemId) {
+        return Application.Storage.getValue(artKey(itemId));
+    }
+    function icon(itemId) {
+        return Application.Storage.getValue(iconKey(itemId));
+    }
+
+    // Persist a downloaded cover bitmap. Storage.setValue throws if the value
+    // is too large or the object store is full - art is decoration, so any
+    // failure is swallowed and the book simply keeps the placeholder.
+    function saveArt(storageKey, bitmap) {
+        try {
+            Application.Storage.setValue(storageKey, bitmap);
+        } catch (e) {
+            System.println("art save failed: " + e.getErrorMessage());
+        }
+    }
+
+    // Drop a book's art keys unless the book is actually downloaded (indexed).
+    // Art is fetched when a job STARTS, before any chunk is recorded - so a
+    // job abandoned early (Clear queue, stray-job self-heal) would otherwise
+    // strand ~23KB of unreachable bitmaps forever: Storage has no key
+    // iteration, and deleteBook (the normal cleanup) only runs for books the
+    // user can see. Call this wherever a job dies before its book is indexed.
+    function dropArtIfUnindexed(itemId) {
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index != null) {
+            for (var i = 0; i < index.size(); ++i) {
+                if (index[i].equals(itemId)) { return; }
+            }
+        }
+        Application.Storage.deleteValue(artKey(itemId));
+        Application.Storage.deleteValue(iconKey(itemId));
     }
 
     // Downloaded-chunk count for a book (0 if none). Chunks download strictly
@@ -99,6 +159,8 @@ module BookStore {
             Application.Storage.deleteValue(pageKey(itemId, p));
         }
         Application.Storage.deleteValue(key(itemId));
+        Application.Storage.deleteValue(artKey(itemId));
+        Application.Storage.deleteValue(iconKey(itemId));
     }
 
     // ---- BOOK_INDEX maintenance (the menu/playback book list) -------------

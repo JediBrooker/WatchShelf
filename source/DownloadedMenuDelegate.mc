@@ -45,9 +45,14 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
         // "Clear queue" -> abandon anything pending (a crashed/interrupted sync
         // can leave queued jobs behind, since they're only cleared as each book
         // finishes) WITHOUT starting a sync - we want to drop them, not process
-        // them.
+        // them. Cover art is fetched at job start, so a job cleared before its
+        // first chunk landed has art keys no other path would ever reclaim.
         if ((id instanceof Toybox.Lang.String) && id.equals("clearqueue")) {
+            var jobIds = JobStore.list();
             JobStore.clearAll();
+            for (var i = 0; i < jobIds.size(); ++i) {
+                BookStore.dropArtIfUnindexed(jobIds[i]);
+            }
             Application.Storage.setValue(Store.DELETE_LIST, []);
             Notify.flash(Rez.Strings.queueCleared);
             return;

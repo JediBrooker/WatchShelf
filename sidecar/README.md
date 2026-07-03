@@ -10,8 +10,12 @@ internet:
 - **`/login`** — proxies to ABS `/login`, returns just `{user:{token}}`.
 - **`/libraries`, `/list`, `/authors`, `/series`, `/collections`, `/files`** — lean
   JSON (a few KB) so listings never overflow the watch.
-- **`/transcode`** — cuts a small on-demand mp3 chunk out of any file using an HTTP
-  Range request (it never downloads the whole gigabyte — a 30-min chunk is ~14 MB).
+- **`/transcode`** — cuts a small on-demand AAC chunk (real M4A/MP4 container, so
+  the watch's native player knows the exact duration and can show a position bar)
+  out of any file using an HTTP Range request (it never downloads the whole
+  gigabyte — a 3-min chunk is ~2 MB).
+- **`/cover`** — the book's cover image, resized by ABS, for menu thumbnails and
+  the player's album art.
 - **`/progress`** — forwards the watch's progress as a real `PATCH` to ABS (Monkey C
   has no PATCH method).
 
@@ -58,7 +62,9 @@ PATH), then expose it the same way (step 3 above).
 
 ## Tuning
 
-- **Chunk length** is 30 min, set in the watch app (`source/BookMenuDelegate.mc`,
-  `chunk = 1800`). Smaller → more, smaller downloads; larger → fewer, bigger.
-- **Quality** is 64 kbps mono mp3 (spoken-word sweet spot). Change in `server.js`
+- **Chunk length** is ~3 min (first chunk 15 s so playback can be tested right
+  after a sync starts), set in the watch app (`source/Chunks.mc`, `FIRST`/`LEN`).
+  Smaller → more, smaller downloads; larger → fewer, bigger.
+- **Quality** is 96 kbps mono AAC in an M4A container (spoken-word sweet spot;
+  the real container is what gives the player a duration). Change in `server.js`
   `ffArgs`.

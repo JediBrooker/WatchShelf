@@ -15,6 +15,12 @@ class RequestDelegate {
         Communications.makeWebRequest(url, params, options, self.method(:onWebResponse));
     }
 
+    // Same context-injection, for image downloads (cover art). The callback
+    // data is a WatchUi.BitmapResource (or null on error) instead of JSON.
+    function makeImageRequest(url, params, options) {
+        Communications.makeImageRequest(url, params, options, self.method(:onWebResponse));
+    }
+
     function onWebResponse(code, data) {
         mCallback.invoke(code, data, mContext);
     }

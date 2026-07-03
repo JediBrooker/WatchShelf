@@ -30,11 +30,13 @@ class SyncDelegate extends Communications.SyncDelegate {
 
     private var mTotal;      // ops planned at sync start (downloads + deletes)
     private var mDone;       // ops completed
+    private var mArtTried;   // { itemId => true } - cover art attempted this sync
 
     function initialize() {
         SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
+        mArtTried = {};
     }
 
     function deletes() {
@@ -65,8 +67,10 @@ class SyncDelegate extends Communications.SyncDelegate {
                 // Stray index entry (crash window) - heal HERE too, not just
                 // in downloadNext: a queue of only strays makes mTotal 0 and
                 // returns before downloadNext ever runs, leaving
-                // isSyncNeeded() true forever (endless no-op syncs).
+                // isSyncNeeded() true forever (endless no-op syncs). Art may
+                // already exist for the dying job - reclaim it.
                 JobStore.remove(jobIds[i]);
+                BookStore.dropArtIfUnindexed(jobIds[i]);
                 continue;
             }
             var left = Chunks.total(job["durs"]) - job["done"];
@@ -143,10 +147,29 @@ class SyncDelegate extends Communications.SyncDelegate {
 
         var job = JobStore.get(itemId);
         if (job == null) {
-            // Stray index entry (crash window) - self-heal and move on.
+            // Stray index entry (crash window) - self-heal and move on,
+            // reclaiming any art the dead job already fetched.
             JobStore.remove(itemId);
+            BookStore.dropArtIfUnindexed(itemId);
             downloadNext();
             return;
+        }
+
+        // Fetch this book's cover art (player size + menu icon size, chained
+        // in onArt) BEFORE its chunks, so art is already in place when the
+        // first chunk becomes playable. Strictly best-effort: one attempt per
+        // sync (mArtTried), failures leave the placeholder and never block
+        // audio; the next sync retries. Not counted in mTotal - the progress
+        // bar tracks audio, art is decoration. mArtTried is set on the CHECK,
+        // not just the fetch: art()/icon() deserialize whole bitmaps, so a
+        // book that already has art must not re-read ~23KB before every one
+        // of its hundreds of chunks.
+        if (mArtTried[itemId] == null) {
+            mArtTried[itemId] = true;
+            if ((BookStore.art(itemId) == null) || (BookStore.icon(itemId) == null)) {
+                requestArt(itemId, BookStore.artKey(itemId), BookStore.ART_PX);
+                return;
+            }
         }
 
         var c = Chunks.at(job["durs"], job["done"]);
@@ -161,8 +184,13 @@ class SyncDelegate extends Communications.SyncDelegate {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
             // Audio download: hand bytes straight to the media cache.
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_AUDIO,
-            // The sidecar always transcodes chunks to AAC/ADTS.
-            :mediaEncoding => Media.ENCODING_ADTS
+            // The sidecar transcodes chunks to AAC in a REAL M4A/MP4 container
+            // (was raw ADTS). The native player derives track duration by
+            // parsing the cached file and there is NO API to supply it any
+            // other way - raw ADTS carries no duration, which is why the
+            // player showed no elapsed/total time. The M4A moov atom carries
+            // exact duration, so the position indicator works.
+            :mediaEncoding => Media.ENCODING_M4A
         };
 
         // "k" pins WHICH chunk this request is for and "gen" pins WHICH job
@@ -203,7 +231,7 @@ class SyncDelegate extends Communications.SyncDelegate {
         }
 
         var k = job["done"];
-        BookStore.ensureMeta(itemId, job["title"], job["durs"]);
+        BookStore.ensureMeta(itemId, job["title"], job["author"], job["durs"]);
         BookStore.saveChunk(itemId, k, refId);
         BookStore.addToIndex(itemId);
 
@@ -218,6 +246,32 @@ class SyncDelegate extends Communications.SyncDelegate {
         }
 
         onOpDone();
+        downloadNext();
+    }
+
+    // Kick off one cover-art image download. Image requests can't send
+    // headers, so auth is in the URL (AbsApi.coverUrl); Garmin Connect Mobile
+    // scales/dithers the JPEG to the device's real capability, bounded by
+    // :maxWidth/:maxHeight.
+    function requestArt(itemId, storageKey, px) {
+        var delegate = new RequestDelegate(method(:onArt),
+            { "item" => itemId, "key" => storageKey, "px" => px });
+        delegate.makeImageRequest(AbsApi.coverUrl(itemId, px), null,
+            { :maxWidth => px, :maxHeight => px });
+    }
+
+    // Cover art arrived (or failed - art is never load-bearing, so a failure
+    // just leaves the placeholder until the next sync retries). The player
+    // size is fetched first, then the menu-icon size, then chunk downloads
+    // resume.
+    function onArt(code, data, context) {
+        if ((code == 200) && (data != null)) {
+            BookStore.saveArt(context["key"], data);
+        }
+        if (context["px"] == BookStore.ART_PX) {
+            requestArt(context["item"], BookStore.iconKey(context["item"]), BookStore.ICON_PX);
+            return;
+        }
         downloadNext();
     }
 

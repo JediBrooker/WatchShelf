@@ -3,7 +3,19 @@ using Toybox.WatchUi;
 // Browse entry: All books / By author / By series / By collection. Group lists
 // come from the sidecar (lean); picking one shows a filtered book list that flows
 // into the normal download path (BookMenuDelegate).
+//
+// NO cover thumbnails in this pick-a-book list, deliberately. It is unbounded
+// (a whole library - the sidecar returns up to 1000 books), the covers are not
+// yet local (each would need a live makeImageRequest + JPEG decode), and this
+// whole app shares the 512KB audioContentProvider ceiling. b29 tried
+// IconMenuItem + a live cover loader here and it OOM'd on real libraries
+// ("Media Error Occurred") - building ~1000 icon-bearing rows alone crosses
+// the ceiling, before any cover even loads. Plain MenuItem is the known-good
+// shape. Cover art lives where it is memory-bounded instead: DownloadedMenu
+// (only books you actually downloaded, icons already in Storage) and the
+// native player (Media.setAlbumArt).
 module Browse {
+
     function start(libId) {
         var m = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.browseLibrary) });
         m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.allBooks), null, "all", null));
@@ -22,6 +34,9 @@ module Browse {
         }
         var books = data["books"];
         var m = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.pickBook) });
+        // Plain MenuItem, no per-row icon: this list is O(whole library) and
+        // must stay lean in the 512KB ACP heap (see module header). Nothing is
+        // retained past this loop.
         for (var i = 0; i < books.size(); ++i) {
             var b = books[i];
             m.addItem(new WatchUi.MenuItem(b["title"], b["author"], b["id"], null));
