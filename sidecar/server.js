@@ -333,6 +333,17 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   let p = u.pathname;
   if (BASE_PATH && p.startsWith(BASE_PATH)) { p = p.slice(BASE_PATH.length) || '/'; }
+  // Lightweight request trace (path + safe params only - NEVER the token) so a
+  // download crash can be pinpointed from `docker compose logs`: the LAST line
+  // before the watch dies names the phase - /files (file list), /cover (art),
+  // or /transcode (an audio chunk, with which chunk).
+  if (p !== '/health') {
+    const q = u.searchParams;
+    const extra = p === '/transcode'
+      ? ` item=${q.get('item')} file=${q.get('file')} start=${q.get('start')} end=${q.get('end')}`
+      : (q.get('item') ? ` item=${q.get('item')}` : '');
+    console.log(`${req.method} ${p}${extra}`);
+  }
   const g = req.method === 'GET';
   // CONTRACT: the watch's login preflight requires status 200, Content-Type
   // text/plain, and a body of EXACTLY "ok" (no newline) - it is how the app
