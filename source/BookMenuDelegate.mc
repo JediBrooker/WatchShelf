@@ -33,6 +33,9 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         var files = data["files"];
         var title = data["title"];
         if (title == null) { title = "Book"; }
+        // Author rides along for player metadata (artist line). Older sidecars
+        // don't send it - null is fine everywhere downstream.
+        var author = data["author"];
 
         var inos = [];
         var durs = [];
@@ -135,11 +138,12 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // recorded into the new one, even at the same cursor value.
         var have = drifted ? 0 : BookStore.count(mItemId);
         JobStore.put(mItemId, {
-            "inos"  => inos,
-            "durs"  => durs,
-            "title" => title,
-            "done"  => have,
-            "gen"   => gen
+            "inos"   => inos,
+            "durs"   => durs,
+            "title"  => title,
+            "author" => author,
+            "done"   => have,
+            "gen"    => gen
         });
 
         Notify.flash(Rez.Strings.queued);

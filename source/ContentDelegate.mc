@@ -7,11 +7,13 @@ using Toybox.System;
 class ContentDelegate extends Media.ContentDelegate {
 
     private var mIterator;
-    private var mProgressLookup; // { refId => [itemId, start] }, lazy
+    private var mProgressLookup; // { refId => [itemId, start, bookDuration] }, lazy
+    private var mArtItemId;      // book whose cover is currently on the player
 
     function initialize() {
         ContentDelegate.initialize();
         mProgressLookup = null;
+        mArtItemId = null;
         resetContentIterator();
     }
 
@@ -31,6 +33,10 @@ class ContentDelegate extends Media.ContentDelegate {
     // (Media.SONG_EVENT_PLAYBACK_NOTIFY=3, COMPLETE=4, STOP=5, PAUSE=6)
     // rather than magic numbers.
     function onSong(refId, songEvent, playbackPosition) {
+        if (songEvent == Media.SONG_EVENT_START) {
+            showArt(refId);
+            return;
+        }
         if (songEvent == Media.SONG_EVENT_PLAYBACK_NOTIFY ||
             songEvent == Media.SONG_EVENT_COMPLETE ||
             songEvent == Media.SONG_EVENT_STOP ||
@@ -39,32 +45,55 @@ class ContentDelegate extends Media.ContentDelegate {
         }
     }
 
-    function syncProgress(refId, positionInChapter) {
-        if (!AbsApi.isConfigured()) { return; }
-
-        // { refId => [itemId, start] }, built once per playback session (the
-        // downloaded set can't change while the player is running - syncs
-        // and playback are separate app modes).
-        if (mProgressLookup == null) {
-            mProgressLookup = {};
-            var index = Application.Storage.getValue(Store.BOOK_INDEX);
-            if (index == null) { index = []; }
-            for (var b = 0; b < index.size(); ++b) {
-                var perBook = {};
-                BookStore.addLookup(index[b], b, perBook);
-                var refIds = perBook.keys();
-                for (var i = 0; i < refIds.size(); ++i) {
-                    mProgressLookup[refIds[i]] = [index[b], perBook[refIds[i]][1]];
-                }
+    // { refId => [itemId, start, bookDuration] }, built once per playback
+    // session (the downloaded set can't change while the player is running -
+    // syncs and playback are separate app modes). bookDuration is the sum of
+    // the book's per-file durations, or null on records from older builds.
+    function ensureLookup() {
+        if (mProgressLookup != null) { return; }
+        mProgressLookup = {};
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { index = []; }
+        for (var b = 0; b < index.size(); ++b) {
+            var meta = BookStore.get(index[b]);
+            var total = null;
+            if ((meta != null) && (meta["durs"] != null)) {
+                total = 0;
+                var durs = meta["durs"];
+                for (var d = 0; d < durs.size(); ++d) { total += durs[d]; }
+            }
+            var perBook = {};
+            BookStore.addLookup(index[b], b, perBook);
+            var refIds = perBook.keys();
+            for (var i = 0; i < refIds.size(); ++i) {
+                mProgressLookup[refIds[i]] = [index[b], perBook[refIds[i]][1], total];
             }
         }
+    }
 
+    function syncProgress(refId, positionInChapter) {
+        if (!AbsApi.isConfigured()) { return; }
+        ensureLookup();
         var hit = mProgressLookup[refId];
         if (hit == null) { return; }
         var absolute = hit[1] + positionInChapter;
-        // We do not know the book's total duration here; passing null lets ABS
-        // keep its stored duration and just update currentTime.
-        AbsApi.patchProgress(hit[0], absolute, null);
+        // The book's total duration lets ABS compute a progress fraction;
+        // null (older record without durations) keeps ABS's stored duration.
+        AbsApi.patchProgress(hit[0], absolute, hit[2]);
+    }
+
+    // A track started: put its book's cover on the native player screen
+    // (Media.setAlbumArt is THE artwork mechanism for provider apps - there
+    // is no per-track artwork field). null restores the system default art.
+    // Skipped when the book hasn't changed - chunks are ~3 minutes apart.
+    function showArt(refId) {
+        ensureLookup();
+        var hit = mProgressLookup[refId];
+        var itemId = (hit != null) ? hit[0] : null;
+        if ((itemId == null) && (mArtItemId == null)) { return; }
+        if ((itemId != null) && (mArtItemId != null) && itemId.equals(mArtItemId)) { return; }
+        mArtItemId = itemId;
+        Media.setAlbumArt((itemId != null) ? BookStore.art(itemId) : null);
     }
 
     function onShuffle() {

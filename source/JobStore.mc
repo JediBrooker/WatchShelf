@@ -5,7 +5,7 @@ using Toybox.Application;
 //
 //   "jobidx"        => [ itemId, ... ]
 //   "job:" + itemId => { "inos" => [str], "durs" => [num], "title" => str,
-//                        "done" => num }
+//                        "author" => str or null, "done" => num, "gen" => num }
 //
 // One-job-per-key matters for the same reason BookStore pages do: a
 // chapterized book can be hundreds of per-chapter files, so a job's

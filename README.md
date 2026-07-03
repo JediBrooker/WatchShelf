@@ -21,8 +21,10 @@ the sidecar**:
 
 - lean lists (`/libraries`, `/list`, `/authors`, `/series`, `/collections`, `/files`)
   so nothing overflows the watch;
-- `/transcode` cuts a small on-demand mp3 chunk out of any file via HTTP Range (it
-  never downloads the whole gigabyte);
+- `/transcode` cuts a small on-demand AAC/M4A chunk out of any file via HTTP Range
+  (it never downloads the whole gigabyte), with a real container so the native
+  player shows a position/time indicator;
+- `/cover` serves the book's cover for menu thumbnails and player album art;
 - `/login` + `/progress` proxy to ABS, so **Audiobookshelf itself never has to be
   exposed to the internet** — it can stay fully private.
 
@@ -46,8 +48,9 @@ Traefik** is in [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
   |-- login:    POST {sidecar}/login        -> ABS token (stored; password discarded)
   |-- browse:   GET  {sidecar}/{libraries|list|authors|series|collections} -> lean lists
   |-- open:     GET  {sidecar}/files?item    -> the book's files (lean)
-  |-- queue:    split each file into 30-min chunks
-  |-- sync:     GET  {sidecar}/transcode?item&file&start&end -> mp3 chunk
+  |-- queue:    split each file into ~3-min chunks
+  |-- sync:     GET  {sidecar}/transcode?item&file&start&end -> M4A chunk
+  |             GET  {sidecar}/cover?item                    -> cover art
   |-- play:     native media player -> Bluetooth
   |-- progress: POST {sidecar}/progress      -> sidecar PATCHes ABS
   v
@@ -57,7 +60,9 @@ Traefik** is in [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 - **The watch only ever talks to the sidecar.** ABS can stay on a private network.
 - **Login is on the watch** (`TextPicker`), because a sideloaded app can't use Garmin
   Connect phone settings. Only the ABS token is stored, never the password.
-- **Chunks** are 30-min, 64 kbps mono mp3 (~14 MB). Tune in `source/BookMenuDelegate.mc`.
+- **Chunks** are ~3-min, 96 kbps mono AAC in a real M4A container (~2 MB) — the
+  container is what lets the native player show a position/time indicator. Tune in
+  `source/Chunks.mc`.
 - **State** lives in `Application.Storage` as chunk *params* (not URLs) to stay small.
 
 ## Build & run

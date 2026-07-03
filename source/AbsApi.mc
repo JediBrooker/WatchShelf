@@ -74,12 +74,25 @@ module AbsApi {
             cb);
     }
 
-    // One CHUNK of a file as a small AAC/ADTS chunk the watch can download.
-    // fmt=m4a on the sidecar produces ADTS, not mp3 - see BookMenuDelegate.mc
-    // for why (testing whether MP3 itself is what real hardware struggles with).
+    // One CHUNK of a file as a small AAC chunk in a REAL M4A container (the
+    // container is what gives the native player a track duration - see
+    // SyncDelegate). fmt=m4a2 doubles as the watch/sidecar protocol-version
+    // guard: an older sidecar doesn't know it and 400s, so the sync fails
+    // VISIBLY instead of the old sidecar's raw ADTS being silently cached
+    // under ENCODING_M4A (which would poison every downloaded chunk).
     function sidecarChunkUrl(itemId, ino, startSec, endSec) {
         return sidecarBase() + "/transcode?item=" + itemId + "&file=" + ino
-            + "&fmt=m4a&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&fmt=m4a2&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&token=" + authToken();
+    }
+
+    // Cover image URL for Communications.makeImageRequest. Image requests
+    // cannot send custom headers (no :headers option exists on them), so auth
+    // rides in the URL like every other watch-facing sidecar route. `px`
+    // bounds what ABS ships over the wire; Garmin Connect Mobile then scales/
+    // dithers to the device's actual capability.
+    function coverUrl(itemId, px) {
+        return sidecarBase() + "/cover?item=" + itemId + "&w=" + px.toString()
             + "&token=" + authToken();
     }
 

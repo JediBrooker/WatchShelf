@@ -49,13 +49,20 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteAllDownloads), null, "deleteall", null));
         }
 
+        // Book rows carry the cover art synced by SyncDelegate (IconMenuItem,
+        // NOT MenuItem.setIcon - plain MenuItem icons only render in the
+        // subscreen area, never in the list on round watches). Books whose
+        // art fetch failed get the placeholder glyph.
+        var placeholder = WatchUi.loadResource(Rez.Drawables.bookIcon);
         for (var i = 0; i < index.size(); ++i) {
             var itemId = index[i];
             var meta = BookStore.get(itemId);
             var title = ((meta != null) && (meta["title"] != null)) ? meta["title"] : "Book";
             var count = BookStore.count(itemId);
             var sub = count.toString() + " part" + ((count == 1) ? "" : "s");
-            addItem(new WatchUi.MenuItem(title, sub, itemId, null));
+            var art = BookStore.icon(itemId);
+            addItem(new WatchUi.IconMenuItem(title, sub, itemId,
+                (art != null) ? art : placeholder, null));
         }
     }
 

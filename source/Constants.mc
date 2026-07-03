@@ -49,10 +49,15 @@ module Versions {
     enum {
         V1 = 0,
         V2 = 1,  // per-chunk SYNC_LIST/TRACKS dicts -> per-book jobs + BookStore
-        V3 = 2   // single SYNC_JOBS dict -> JobStore (one job per key + index)
+        V3 = 2,  // single SYNC_JOBS dict -> JobStore (one job per key + index)
+        V4 = 3   // chunk format ADTS -> real M4A container (the native player
+                 // derives track duration by parsing the cached file; raw ADTS
+                 // has none, so no time indicator). Old cached chunks are the
+                 // wrong format and must re-download - the version-change wipe
+                 // in WatchShelfApp handles that.
     }
-    const current = V3;
+    const current = V4;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable).
-    const tag = "b28";
+    const tag = "b29";
 }
