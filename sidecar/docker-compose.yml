@@ -17,6 +17,14 @@ services:
       - ABS_URL=${ABS_URL:-http://host.docker.internal:13378}
       - BIND=0.0.0.0
       - PORT=8081
+      # OPTIONAL - stops the watch ever needing to log in again. ABS_API_KEY is a
+      # long-lived ABS API key (ABS Settings > API Keys); when set, the sidecar
+      # uses it for ABS instead of the watch's short-lived login token (which
+      # expires ~hourly). WATCH_SECRET (any random string) then gates the URL so
+      # it isn't an open proxy - set both and re-login once to adopt it. Leave
+      # blank to keep the old behaviour. Both read from .env.
+      - ABS_API_KEY=${ABS_API_KEY:-}
+      - WATCH_SECRET=${WATCH_SECRET:-}
     extra_hosts:
       # Makes host.docker.internal resolve on native Linux Docker too, not just
       # Docker Desktop (Mac/Windows) - harmless if you don't use that address.
