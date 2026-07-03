@@ -30,13 +30,11 @@ class SyncDelegate extends Communications.SyncDelegate {
 
     private var mTotal;      // ops planned at sync start (downloads + deletes)
     private var mDone;       // ops completed
-    private var mArtTried;   // { itemId => true } - cover art attempted this sync
 
     function initialize() {
         SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
-        mArtTried = {};
     }
 
     function deletes() {
@@ -155,22 +153,19 @@ class SyncDelegate extends Communications.SyncDelegate {
             return;
         }
 
-        // Fetch this book's cover art (player size + menu icon size, chained
-        // in onArt) BEFORE its chunks, so art is already in place when the
-        // first chunk becomes playable. Strictly best-effort: one attempt per
-        // sync (mArtTried), failures leave the placeholder and never block
-        // audio; the next sync retries. Not counted in mTotal - the progress
-        // bar tracks audio, art is decoration. mArtTried is set on the CHECK,
-        // not just the fetch: art()/icon() deserialize whole bitmaps, so a
-        // book that already has art must not re-read ~23KB before every one
-        // of its hundreds of chunks.
-        if (mArtTried[itemId] == null) {
-            mArtTried[itemId] = true;
-            if ((BookStore.art(itemId) == null) || (BookStore.icon(itemId) == null)) {
-                requestArt(itemId, BookStore.artKey(itemId), BookStore.ART_PX);
-                return;
-            }
-        }
+        // NO cover-art fetch here, deliberately. b29 fetched cover art at sync
+        // start via Communications.makeImageRequest - but that call routes image
+        // work through the phone (Garmin Connect Mobile), and firing it as the
+        // FIRST action of a phoneless WiFi download (a tactix on wifi) faults
+        // the ACP image pipeline synchronously, BEFORE the request is even sent,
+        // surfacing on-watch as "Media Error Occurred" the moment ANY book is
+        // selected to download. It could not be fixed sidecar-side (the crash is
+        // on the watch, before /cover leaves it). So the sync goes straight to
+        // the first audio chunk - the SDK-sanctioned makeWebRequest path that
+        // streams bytes into the media cache, never the 512KB heap. The player's
+        // time indicator is UNAFFECTED (it comes from the M4A moov atom, not
+        // art). Cover art can only be re-added from a foreground UI context or
+        // baked into the audio - never from makeImageRequest inside a sync.
 
         var c = Chunks.at(job["durs"], job["done"]);
         if (c == null) {
@@ -246,32 +241,6 @@ class SyncDelegate extends Communications.SyncDelegate {
         }
 
         onOpDone();
-        downloadNext();
-    }
-
-    // Kick off one cover-art image download. Image requests can't send
-    // headers, so auth is in the URL (AbsApi.coverUrl); Garmin Connect Mobile
-    // scales/dithers the JPEG to the device's real capability, bounded by
-    // :maxWidth/:maxHeight.
-    function requestArt(itemId, storageKey, px) {
-        var delegate = new RequestDelegate(method(:onArt),
-            { "item" => itemId, "key" => storageKey, "px" => px });
-        delegate.makeImageRequest(AbsApi.coverUrl(itemId, px), null,
-            { :maxWidth => px, :maxHeight => px });
-    }
-
-    // Cover art arrived (or failed - art is never load-bearing, so a failure
-    // just leaves the placeholder until the next sync retries). The player
-    // size is fetched first, then the menu-icon size, then chunk downloads
-    // resume.
-    function onArt(code, data, context) {
-        if ((code == 200) && (data != null)) {
-            BookStore.saveArt(context["key"], data);
-        }
-        if (context["px"] == BookStore.ART_PX) {
-            requestArt(context["item"], BookStore.iconKey(context["item"]), BookStore.ICON_PX);
-            return;
-        }
         downloadNext();
     }
 
