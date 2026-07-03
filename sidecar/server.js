@@ -16,7 +16,8 @@
 //                                   (or {..,files:[],fileCount,tooManyFiles:true}
 //                                    when the book has > MAX_FILES audio files)
 //   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
-//   GET /cover?item&token[&w]    -> the book's cover image (JPEG, resized by ABS)
+//   GET /cover?item&token[&w]    -> the book's cover, hard-resized by us to a
+//                                   small JPEG (the watch decodes it in 512KB)
 //   POST /progress?token  {itemId,currentTime,duration} -> real PATCH to ABS
 
 import http from 'node:http';
@@ -158,22 +159,48 @@ function transcode(req, res, u) {
   });
 }
 
-// GET /cover?item&token[&w] -> the book's cover, resized by ABS itself
-// (format=jpeg keeps the payload small and universally decodable). The watch
-// fetches this via Communications.makeImageRequest, which cannot send custom
-// headers - hence ?token= auth, same as every other watch-facing route. Garmin
-// Connect Mobile downscales/dithers the image for the device, so `w` only
-// bounds what ABS ships over the wire.
+// GET /cover?item&token[&w] -> the book's cover, HARD-resized by us to `w` px.
+//
+// This must not trust ABS's ?width= param or the watch to scale. The watch
+// fetches this with Communications.makeImageRequest, and image scaling
+// (:maxWidth/:maxHeight) is applied by Garmin Connect Mobile - the PHONE. When
+// the watch downloads over WiFi/LTE with no phone in the path (e.g. a tactix on
+// wifi), nothing downscales: the watch decodes whatever bytes we send straight
+// into its 512KB audioContentProvider heap. A full-res cover (a megapixel JPEG,
+// hundreds of KB) OOMs it, and the sync aborts as the opaque "Media Error
+// Occurred" - the crash reported when selecting ANY book to download. So we
+// re-encode to a small JPEG here with ffmpeg (already a dependency); the watch
+// then only ever decodes a few-KB image, phone or no phone. Auth is ?token=
+// because makeImageRequest can't send headers.
 async function cover(req, res, u) {
   const item = u.searchParams.get('item'), token = u.searchParams.get('token');
-  const w = u.searchParams.get('w') || '256';
-  if (!item || !token || !IDRE.test(item) || !NUM.test(w)) { res.writeHead(400).end('bad params'); return; }
+  let w = Number(u.searchParams.get('w') || '96');
+  if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
+  if (!Number.isFinite(w) || w < 16) { w = 96; }
+  if (w > 256) { w = 256; }   // hard cap - never hand the watch a big image to decode
   try {
-    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg&width=${w}`, { headers: bearer(token) });
+    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(token) });
     if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502).end('ABS ' + r.status); return; }
-    const buf = Buffer.from(await r.arrayBuffer());
-    res.writeHead(200, { 'Content-Type': r.headers.get('content-type') || 'image/jpeg', 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
-    res.end(buf);
+    const src = Buffer.from(await r.arrayBuffer());
+    // Downscale to w px wide (aspect preserved), re-encode as a small JPEG.
+    // -2 keeps the height even; q:v 6 is a good quality/size tradeoff (~a few KB).
+    const ff = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
+      '-vf', `scale=${w}:-2:flags=bilinear`, '-frames:v', '1', '-f', 'mjpeg', '-q:v', '6', 'pipe:1'],
+      { stdio: ['pipe', 'pipe', 'inherit'] });
+    const parts = [];
+    let done = false;
+    ff.stdout.on('data', (c) => parts.push(c));
+    ff.on('error', () => { if (!done) { done = true; if (!res.headersSent) { res.writeHead(502).end('resize error'); } } });
+    ff.on('close', (code) => {
+      if (done) { return; }
+      done = true;
+      if (code !== 0 || parts.length === 0) { if (!res.headersSent) { res.writeHead(502).end('resize failed'); } return; }
+      const out = Buffer.concat(parts);
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': out.length, 'Cache-Control': 'no-store' });
+      res.end(out);
+    });
+    ff.stdin.on('error', () => {});   // ignore EPIPE if ffmpeg bails early
+    ff.stdin.end(src);
   } catch (e) { res.writeHead(502).end('ABS unreachable'); }
 }
 
