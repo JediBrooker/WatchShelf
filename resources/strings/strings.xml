@@ -19,6 +19,8 @@
     <string id="alreadyDownloaded">Already downloaded.\nSee "Downloaded".</string>
 
     <!-- errors -->
+    <string id="errPhone">No phone connection.\nOpen Garmin Connect\non your phone.</string>
+    <string id="errServer">Server not responding.\nCheck it's running.</string>
     <string id="errLibraries">Could not load libraries</string>
     <string id="errItems">Could not load books</string>
     <string id="errDetail">Could not load book</string>

@@ -237,7 +237,8 @@ class SyncDelegate extends Communications.SyncDelegate {
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
         if ((code != 200) || (data == null)) {
-            Communications.notifySyncComplete("Download failed (" + code + ")");
+            var h = Errors.hint(code);
+            Communications.notifySyncComplete((h != null) ? h : ("Download failed (" + code + ")"));
             return;
         }
 

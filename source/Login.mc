@@ -65,7 +65,7 @@ class LoginView extends WatchUi.View {
             AbsApi.login(mCreds.server, mCreds.username, mCreds.password, method(:onLogin));
         } else {
             mState = 99;
-            mMessage = WatchUi.loadResource(Rez.Strings.errNotWatchShelf) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.errNotWatchShelf, code);
             WatchUi.requestUpdate();
         }
     }
@@ -120,7 +120,7 @@ class LoginView extends WatchUi.View {
             WatchUi.switchToView(new LibraryView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
         } else {
             mState = 99;
-            mMessage = WatchUi.loadResource(Rez.Strings.loginFailed) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.loginFailed, code);
             WatchUi.requestUpdate();
         }
     }

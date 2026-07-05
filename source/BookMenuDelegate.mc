@@ -25,7 +25,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function onFiles(code, data) {
         if (code != 200 || data == null) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
+            WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errDetail, code)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
@@ -41,7 +41,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
 
         if (data["files"] == null || data["files"].size() == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
+            WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errDetail, code)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }

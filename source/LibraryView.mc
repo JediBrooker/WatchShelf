@@ -53,7 +53,7 @@ class LibraryView extends WatchUi.View {
             }
             WatchUi.pushView(menu, new LibraryMenuDelegate(), WatchUi.SLIDE_LEFT);
         } else {
-            mMessage = WatchUi.loadResource(Rez.Strings.errLibraries) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.errLibraries, code);
             WatchUi.requestUpdate();
         }
     }
