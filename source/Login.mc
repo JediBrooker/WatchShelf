@@ -22,6 +22,14 @@ module Login {
     function start() {
         WatchUi.pushView(new LoginView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
     }
+    // ABS reported our session dead (401). Drop the stale token (keep the server
+    // URL) and restart login, so a data screen recovers cleanly instead of
+    // dead-ending on "Could not load..." or a -300 hang. This is the one action
+    // that actually fixes an expired session, surfaced automatically.
+    function reauth() {
+        AbsApi.clearToken();
+        start();
+    }
 }
 
 class LoginView extends WatchUi.View {
@@ -65,7 +73,7 @@ class LoginView extends WatchUi.View {
             AbsApi.login(mCreds.server, mCreds.username, mCreds.password, method(:onLogin));
         } else {
             mState = 99;
-            mMessage = WatchUi.loadResource(Rez.Strings.errNotWatchShelf) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.errNotWatchShelf, code);
             WatchUi.requestUpdate();
         }
     }
@@ -120,7 +128,7 @@ class LoginView extends WatchUi.View {
             WatchUi.switchToView(new LibraryView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
         } else {
             mState = 99;
-            mMessage = WatchUi.loadResource(Rez.Strings.loginFailed) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.loginFailed, code);
             WatchUi.requestUpdate();
         }
     }

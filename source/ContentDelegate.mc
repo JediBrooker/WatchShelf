@@ -9,9 +9,14 @@ class ContentDelegate extends Media.ContentDelegate {
     private var mIterator;
     private var mProgressLookup; // { refId => [itemId, start, bookDuration] }, lazy
     private var mArtItemId;      // book whose cover is currently on the player
+    private var mArgs;           // { item, mode } from startPlayback, or null
 
-    function initialize() {
+    // args is the payload passed to Media.startPlayback (our BookActionMenu
+    // sends { item, mode }); null when playback is launched from the native
+    // Music widget. It flows on to the ContentIterator to position the cursor.
+    function initialize(args) {
         ContentDelegate.initialize();
+        mArgs = args;
         mProgressLookup = null;
         mArtItemId = null;
         resetContentIterator();
@@ -22,7 +27,7 @@ class ContentDelegate extends Media.ContentDelegate {
     }
 
     function resetContentIterator() {
-        mIterator = new ContentIterator();
+        mIterator = new ContentIterator(mArgs);
         return mIterator;
     }
 
@@ -76,10 +81,22 @@ class ContentDelegate extends Media.ContentDelegate {
         ensureLookup();
         var hit = mProgressLookup[refId];
         if (hit == null) { return; }
-        var absolute = hit[1] + positionInChapter;
-        // The book's total duration lets ABS compute a progress fraction;
-        // null (older record without durations) keeps ABS's stored duration.
-        AbsApi.patchProgress(hit[0], absolute, hit[2]);
+        // If this chunk was resumed partway in via ActiveContent, onSong reports
+        // playbackPosition RELATIVE to that start offset, so add it back to get
+        // the true book-absolute position (0 for every normally-started chunk).
+        var startOff = (mIterator != null) ? mIterator.resumeOffsetFor(refId) : 0;
+        var absolute = hit[1] + startOff + positionInChapter;
+        // Persist the position LOCALLY first (survives being offline, and even
+        // an app kill mid-listen). The live push then clears the dirty flag if
+        // it reaches ABS; if it doesn't (phoneless run), it stays queued and the
+        // next sync flushes it. Same timestamp is used for both so the flush and
+        // the eventual cross-device merge agree on when this was played.
+        var ts = Progress.nowSec();
+        Progress.record(hit[0], absolute, ts);
+        // The book's total duration (hit[2]) lets ABS compute a progress
+        // fraction; null (older record without durations) keeps ABS's stored
+        // duration.
+        AbsApi.patchProgress(hit[0], absolute, hit[2], ts);
     }
 
     // A track started: put its book's cover on the native player screen

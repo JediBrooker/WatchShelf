@@ -27,8 +27,10 @@ module Browse {
 
     // Build + push a book menu from { books:[{id,title,author}] }.
     function showBooks(code, data) {
+        // Session expired -> re-login instead of a dead-end error.
+        if (code == 401) { Login.reauth(); return; }
         if (code != 200 || data == null || data["books"] == null || data["books"].size() == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errItems) + "\n(" + code + ")"),
+            WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errItems, code)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }

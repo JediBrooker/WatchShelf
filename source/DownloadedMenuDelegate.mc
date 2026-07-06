@@ -23,13 +23,24 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // "Play downloaded" -> start playback directly. NOT wired through
-        // Menu2's onDone() (see class comment) - onDone() never fires on a
-        // plain Menu2 like this one, only on a WatchUi.CheckboxMenu, so a
-        // Done-triggered "play" was unreachable on real hardware no matter
-        // what the user pressed. This is a normal, always-reachable tap.
+        // "Play downloaded" -> the book list (PlayMenu). Picking a book there
+        // offers Resume / Play from start / Delete. A normal, always-reachable
+        // tap (NOT Menu2 onDone(), which never fires on a plain Menu2).
         if ((id instanceof Toybox.Lang.String) && id.equals("play")) {
-            Media.startPlayback(null);
+            WatchUi.pushView(new PlayMenu(), new PlayMenuDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        // "Sync now" -> force a one-shot sync so the two-way progress exchange
+        // runs even with no download/delete queued. The FORCE_SYNC flag makes
+        // isSyncNeeded() true (onStartSync clears it), and startSync() kicks the
+        // system sync that carries it out. Whether it can actually reach ABS
+        // depends on connectivity right now (phone in range / WiFi) - the same
+        // constraint every sidecar call has.
+        if ((id instanceof Toybox.Lang.String) && id.equals("syncnow")) {
+            Application.Storage.setValue(Store.FORCE_SYNC, true);
+            Communications.startSync();
+            Notify.flash(Rez.Strings.syncing);
             return;
         }
 
@@ -58,39 +69,39 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // "Delete all downloads" -> queue every downloaded book.
+        // "Delete all downloads" -> wipes EVERY book, so confirm first (a mis-tap
+        // here used to nuke the whole library instantly). The actual delete runs
+        // from the confirmation delegate on YES.
         if ((id instanceof Toybox.Lang.String) && id.equals("deleteall")) {
             var index = Application.Storage.getValue(Store.BOOK_INDEX);
             if (index == null) { index = []; }
-            queueDelete(index);
+            if (index.size() == 0) { return; }
+            WatchUi.pushView(
+                new WatchUi.Confirmation(WatchUi.loadResource(Rez.Strings.confirmDeleteAll)),
+                new DeleteAllConfirmDelegate(index), WatchUi.SLIDE_LEFT);
             return;
         }
-
-        // Anything else is a BOOK's itemId - queue that one book for deletion.
-        // Deletions are always whole-book (a book can be 100+ ~3-min chunks;
-        // per-chunk anything isn't usable, and per-chunk STORAGE is what used
-        // to OOM-crash the app - see Constants.mc).
-        queueDelete([id]);
-    }
-
-    // Add every given book itemId to the delete queue, then run a sync now to
-    // perform the deletions (Media.deleteCachedItem happens per cached chunk in
-    // SyncDelegate.deleteQueued).
-    function queueDelete(itemIds) {
-        if (itemIds.size() == 0) { return; }
-
-        var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
-        if (deleteList == null) { deleteList = []; }
-        for (var i = 0; i < itemIds.size(); ++i) {
-            deleteList.add(itemIds[i]);
-        }
-        Application.Storage.setValue(Store.DELETE_LIST, deleteList);
-
-        Communications.startSync();
-        Notify.flash(Rez.Strings.deleting);
+        // No book rows live in this menu anymore - per-book delete moved to
+        // PlayMenu -> BookActionMenu. Unknown ids fall through to nothing.
     }
 
     function onBack() {
         WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
+}
+
+// "Delete all downloads" confirmation. Only on YES do we queue every book for
+// deletion (Downloads.queueDelete kicks the sync that evicts the chunks).
+class DeleteAllConfirmDelegate extends WatchUi.ConfirmationDelegate {
+    private var mItemIds;
+    function initialize(itemIds) {
+        ConfirmationDelegate.initialize();
+        mItemIds = itemIds;
+    }
+    function onResponse(response) {
+        if (response == WatchUi.CONFIRM_YES) {
+            Downloads.queueDelete(mItemIds);
+        }
+        return true;
     }
 }

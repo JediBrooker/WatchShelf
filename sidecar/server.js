@@ -21,7 +21,10 @@
 //   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
 //   GET /cover?item&token[&w]    -> the book's cover, hard-resized by us to a
 //                                   small JPEG (the watch decodes it in 512KB)
-//   POST /progress?token  {itemId,currentTime,duration} -> real PATCH to ABS
+//   GET  /progress?item&token -> {currentTime,duration,lastUpdate,isFinished}
+//                                (seconds) or {} - saved position for resume
+//   POST /progress?token  {itemId,currentTime,duration,lastUpdateSec}
+//                                -> real PATCH to ABS (lastUpdateSec -> ms)
 
 import http from 'node:http';
 import { spawn } from 'node:child_process';
@@ -38,6 +41,13 @@ const PORT = Number(process.env.PORT || 8081);
 // also works. Set BASE_PATH='' to disable if your proxy already strips.
 const BASE_PATH = (process.env.BASE_PATH ?? '/watchshelf-transcode').replace(/\/+$/, '');
 const UA   = 'WatchShelf-sidecar';
+// Hard ceiling on every ABS round-trip. A healthy ABS answers in well under a
+// second, so this never trips legitimately - it exists so a stale/slow token
+// refresh (or a wedged ABS) can't HANG a watch request. Without it, a bad
+// refresh left the watch's makeWebRequest to time out on its own (-300, "could
+// not load libraries") instead of getting a fast 401 it can act on. Every ABS
+// fetch below passes `signal: AbortSignal.timeout(ABS_TIMEOUT_MS)`.
+const ABS_TIMEOUT_MS = 8000;
 // STOP PERIODIC RE-LOGIN - per user, keeping each user's own identity.
 // ABS >= 2.26 hands out a SHORT-LIVED (~1h) accessToken + a LONG-LIVED (~30d,
 // rotating) refreshToken at login; once the accessToken expires every watch
@@ -77,7 +87,7 @@ async function refreshSession(sid) {
   const s = sessions[sid];
   if (!s || !s.refresh) { return false; }
   try {
-    const r = await fetch(`${ABS}/auth/refresh`, { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA } });
+    const r = await fetch(`${ABS}/auth/refresh`, { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA }, signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
     if (!r.ok) { return false; }
     const u = (((await r.json()) || {}).user || {});
     if (!u.accessToken) { return false; }
@@ -274,9 +284,9 @@ const bookOf = (it) => ({
 async function absJson(path, sid) {
   const access = await freshAccess(sid);
   if (!access) { const e = new Error('unauthorized'); e.status = 401; throw e; }
-  let r = await fetch(`${ABS}${path}`, { headers: bearer(access) });
+  let r = await fetch(`${ABS}${path}`, { headers: bearer(access), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
   if (r.status === 401 && (await refreshSession(sid))) {
-    r = await fetch(`${ABS}${path}`, { headers: bearer(sessions[sid].access) });
+    r = await fetch(`${ABS}${path}`, { headers: bearer(sessions[sid].access), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
   }
   if (!r.ok) { const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
   return r.json();
@@ -343,6 +353,23 @@ function readJson(req, cb) {
   req.on('error', () => cb(null));
 }
 
+// Slim a full ABS userMediaProgress down to what the watch needs, converting
+// lastUpdate from epoch MILLISECONDS to epoch SECONDS - the watch stores time in
+// a 32-bit Number, which an ms value overflows (and JSON-decodes lossily).
+function slimProgress(p) {
+  return {
+    currentTime: p.currentTime || 0,
+    duration: p.duration || 0,
+    lastUpdate: Math.floor((p.lastUpdate || 0) / 1000),
+    isFinished: !!p.isFinished,
+  };
+}
+
+// POST /progress?token {itemId,currentTime,duration,lastUpdateSec} -> PATCH ABS.
+// lastUpdateSec (epoch seconds, the watch's listen time) becomes ABS's
+// lastUpdate (ms). ABS honors a client-supplied lastUpdate ("for local sync"),
+// so an offline listen flushed later still orders correctly against other
+// devices instead of looking like it happened at flush time.
 function progress(req, res, u) {
   const token = u.searchParams.get('token');
   if (!token) { fail(res, 400, 'bad params'); return; }
@@ -352,12 +379,27 @@ function progress(req, res, u) {
     if (!access) { fail(res, 401, 'unauthorized'); return; }
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
+    if (typeof body.lastUpdateSec === 'number' && body.lastUpdateSec > 0) { payload.lastUpdate = Math.round(body.lastUpdateSec * 1000); }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
-        { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { res.writeHead(502).end('ABS unreachable'); }
   });
+}
+
+// GET /progress?item&token -> the item's saved position for cross-device resume,
+// as {currentTime,duration,lastUpdate,isFinished} (seconds), or {} if ABS has
+// none. ABS only attaches userMediaProgress to item detail when expanded=1 AND
+// include contains 'progress'.
+async function progressRead(req, res, u) {
+  const item = u.searchParams.get('item'), token = u.searchParams.get('token');
+  if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
+  try {
+    const d = await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1&include=progress`, token);
+    const p = d.userMediaProgress;
+    res.writeHead(200, jsonHead).end(JSON.stringify(p ? slimProgress(p) : {}));
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
 // POST /login {username,password} -> proxy to ABS /login, return a slim {user:{token}}.
@@ -373,6 +415,7 @@ function login(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': UA, 'x-return-tokens': 'true' },
         body: JSON.stringify({ username: body.username, password: body.password }),
+        signal: AbortSignal.timeout(ABS_TIMEOUT_MS),
       });
       if (!r.ok) { fail(res, r.status === 401 ? 401 : 502, 'login ' + r.status); return; }
       const u = (((await r.json()) || {}).user || {});
@@ -425,6 +468,7 @@ const server = http.createServer((req, res) => {
   if (p === '/files'       && g) { files(req, res, u); return; }
   if (p === '/transcode'   && g) { transcode(req, res, u); return; }
   if (p === '/cover'       && g) { cover(req, res, u); return; }
+  if (p === '/progress'    && g) { progressRead(req, res, u); return; }
   if (p === '/progress'    && req.method === 'POST') { progress(req, res, u); return; }
   res.writeHead(404).end();
 });

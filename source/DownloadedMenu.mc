@@ -2,12 +2,12 @@ using Toybox.Application;
 using Toybox.Media;
 using Toybox.WatchUi;
 
-// Lists downloaded books - one row per book from the BOOK_INDEX, with the
-// chunk count as the subtitle. Selecting a book removes ALL of its chunks;
-// "Play downloaded" starts playback (Media.startPlayback), which hands off to
-// the native player driving ContentIterator's set. The watch's own Music
-// widget (hold the music-controls button -> Music Providers -> WatchShelf)
-// reaches the SAME downloaded content and is the platform-standard way in too.
+// The top-level management screen: browse the library, open the downloaded
+// books ("Play downloaded" -> PlayMenu, where each book offers Resume / Play
+// from start / Delete), sync, log out, and bulk maintenance. The per-book list
+// lives in PlayMenu now, not here. The watch's own Music widget (hold the
+// music-controls button -> Music Providers -> WatchShelf) reaches the SAME
+// downloaded content and is the platform-standard way into playback too.
 class DownloadedMenu extends WatchUi.Menu2 {
 
     function initialize() {
@@ -21,14 +21,22 @@ class DownloadedMenu extends WatchUi.Menu2 {
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
 
-        // Explicit, direct "Play" action - a plain MenuItem calling
-        // Media.startPlayback() straight from onSelect. NOT wired through
-        // Menu2's onDone(): per Garmin's own API docs, onDone() is only ever
-        // triggered by a WatchUi.CheckboxMenu, never a plain Menu2 like this
-        // one - so a Done-based "play" action here would be silently
-        // unreachable on real hardware no matter what the user pressed.
+        // "Play downloaded" -> the book list (PlayMenu), where each book offers
+        // Resume / Play from start / Delete. A normal tap handled in onSelect;
+        // NOT Menu2's onDone() (that only fires on a CheckboxMenu, never a plain
+        // Menu2, so it would be unreachable on real hardware).
         if (index.size() > 0) {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.playDownloaded), null, "play", null));
+        }
+
+        // "Sync now" - force an on-demand two-way progress exchange with ABS
+        // (push our listens, pull other devices'). The value at a device handoff:
+        // the OS only auto-syncs on its own schedule (roughly, on the charger),
+        // which won't have fired in the minute between finishing on the watch and
+        // picking up in the car - and there is no wake-on-reconnect event to make
+        // it instant. This is the deterministic "sync before I switch" control.
+        if (AbsApi.isConfigured() && (index.size() > 0)) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.syncNow), null, "syncnow", null));
         }
 
         // Only offer to log out if actually logged in - avoids a pointless item
@@ -48,22 +56,8 @@ class DownloadedMenu extends WatchUi.Menu2 {
         if (index.size() > 0) {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteAllDownloads), null, "deleteall", null));
         }
-
-        // Book rows carry the cover art synced by SyncDelegate (IconMenuItem,
-        // NOT MenuItem.setIcon - plain MenuItem icons only render in the
-        // subscreen area, never in the list on round watches). Books whose
-        // art fetch failed get the placeholder glyph.
-        var placeholder = WatchUi.loadResource(Rez.Drawables.bookIcon);
-        for (var i = 0; i < index.size(); ++i) {
-            var itemId = index[i];
-            var meta = BookStore.get(itemId);
-            var title = ((meta != null) && (meta["title"] != null)) ? meta["title"] : "Book";
-            var count = BookStore.count(itemId);
-            var sub = count.toString() + " part" + ((count == 1) ? "" : "s");
-            var art = BookStore.icon(itemId);
-            addItem(new WatchUi.IconMenuItem(title, sub, itemId,
-                (art != null) ? art : placeholder, null));
-        }
+        // Individual books now live under "Play downloaded" (PlayMenu), each with
+        // its own Resume / Play from start / Delete actions - not as rows here.
     }
 
     function hasQueued() {

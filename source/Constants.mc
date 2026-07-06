@@ -32,6 +32,17 @@ module Store {
     const APP_VERSION = "appVersion";  // Number, see Versions
     const SERVER      = "absServer";   // server URL saved by on-watch login
     const TOKEN       = "absToken";    // bearer token saved by on-watch login
+
+    // Two-way play-progress state, O(books): one small dictionary keyed by
+    // itemId (never per-chunk - see the OOM post-mortem above). See Progress.mc
+    // for the value shape and the last-write-wins merge.
+    const PROGRESS    = "prog";
+    // One-shot flag: the user tapped "Sync now". Makes isSyncNeeded() true for
+    // exactly one sync (onStartSync deletes it immediately), so an on-demand
+    // progress exchange runs even when no download/delete is queued - WITHOUT
+    // leaving isSyncNeeded() permanently true (which the OS would turn into
+    // endless no-op syncs).
+    const FORCE_SYNC  = "forceSync";
 }
 
 // ---------------------------------------------------------------------------
@@ -58,6 +69,9 @@ module Versions {
     }
     const current = V4;
     // Visible build tag - bump every build so we can confirm on-watch which
-    // build is actually running (the MTP transfer is unreliable).
-    const tag = "b33";
+    // build is actually running (the MTP transfer is unreliable). `current` is
+    // NOT bumped for b34: two-way progress only ADDS new Storage keys (PROGRESS,
+    // FORCE_SYNC) and never changes an existing value's shape, so the version
+    // wipe (which would force every book to re-download) must not fire.
+    const tag = "b34";
 }

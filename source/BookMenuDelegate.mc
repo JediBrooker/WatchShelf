@@ -24,8 +24,10 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onFiles(code, data) {
+        // Session expired -> re-login instead of a dead-end error.
+        if (code == 401) { Login.reauth(); return; }
         if (code != 200 || data == null) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
+            WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errDetail, code)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
@@ -41,7 +43,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
 
         if (data["files"] == null || data["files"].size() == 0) {
-            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errDetail) + "\n(" + code + ")"),
+            WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errDetail, code)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
@@ -131,11 +133,15 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // hard kill mid-wipe with the job still queued would leave that job
         // resuming over truncated pages (null-padded silent holes). With the
         // job already gone, a mid-wipe crash decays to a benign partial that
-        // the stranded/orphan machinery cleans up.
+        // the stranded/orphan machinery cleans up. Then UN-INDEX before evict,
+        // so a kill between them leaves an unindexed book with orphan chunks
+        // (swept next sync) rather than an indexed book with zero chunks (which
+        // would make playback start a different book). Progress is NOT pruned:
+        // it's the SAME book re-downloading, so its resume point stays valid.
         if (drifted) {
             JobStore.remove(mItemId);
-            BookStore.deleteBook(mItemId);
             BookStore.removeFromIndex(mItemId);
+            BookStore.deleteBook(mItemId);
         }
 
         // Queueing a book un-dooms it: if it's still sitting in DELETE_LIST

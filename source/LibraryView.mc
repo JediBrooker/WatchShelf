@@ -41,6 +41,8 @@ class LibraryView extends WatchUi.View {
 
     // Got the library list -> show a menu of book libraries.
     function onLibraries(code, data) {
+        // Session expired -> re-login instead of a dead-end error.
+        if (code == 401) { Login.reauth(); return; }
         if ((code == 200) && (data != null) && (data["libraries"] != null)) {
             var libs = data["libraries"];
             var menu = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.pickLibrary) });
@@ -53,7 +55,7 @@ class LibraryView extends WatchUi.View {
             }
             WatchUi.pushView(menu, new LibraryMenuDelegate(), WatchUi.SLIDE_LEFT);
         } else {
-            mMessage = WatchUi.loadResource(Rez.Strings.errLibraries) + "\n(" + code + ")";
+            mMessage = Errors.message(Rez.Strings.errLibraries, code);
             WatchUi.requestUpdate();
         }
     }

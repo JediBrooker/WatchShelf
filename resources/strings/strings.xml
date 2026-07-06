@@ -13,10 +13,18 @@
     <string id="clearQueue">Clear queue</string>
     <string id="queueCleared">Queue cleared</string>
     <string id="deleteAllDownloads">Delete all downloads</string>
+    <string id="confirmDeleteAll">Delete ALL downloads?</string>
     <string id="playDownloaded">Play downloaded</string>
+    <string id="resume">Resume</string>
+    <string id="playFromStart">Play from start</string>
+    <string id="deleteBook">Delete from watch</string>
+    <string id="syncNow">Sync now</string>
+    <string id="syncing">Syncing...</string>
     <string id="alreadyDownloaded">Already downloaded.\nSee "Downloaded".</string>
 
     <!-- errors -->
+    <string id="errPhone">No phone connection.\nOpen Garmin Connect\non your phone.</string>
+    <string id="errServer">Server not responding.\nCheck it's running.</string>
     <string id="errLibraries">Could not load libraries</string>
     <string id="errItems">Could not load books</string>
     <string id="errDetail">Could not load book</string>

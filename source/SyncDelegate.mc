@@ -28,13 +28,16 @@ using Toybox.Media;
 // persisted), and was reverted.
 class SyncDelegate extends Communications.SyncDelegate {
 
-    private var mTotal;      // ops planned at sync start (downloads + deletes)
-    private var mDone;       // ops completed
+    private var mTotal;         // ops planned at sync start (downloads + deletes)
+    private var mDone;          // ops completed
+    private var mProgressSync;  // held so its async chain isn't GC'd mid-flight
+    private var mSyncError;     // download error surfaced AFTER progress runs, or null
 
     function initialize() {
         SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
+        mSyncError = null;
     }
 
     function deletes() {
@@ -42,12 +45,28 @@ class SyncDelegate extends Communications.SyncDelegate {
         return (d == null) ? [] : d;
     }
 
-    // The system only starts a sync when this is true.
+    // The system only starts a sync when this is true. Besides queued downloads
+    // and deletes, a sync is needed when we have an unflushed local listen to
+    // push (Progress.hasDirty), or when the user tapped "Sync now" (the one-shot
+    // FORCE_SYNC flag, cleared at the top of onStartSync so it can't loop).
     function isSyncNeeded() {
-        return (JobStore.list().size() != 0) || (deletes().size() != 0);
+        return (JobStore.list().size() != 0)
+            || (deletes().size() != 0)
+            || Progress.hasDirty()
+            || (Application.Storage.getValue(Store.FORCE_SYNC) != null);
     }
 
     function onStartSync() {
+        // Consume the one-shot "Sync now" flag immediately so this sync can't be
+        // re-triggered by it forever.
+        Application.Storage.deleteValue(Store.FORCE_SYNC);
+        // Downloads/deletes run FIRST and drive the sync; the two-way progress
+        // exchange runs at the very END (finishSync). It is deliberately NOT put
+        // in front of downloads: progress must never gate, delay, or - worst
+        // case - regress the historically crash-prone download path. By the time
+        // progress runs the downloads are already done, so any progress-request
+        // failure is harmless. finishSync is reached from BOTH success paths
+        // (nothing-to-download here, and all-downloads-done in downloadNext).
         var toDelete = deletes();
 
         // Cancel any queued job for a book being deleted BEFORE counting or
@@ -75,12 +94,28 @@ class SyncDelegate extends Communications.SyncDelegate {
             if (left > 0) { mTotal += left; }
         }
         if (mTotal == 0) {
-            Communications.notifySyncComplete(null);
+            finishSync();
             return;
         }
 
         deleteQueued(toDelete);
         downloadNext();
+    }
+
+    // Final, DECOUPLED step of every successful sync: exchange play progress
+    // with ABS (pull other devices' positions + merge, then push our offline
+    // listens), then complete. ProgressSync always invokes its continuation -
+    // even if a request errors - so the sync always reaches notifySyncComplete.
+    // Kept separate from the download engine on purpose (see onStartSync).
+    function finishSync() {
+        mProgressSync = new ProgressSync();
+        mProgressSync.start(method(:onProgressDone));
+    }
+
+    function onProgressDone() {
+        // Report a download error (if any) only now - AFTER the progress exchange
+        // has had its chance to flush a dirty offline listen. null on a clean sync.
+        Communications.notifySyncComplete(mSyncError);
     }
 
     // System-initiated cancel: stop cleanly. In-flight request is abandoned;
@@ -90,13 +125,20 @@ class SyncDelegate extends Communications.SyncDelegate {
         Communications.notifySyncComplete(null);
     }
 
-    // Delete every queued BOOK: BookStore evicts its cached chunks and drops
-    // its records; then remove it from the menu index.
+    // Delete every queued BOOK: un-index it, evict its cached chunks and records,
+    // and drop its saved progress.
     function deleteQueued(toDelete) {
         if (toDelete.size() == 0) { return; }
         for (var i = 0; i < toDelete.size(); ++i) {
-            BookStore.deleteBook(toDelete[i]);
+            // Un-index FIRST, then evict. A hard kill between the two then leaves
+            // an UNindexed book with orphan chunks (harmlessly swept next sync,
+            // never played) rather than an INDEXED book with zero chunks (which
+            // makes playback start a DIFFERENT book's audio). Prune its progress
+            // too, so a deleted book can never win bestResume() and misdirect a
+            // later native-widget resume to the wrong (or no) book.
             BookStore.removeFromIndex(toDelete[i]);
+            BookStore.deleteBook(toDelete[i]);
+            Progress.remove(toDelete[i]);
             onOpDone();
         }
 
@@ -128,7 +170,7 @@ class SyncDelegate extends Communications.SyncDelegate {
         var jobIds = JobStore.list();
         if (jobIds.size() == 0) {
             sweepOrphans();
-            Communications.notifySyncComplete(null);
+            finishSync();
             return;
         }
 
@@ -206,7 +248,15 @@ class SyncDelegate extends Communications.SyncDelegate {
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
         if ((code != 200) || (data == null)) {
-            Communications.notifySyncComplete("Download failed (" + code + ")");
+            // Download failed. Do NOT end here: a dirty offline listen still needs
+            // flushing and the progress exchange requires no successful download.
+            // Route through finishSync (which runs ProgressSync, then reports this
+            // error via onProgressDone). The failing job stays queued for the next
+            // sync to retry. ProgressSync always fires its continuation even if its
+            // own requests error, so this cannot hang.
+            var h = Errors.hint(code);
+            mSyncError = (h != null) ? h : ("Download failed (" + code + ")");
+            finishSync();
             return;
         }
 
