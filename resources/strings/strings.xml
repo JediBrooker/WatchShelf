@@ -13,6 +13,7 @@
     <string id="clearQueue">Clear queue</string>
     <string id="queueCleared">Queue cleared</string>
     <string id="deleteAllDownloads">Delete all downloads</string>
+    <string id="confirmDeleteAll">Delete ALL downloads?</string>
     <string id="playDownloaded">Play downloaded</string>
     <string id="resume">Resume</string>
     <string id="playFromStart">Play from start</string>

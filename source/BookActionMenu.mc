@@ -42,16 +42,11 @@ class BookActionMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // Delete this one book: queue it and run a sync (SyncDelegate.deleteQueued
-        // evicts each cached chunk). Whole-book only - see Constants.mc for why
-        // per-chunk state is forbidden. Pop back to the book list afterwards.
+        // Delete this one book (shared path: queue + sync, evicts the chunks).
+        // A single book is far less destructive than "delete all", so no extra
+        // confirm here. Pop back to the book list afterwards.
         if ((id instanceof Toybox.Lang.String) && id.equals("delete")) {
-            var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
-            if (deleteList == null) { deleteList = []; }
-            deleteList.add(mItemId);
-            Application.Storage.setValue(Store.DELETE_LIST, deleteList);
-            Communications.startSync();
-            Notify.flash(Rez.Strings.deleting);
+            Downloads.queueDelete([mItemId]);
             WatchUi.popView(WatchUi.SLIDE_RIGHT);
             return;
         }

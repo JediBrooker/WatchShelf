@@ -69,35 +69,39 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // "Delete all downloads" -> queue every downloaded book.
+        // "Delete all downloads" -> wipes EVERY book, so confirm first (a mis-tap
+        // here used to nuke the whole library instantly). The actual delete runs
+        // from the confirmation delegate on YES.
         if ((id instanceof Toybox.Lang.String) && id.equals("deleteall")) {
             var index = Application.Storage.getValue(Store.BOOK_INDEX);
             if (index == null) { index = []; }
-            queueDelete(index);
+            if (index.size() == 0) { return; }
+            WatchUi.pushView(
+                new WatchUi.Confirmation(WatchUi.loadResource(Rez.Strings.confirmDeleteAll)),
+                new DeleteAllConfirmDelegate(index), WatchUi.SLIDE_LEFT);
             return;
         }
         // No book rows live in this menu anymore - per-book delete moved to
         // PlayMenu -> BookActionMenu. Unknown ids fall through to nothing.
     }
 
-    // Add every given book itemId to the delete queue, then run a sync now to
-    // perform the deletions (Media.deleteCachedItem happens per cached chunk in
-    // SyncDelegate.deleteQueued).
-    function queueDelete(itemIds) {
-        if (itemIds.size() == 0) { return; }
-
-        var deleteList = Application.Storage.getValue(Store.DELETE_LIST);
-        if (deleteList == null) { deleteList = []; }
-        for (var i = 0; i < itemIds.size(); ++i) {
-            deleteList.add(itemIds[i]);
-        }
-        Application.Storage.setValue(Store.DELETE_LIST, deleteList);
-
-        Communications.startSync();
-        Notify.flash(Rez.Strings.deleting);
-    }
-
     function onBack() {
         WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
+}
+
+// "Delete all downloads" confirmation. Only on YES do we queue every book for
+// deletion (Downloads.queueDelete kicks the sync that evicts the chunks).
+class DeleteAllConfirmDelegate extends WatchUi.ConfirmationDelegate {
+    private var mItemIds;
+    function initialize(itemIds) {
+        ConfirmationDelegate.initialize();
+        mItemIds = itemIds;
+    }
+    function onResponse(response) {
+        if (response == WatchUi.CONFIRM_YES) {
+            Downloads.queueDelete(mItemIds);
+        }
+        return true;
     }
 }
