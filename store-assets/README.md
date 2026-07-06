@@ -25,6 +25,13 @@ literal device captures. Garmin's store accepts promotional screenshots; for
 pixel-true captures instead, use the simulator's "Save Screen" (454×454) or a
 real device.
 
+> **Screen Images cap:** the store's "Screen Images" field requires each file to
+> be **JPG/GIF/PNG under 150 KB**. The `screen_*` PNGs are flattened onto an
+> opaque background and saved as 256-colour PNG-8 (`save_screen()` in
+> `generate.py`), which keeps them ~50–60 KB with no visible quality loss. If you
+> re-render at a larger size or add gradients, re-check the file size stays
+> < 150 KB.
+
 ## Regenerate
 
 ```

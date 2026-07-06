@@ -259,8 +259,19 @@ screens = {
  "screen_3_bookactions": menu_screen("Project Hail Mary",
      [("Resume",None),("Play from start",None),("Delete from watch",None)], 0),
 }
+def save_screen(rgba, path, bg=(14, 12, 10)):
+    """Connect IQ 'Screen Images' must be < 150 KB. These are flat UI mockups,
+    so flatten onto an opaque brand-dark background and quantize to a 256-colour
+    palette (PNG-8): visually identical, a fraction of the size."""
+    canvas = Image.new("RGB", rgba.size, bg)
+    canvas.paste(rgba, (0, 0), rgba)          # composite over the alpha
+    canvas.quantize(colors=256, method=Image.MEDIANCUT).save(path, optimize=True)
+    kb = os.path.getsize(path) / 1024
+    print(f"screen -> {os.path.basename(path)}  ({kb:.0f} KB)")
+    return kb
+
 for name, fn in screens.items():
-    watch(fn, D=900).save(f"{OUT}/{name}.png"); print("screen ->", name)
-watch(player_screen("Project Hail Mary","Andy Weir","4:12:09","16:20:41",0.26), D=900)\
-    .save(f"{OUT}/screen_4_player.png"); print("screen -> screen_4_player")
+    save_screen(watch(fn, D=880), f"{OUT}/{name}.png")
+save_screen(watch(player_screen("Project Hail Mary","Andy Weir","4:12:09","16:20:41",0.26), D=880),
+            f"{OUT}/screen_4_player.png")
 print("DONE ->", OUT)
