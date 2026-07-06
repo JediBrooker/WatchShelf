@@ -158,18 +158,17 @@ class ContentIterator extends Media.ContentIterator {
     // The sidecar strips ALL tags from transcoded chunks (deliberately - a
     // Garmin-confirmed bug makes certain ID3 text frames break native playback
     // on real hardware), so without this the player screen shows blank
-    // title/artist. Attach metadata at hand-off instead (the SubMusic
-    // pattern): title = "<book> - <h:mm:ss>" where the timestamp is the
-    // chunk's book-absolute start - with ~3-minute chunks that doubles as the
-    // "where am I in the whole book" indicator next to the native player's
-    // within-chunk position bar - artist = author, album = book title,
-    // trackNumber = the chunk's position within its book.
+    // title/artist. Attach metadata at hand-off instead (the SubMusic pattern):
+    // title = book name, artist = author, album = book name, trackNumber = the
+    // chunk's position within its book. (The title used to append the chunk's
+    // book-absolute timestamp as a coarse position readout; dropped for a clean
+    // "book - author" screen - the native player still shows within-chunk time.)
     function decorate(obj, idx) {
         try {
             var meta = obj.getMetadata();
             if (meta == null) { meta = new Media.ContentMetadata(); }
             var title = mBookTitles[mOrders[idx]];
-            meta.title = title + " - " + fmtTime(mStarts[idx]);
+            meta.title = title;
             meta.album = title;
             var author = mBookAuthors[mOrders[idx]];
             if (author != null) { meta.artist = author; }
@@ -192,7 +191,7 @@ class ContentIterator extends Media.ContentIterator {
     function resumeMetadata(idx) {
         var meta = new Media.ContentMetadata();
         var title = mBookTitles[mOrders[idx]];
-        meta.title = title + " - " + fmtTime(mStarts[idx]);
+        meta.title = title;
         meta.album = title;
         var author = mBookAuthors[mOrders[idx]];
         if (author != null) { meta.artist = author; }
@@ -208,18 +207,6 @@ class ContentIterator extends Media.ContentIterator {
         var j = idx;
         while ((j > 0) && (mOrders[j - 1] == b)) { --j; }
         return idx - j + 1;
-    }
-
-    // Seconds -> "h:mm:ss" (or "m:ss" under an hour).
-    function fmtTime(totalSec) {
-        var s = totalSec.toNumber();
-        var h = s / 3600;
-        var m = (s % 3600) / 60;
-        var sec = s % 60;
-        if (h > 0) {
-            return h.toString() + ":" + m.format("%02d") + ":" + sec.format("%02d");
-        }
-        return m.toString() + ":" + sec.format("%02d");
     }
 
     // Build the ordered playlist. Ids come from the OS's OWN content cache
