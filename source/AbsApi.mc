@@ -206,6 +206,12 @@ module AbsApi {
         Application.Storage.deleteValue(Store.SERVER);
         Application.Storage.deleteValue(Store.TOKEN);
     }
+    // Drop ONLY the login token, keeping the server URL. Used when ABS reports
+    // the session is dead (401): isConfigured() flips false so the login flow
+    // restarts, but the user doesn't have to re-type their server URL.
+    function clearToken() {
+        Application.Storage.deleteValue(Store.TOKEN);
+    }
     function _noSlash(url) {
         if ((url != null) && url.length() > 0 && url.substring(url.length() - 1, url.length()).equals("/")) {
             return url.substring(0, url.length() - 1);

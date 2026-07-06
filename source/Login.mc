@@ -22,6 +22,14 @@ module Login {
     function start() {
         WatchUi.pushView(new LoginView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
     }
+    // ABS reported our session dead (401). Drop the stale token (keep the server
+    // URL) and restart login, so a data screen recovers cleanly instead of
+    // dead-ending on "Could not load..." or a -300 hang. This is the one action
+    // that actually fixes an expired session, surfaced automatically.
+    function reauth() {
+        AbsApi.clearToken();
+        start();
+    }
 }
 
 class LoginView extends WatchUi.View {
