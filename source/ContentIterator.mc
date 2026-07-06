@@ -137,7 +137,14 @@ class ContentIterator extends Media.ContentIterator {
                     try {
                         return new Media.ActiveContent(ref, resumeMetadata(idx), mResumeOffset);
                     } catch (e2) {
+                        // ActiveContent unsupported here: fall through to the plain
+                        // cached obj, which plays the chunk from 0. The offset was
+                        // NOT applied, so clear the resume state - otherwise
+                        // resumeOffsetFor() would keep reporting it and
+                        // ContentDelegate.syncProgress would add it back, pushing a
+                        // position ~offset seconds too far ahead to ABS.
                         System.println("ActiveContent resume failed: " + e2.getErrorMessage());
+                        clearResume();
                     }
                 }
                 var obj = Media.getCachedContentObj(ref);
@@ -335,11 +342,38 @@ class ContentIterator extends Media.ContentIterator {
         if (pick >= 0) {
             mIndex = pick;
             var off = (target - mStarts[pick]).toNumber(); // seconds into chunk
+            // Clamp to the picked chunk's REAL length. When the synced position
+            // lands in a chunk that isn't downloaded yet (a partially-downloaded
+            // book), the loop above picks the LAST cached chunk, whose start can
+            // be far below target - leaving off pointing past the chunk's end. An
+            // unclamped off makes ActiveContent overshoot AND makes syncProgress
+            // write that inflated position back to ABS (corrupting cross-device
+            // resume). If off reaches the chunk end, we can't resume precisely
+            // into audio we don't have: start cleanly at the chunk head (off = 0).
+            if (off > 0) {
+                var span = chunkLen(slot, pick - first);
+                if ((span <= 0) || (off >= span)) { off = 0; }
+            }
             if (off > 0) {
                 mResumeRefId = mPlaylist[pick];
                 mResumeOffset = off;
             }
         }
+    }
+
+    // Exact playable length (seconds) of book `slot`'s chunk at in-book index
+    // `k`, or -1 if unknown. Chunks download strictly in order, so a cached
+    // chunk's offset from the book's first playlist row IS its true chunk index.
+    // Boundaries are DERIVED (Chunks.at), never stored per-chunk (OOM discipline);
+    // a fixed LEN guess would misjudge the short last chunk of each file.
+    function chunkLen(slot, k) {
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if ((index == null) || (slot < 0) || (slot >= index.size())) { return -1; }
+        var meta = BookStore.get(index[slot]);
+        if ((meta == null) || (meta["durs"] == null)) { return -1; }
+        var c = Chunks.at(meta["durs"], k);
+        if (c == null) { return -1; }
+        return c["cend"] - c["cstart"];
     }
 
     // Resume offset (seconds) to add for `refId`, else 0. ContentDelegate needs

@@ -31,11 +31,13 @@ class SyncDelegate extends Communications.SyncDelegate {
     private var mTotal;         // ops planned at sync start (downloads + deletes)
     private var mDone;          // ops completed
     private var mProgressSync;  // held so its async chain isn't GC'd mid-flight
+    private var mSyncError;     // download error surfaced AFTER progress runs, or null
 
     function initialize() {
         SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
+        mSyncError = null;
     }
 
     function deletes() {
@@ -111,7 +113,9 @@ class SyncDelegate extends Communications.SyncDelegate {
     }
 
     function onProgressDone() {
-        Communications.notifySyncComplete(null);
+        // Report a download error (if any) only now - AFTER the progress exchange
+        // has had its chance to flush a dirty offline listen. null on a clean sync.
+        Communications.notifySyncComplete(mSyncError);
     }
 
     // System-initiated cancel: stop cleanly. In-flight request is abandoned;
@@ -121,13 +125,20 @@ class SyncDelegate extends Communications.SyncDelegate {
         Communications.notifySyncComplete(null);
     }
 
-    // Delete every queued BOOK: BookStore evicts its cached chunks and drops
-    // its records; then remove it from the menu index.
+    // Delete every queued BOOK: un-index it, evict its cached chunks and records,
+    // and drop its saved progress.
     function deleteQueued(toDelete) {
         if (toDelete.size() == 0) { return; }
         for (var i = 0; i < toDelete.size(); ++i) {
-            BookStore.deleteBook(toDelete[i]);
+            // Un-index FIRST, then evict. A hard kill between the two then leaves
+            // an UNindexed book with orphan chunks (harmlessly swept next sync,
+            // never played) rather than an INDEXED book with zero chunks (which
+            // makes playback start a DIFFERENT book's audio). Prune its progress
+            // too, so a deleted book can never win bestResume() and misdirect a
+            // later native-widget resume to the wrong (or no) book.
             BookStore.removeFromIndex(toDelete[i]);
+            BookStore.deleteBook(toDelete[i]);
+            Progress.remove(toDelete[i]);
             onOpDone();
         }
 
@@ -237,8 +248,15 @@ class SyncDelegate extends Communications.SyncDelegate {
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
         if ((code != 200) || (data == null)) {
+            // Download failed. Do NOT end here: a dirty offline listen still needs
+            // flushing and the progress exchange requires no successful download.
+            // Route through finishSync (which runs ProgressSync, then reports this
+            // error via onProgressDone). The failing job stays queued for the next
+            // sync to retry. ProgressSync always fires its continuation even if its
+            // own requests error, so this cannot hang.
             var h = Errors.hint(code);
-            Communications.notifySyncComplete((h != null) ? h : ("Download failed (" + code + ")"));
+            mSyncError = (h != null) ? h : ("Download failed (" + code + ")");
+            finishSync();
             return;
         }
 

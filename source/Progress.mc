@@ -48,6 +48,17 @@ module Progress {
         save(m);
     }
 
+    // Drop a book's saved progress. Called when the book is deleted from the
+    // watch so a stale entry can't linger and win bestResume() - which would
+    // misdirect a later native-widget resume to a book that's no longer here.
+    function remove(itemId) {
+        var m = all();
+        if (m.hasKey(itemId)) {
+            m.remove(itemId);
+            save(m);
+        }
+    }
+
     // Mark a book's write confirmed to ABS - but ONLY if no NEWER local write
     // landed while the request was in flight. A later record() bumps tsSec, so a
     // stale 200 for an older position must not clear the newer dirty one.
@@ -92,14 +103,21 @@ module Progress {
         return out;
     }
 
-    // The most-recently-updated book as [itemId, positionSec], or null - the
-    // book (and offset) to resume playback at across devices.
+    // The most-recently-updated DOWNLOADED book as [itemId, positionSec], or
+    // null - the book (and offset) to resume playback at across devices. Only
+    // books still in BOOK_INDEX are considered: a progress entry for a deleted
+    // book (or one downloaded on another device but not here) can't be resumed,
+    // and letting it win would strand the null-args resume on a book that isn't
+    // present (playback then silently starts a different book at 0).
     function bestResume() {
         var m = all();
         var ids = m.keys();
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { index = []; }
         var bestId = null;
         var bestTs = null;
         for (var i = 0; i < ids.size(); ++i) {
+            if (!_indexed(index, ids[i])) { continue; }
             var e = m[ids[i]];
             if ((bestTs == null) || (e[1] > bestTs)) {
                 bestTs = e[1];
@@ -108,5 +126,12 @@ module Progress {
         }
         if (bestId == null) { return null; }
         return [bestId, m[bestId][0]];
+    }
+
+    function _indexed(index, itemId) {
+        for (var i = 0; i < index.size(); ++i) {
+            if (index[i].equals(itemId)) { return true; }
+        }
+        return false;
     }
 }

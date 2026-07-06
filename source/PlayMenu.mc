@@ -2,9 +2,17 @@ using Toybox.Application;
 using Toybox.WatchUi;
 
 // "Play downloaded" -> a list of the downloaded books (one row per BOOK_INDEX
-// entry, cover art if present else the placeholder glyph). Selecting a book
-// opens its action menu (Resume / Play from start / Delete). This is the play
-// entry point; the old top-level menu no longer plays or lists books directly.
+// entry). Selecting a book opens its action menu (Resume / Play from start /
+// Delete). This is the play entry point; the old top-level menu no longer plays
+// or lists books directly.
+//
+// PLAIN MenuItem, NO per-row cover art - deliberately. An earlier b34 draft used
+// IconMenuItem with BookStore.icon(); that art is dead code today (cover fetch
+// was removed in b33, so icon() always returns null and only the placeholder
+// glyph rendered), so the IconMenuItem bought nothing while nudging toward the
+// per-row-icon pattern the Browse list had to abandon (b29->b30) to stop OOMing
+// its unbounded list. Keep this list plain; cover art belongs only on the player
+// screen (Media.setAlbumArt), never as menu-row icons.
 class PlayMenu extends WatchUi.Menu2 {
 
     function initialize() {
@@ -13,16 +21,17 @@ class PlayMenu extends WatchUi.Menu2 {
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
 
-        var placeholder = WatchUi.loadResource(Rez.Drawables.bookIcon);
         for (var i = 0; i < index.size(); ++i) {
             var itemId = index[i];
+            var count = BookStore.count(itemId);
+            // Skip a book with no cached chunks - an unplayable transient (the
+            // crash window between a delete's un-index and evict). Selecting it
+            // would have nothing to play and could start a different book.
+            if (count == 0) { continue; }
             var meta = BookStore.get(itemId);
             var title = ((meta != null) && (meta["title"] != null)) ? meta["title"] : "Book";
-            var count = BookStore.count(itemId);
             var sub = count.toString() + " part" + ((count == 1) ? "" : "s");
-            var art = BookStore.icon(itemId);
-            addItem(new WatchUi.IconMenuItem(title, sub, itemId,
-                (art != null) ? art : placeholder, null));
+            addItem(new WatchUi.MenuItem(title, sub, itemId, null));
         }
     }
 }
