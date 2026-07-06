@@ -28,9 +28,20 @@ class ContentIterator extends Media.ContentIterator {
     private var mShuffling;
     private var mResumeRefId;  // the ONE chunk to start partway in (or null)
     private var mResumeOffset; // seconds into that chunk (Number); 0 = none
+    private var mStartItem;    // book itemId to start at (from startPlayback), or null
+    private var mStartMode;    // "resume" | "start" | null
 
-    function initialize() {
+    // args is the startPlayback payload: { item, mode } selects a specific book
+    // and whether to resume or start it; null (native Music widget) resumes the
+    // most-recently-progressed book.
+    function initialize(args) {
         ContentIterator.initialize();
+        mStartItem = null;
+        mStartMode = null;
+        if (args != null) {
+            mStartItem = args["item"];
+            mStartMode = args["mode"];
+        }
         mIndex = 0;
         mShuffling = false;
         buildPlaylist();
@@ -270,48 +281,77 @@ class ContentIterator extends Media.ContentIterator {
             }
         }
         mIndex = 0;
-        applyResume();
+        applyStart();
     }
 
-    // Start the cursor at the resume point synced from ABS instead of the very
-    // first chunk. We pick the CHUNK that contains the saved position, then start
-    // that chunk PARTWAY IN via ActiveContent (see objAt) so resume is exact, not
-    // just chunk-aligned. Best-effort throughout: any problem leaves the cursor
-    // at 0 / the chunk start, never a crash.
-    function applyResume() {
+    // Position the cursor for THIS playback session. If a specific book was
+    // chosen (BookActionMenu -> startPlayback { item, mode }), start it at its
+    // synced position ("resume") or at 0 ("start"). With no book (native Music
+    // widget / null args), resume the most-recently-progressed book. Best-effort
+    // throughout: any problem leaves the cursor at 0, never a crash.
+    function applyStart() {
         try {
-            var r = Progress.bestResume(); // [itemId, positionSec] or null
-            if (r == null) { return; }
-            var index = Application.Storage.getValue(Store.BOOK_INDEX);
-            if (index == null) { return; }
-            var slot = -1;
-            for (var i = 0; i < index.size(); ++i) {
-                if (index[i].equals(r[0])) { slot = i; break; }
+            var slot;
+            var target;
+            if (mStartItem != null) {
+                slot = slotOf(mStartItem);
+                if (slot < 0) { return; } // chosen book isn't downloaded
+                target = ((mStartMode != null) && mStartMode.equals("resume"))
+                    ? resumePosFor(mStartItem) : 0;
+            } else {
+                var r = Progress.bestResume(); // [itemId, positionSec] or null
+                if (r == null) { return; }
+                slot = slotOf(r[0]);
+                if (slot < 0) { return; }
+                target = r[1];
             }
-            if (slot < 0) { return; } // resumed book isn't downloaded - ignore
-            var target = r[1];
-            // A book's chunks are contiguous and ascending in the sorted
-            // playlist: walk this book's run, taking the last chunk that starts
-            // at or before the target, then stop.
-            var pick = -1;
-            for (var i = 0; i < mPlaylist.size(); ++i) {
-                if (mOrders[i] == slot) {
-                    if (mStarts[i] <= target) { pick = i; } else { break; }
-                } else if (pick >= 0) {
-                    break;
-                }
-            }
-            if (pick >= 0) {
-                mIndex = pick;
-                var off = (target - mStarts[pick]).toNumber(); // seconds into chunk
-                if (off > 0) {
-                    mResumeRefId = mPlaylist[pick];
-                    mResumeOffset = off;
-                }
-            }
+            positionAtBook(slot, target);
         } catch (e) {
-            System.println("applyResume failed: " + e.getErrorMessage());
+            System.println("applyStart failed: " + e.getErrorMessage());
             mIndex = 0;
+        }
+    }
+
+    // BOOK_INDEX slot (== sort order) for an itemId, or -1 if not downloaded.
+    function slotOf(itemId) {
+        var index = Application.Storage.getValue(Store.BOOK_INDEX);
+        if (index == null) { return -1; }
+        for (var i = 0; i < index.size(); ++i) {
+            if (index[i].equals(itemId)) { return i; }
+        }
+        return -1;
+    }
+
+    // Saved book-absolute resume position (seconds) for a book, or 0.
+    function resumePosFor(itemId) {
+        var e = Progress.get(itemId); // [positionSec, tsSec, dirty] or null
+        return (e != null) ? e[0] : 0;
+    }
+
+    // Put mIndex on the chunk of book `slot` that contains `target` seconds, and
+    // (via ActiveContent, see objAt) start it partway in for an exact resume. A
+    // book's chunks are contiguous and ascending in the sorted playlist. Falls
+    // back to the book's first cached chunk when target precedes it (e.g. "start"
+    // on a book whose head isn't at absolute 0).
+    function positionAtBook(slot, target) {
+        var first = -1;
+        var pick = -1;
+        for (var i = 0; i < mPlaylist.size(); ++i) {
+            if (mOrders[i] == slot) {
+                if (first < 0) { first = i; }
+                if (mStarts[i] <= target) { pick = i; } else { break; }
+            } else if (first >= 0) {
+                break;
+            }
+        }
+        if (pick < 0) { pick = first; }
+        if (pick >= 0) {
+            mIndex = pick;
+            var off = (target - mStarts[pick]).toNumber(); // seconds into chunk
+            if (off > 0) {
+                mResumeRefId = mPlaylist[pick];
+                mResumeOffset = off;
+            }
         }
     }
 

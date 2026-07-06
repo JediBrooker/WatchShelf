@@ -9,9 +9,14 @@ class ContentDelegate extends Media.ContentDelegate {
     private var mIterator;
     private var mProgressLookup; // { refId => [itemId, start, bookDuration] }, lazy
     private var mArtItemId;      // book whose cover is currently on the player
+    private var mArgs;           // { item, mode } from startPlayback, or null
 
-    function initialize() {
+    // args is the payload passed to Media.startPlayback (our BookActionMenu
+    // sends { item, mode }); null when playback is launched from the native
+    // Music widget. It flows on to the ContentIterator to position the cursor.
+    function initialize(args) {
         ContentDelegate.initialize();
+        mArgs = args;
         mProgressLookup = null;
         mArtItemId = null;
         resetContentIterator();
@@ -22,7 +27,7 @@ class ContentDelegate extends Media.ContentDelegate {
     }
 
     function resetContentIterator() {
-        mIterator = new ContentIterator();
+        mIterator = new ContentIterator(mArgs);
         return mIterator;
     }
 

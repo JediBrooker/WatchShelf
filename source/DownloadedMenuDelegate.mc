@@ -23,13 +23,11 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
-        // "Play downloaded" -> start playback directly. NOT wired through
-        // Menu2's onDone() (see class comment) - onDone() never fires on a
-        // plain Menu2 like this one, only on a WatchUi.CheckboxMenu, so a
-        // Done-triggered "play" was unreachable on real hardware no matter
-        // what the user pressed. This is a normal, always-reachable tap.
+        // "Play downloaded" -> the book list (PlayMenu). Picking a book there
+        // offers Resume / Play from start / Delete. A normal, always-reachable
+        // tap (NOT Menu2 onDone(), which never fires on a plain Menu2).
         if ((id instanceof Toybox.Lang.String) && id.equals("play")) {
-            Media.startPlayback(null);
+            WatchUi.pushView(new PlayMenu(), new PlayMenuDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
 
@@ -78,12 +76,8 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             queueDelete(index);
             return;
         }
-
-        // Anything else is a BOOK's itemId - queue that one book for deletion.
-        // Deletions are always whole-book (a book can be 100+ ~3-min chunks;
-        // per-chunk anything isn't usable, and per-chunk STORAGE is what used
-        // to OOM-crash the app - see Constants.mc).
-        queueDelete([id]);
+        // No book rows live in this menu anymore - per-book delete moved to
+        // PlayMenu -> BookActionMenu. Unknown ids fall through to nothing.
     }
 
     // Add every given book itemId to the delete queue, then run a sync now to

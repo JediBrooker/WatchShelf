@@ -27,8 +27,11 @@ class WatchShelfApp extends Application.AudioContentProviderApp {
     }
 
     // System -> playback: hand back a delegate that yields cached chapter tracks.
+    // args is the payload from Media.startPlayback - our BookActionMenu passes
+    // { item, mode } so the iterator can resume/start the chosen book; null from
+    // the native Music widget (iterator then resumes the most recent book).
     function getContentDelegate(args) {
-        return new ContentDelegate();
+        return new ContentDelegate(args);
     }
 
     // System -> sync: background download engine. getSyncDelegate() is the
