@@ -20,8 +20,10 @@
             <iq:product id="fenix7spro"/>
             <iq:product id="fenix7pro"/>
             <iq:product id="fenix7xpro"/>
-            <iq:product id="fenix7pronowifi"/>
-            <iq:product id="fenix7xpronowifi"/>
+            <!-- fenix7pronowifi / fenix7xpronowifi deliberately OMITTED: they do
+                 not support the audio-content-provider-app type, so including them
+                 makes the store package (make package -> bin/WatchShelf.iq) fail to
+                 compile. Debug/sideload builds for supported devices are unaffected. -->
             <!-- fenix 8 43mm + fenix 8 Solar (MIP) + fenix 8 Pro (fenix847mm is above) -->
             <iq:product id="fenix843mm"/>
             <iq:product id="fenix8solar47mm"/>
