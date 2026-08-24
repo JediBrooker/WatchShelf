@@ -43,6 +43,11 @@ module Store {
     // leaving isSyncNeeded() permanently true (which the OS would turn into
     // endless no-op syncs).
     const FORCE_SYNC  = "forceSync";
+    // Last foreground-readable download failure. Some device firmware renders
+    // only the native "Transfer failed" heading and drops the descriptive
+    // string passed to notifySyncComplete(), so keep the same detail here for
+    // DownloadedMenu -> "Last sync failed".
+    const LAST_SYNC_ERROR = "syncError";
 }
 
 // ---------------------------------------------------------------------------
@@ -70,8 +75,8 @@ module Versions {
     const current = V4;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable). `current` is
-    // NOT bumped for b34: two-way progress only ADDS new Storage keys (PROGRESS,
-    // FORCE_SYNC) and never changes an existing value's shape, so the version
-    // wipe (which would force every book to re-download) must not fire.
-    const tag = "b34";
+    // NOT bumped for b35: tail-only metadata and finished progress append
+    // optional fields with legacy defaults, so forcing every book to re-download
+    // would be needless. The visible tag still distinguishes the tested build.
+    const tag = "b35";
 }

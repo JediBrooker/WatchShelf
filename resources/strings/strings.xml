@@ -17,9 +17,13 @@
     <string id="playDownloaded">Play downloaded</string>
     <string id="resume">Resume</string>
     <string id="playFromStart">Play from start</string>
+    <string id="playFromDownloadedStart">Play downloaded start</string>
     <string id="deleteBook">Delete from watch</string>
     <string id="syncNow">Sync now</string>
     <string id="syncing">Syncing...</string>
+    <string id="synced">synced</string>
+    <string id="lastSyncError">Last sync failed</string>
+    <string id="nothingToDownload">No unlistened audio\nto sync</string>
     <string id="alreadyDownloaded">Already downloaded.\nSee "Downloaded".</string>
 
     <!-- errors -->
@@ -45,6 +49,7 @@
     <string id="fieldUser">Username</string>
     <string id="fieldPass">Password</string>
     <string id="allBooks">All books</string>
+    <string id="continueListening">Continue listening</string>
     <string id="byAuthor">By author</string>
     <string id="bySeries">By series</string>
     <string id="byCollection">By collection</string>

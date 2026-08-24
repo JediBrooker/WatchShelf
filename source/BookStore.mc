@@ -6,7 +6,8 @@ using Toybox.System;
 // every recorded chunk. Layout (see Constants.mc for the OOM post-mortem that
 // forced O(books) storage):
 //
-//   "trk:"  + itemId          => { "title" => str, "author" => str, "durs" => [num, ...] }
+//   "trk:"  + itemId          => { "title" => str, "author" => str,
+//                                  "durs" => [num, ...], "first" => num }
 //   "trkc:" + itemId + ":" + p => [ refId, ... ]   (page p, PAGE_SIZE entries)
 //   "arta:" + itemId          => BitmapResource (player album art, ~ART_PX px)
 //   "arti:" + itemId          => BitmapResource (menu icon, ~ICON_PX px)
@@ -16,10 +17,14 @@ using Toybox.System;
 // 16bpp: 96px^2 * 2B ~= 18KB, 48px^2 * 2B ~= 4.6KB. Art is best-effort
 // everywhere - a missing/failed bitmap must never break sync or playback.
 //
-// Chunks are stored as ARRAYS indexed by chunk number, in pages:
-//  - position == chunk index, so re-recording a chunk after a crash/resume
+// Chunks are stored as ARRAYS indexed LOCALLY from meta.first, in pages:
+//  - local position == global chunk index - first, so re-recording a chunk
+//    after a crash/resume
 //    OVERWRITES (and evicts the superseded cached item) instead of duplicating,
-//    and "count == next chunk to download" holds by construction.
+//    and "first + count == next chunk to download" holds by construction.
+//  - `first` lets an in-progress ABS book omit its already-listened prefix
+//    WITHOUT null-padding page 0 (which made count wrong and made first>=256
+//    wholly unreachable because every reader stops at the first missing page).
 //  - pages keep every Storage value bounded (~11KB worst case at UUID-length
 //    refIds) - a single flat per-book value would cross the documented
 //    32KB-per-value cap on 33h+ books.
@@ -46,17 +51,28 @@ module BookStore {
         return "arti:" + itemId;
     }
 
-    // Book metadata { "title", "author", "durs" }, or null if nothing recorded
-    // yet. "author" may be absent/null on records written by older builds.
+    // Book metadata { "title", "author", "durs", "first" }, or null if
+    // nothing recorded yet. "author" and "first" may be absent/null on records
+    // written by older builds; an absent first means the legacy chunk 0.
     function get(itemId) {
         return Application.Storage.getValue(key(itemId));
     }
 
-    function ensureMeta(itemId, title, author, durs) {
+    function ensureMeta(itemId, title, author, durs, firstChunk) {
         if (get(itemId) == null) {
+            if (firstChunk == null) { firstChunk = 0; }
             Application.Storage.setValue(key(itemId),
-                { "title" => title, "author" => author, "durs" => durs });
+                { "title" => title, "author" => author, "durs" => durs,
+                  "first" => firstChunk });
         }
+    }
+
+    // Global index of this book's first cached chunk. Legacy metadata predates
+    // tail-only downloads and therefore always begins at chunk 0.
+    function first(itemId) {
+        var meta = get(itemId);
+        if ((meta == null) || (meta["first"] == null)) { return 0; }
+        return meta["first"];
     }
 
     // ---- cover art (best-effort, never load-bearing) -----------------------
@@ -97,8 +113,9 @@ module BookStore {
         Application.Storage.deleteValue(iconKey(itemId));
     }
 
-    // Downloaded-chunk count for a book (0 if none). Chunks download strictly
-    // in order, so this is also the next chunk index to fetch.
+    // Actual downloaded-chunk count for a book (0 if none). Pages are local to
+    // first(), so unlike the former null-padding idea this never counts omitted
+    // listened chunks as if they occupied cache space.
     function count(itemId) {
         var total = 0;
         var p = 0;
@@ -111,13 +128,24 @@ module BookStore {
         return total;
     }
 
-    // Record chunk k's cache refId. Only page k/PAGE_SIZE is read-modified-
-    // written, so the write stays small no matter how long the book is. If a
-    // refId is already recorded at k (crash-window re-download), the OLD
+    // Global next chunk to fetch for a contiguous cached suffix.
+    function nextChunk(itemId) {
+        return first(itemId) + count(itemId);
+    }
+
+    // Record GLOBAL chunk k's cache refId. Only the local page relative to
+    // first() is read-modified-written, so the write stays small no matter how
+    // long the book is. If a refId is already recorded at k (crash-window
+    // re-download), the OLD
     // cached item is evicted and the slot overwritten - no duplicates, ever.
     function saveChunk(itemId, k, refId) {
-        var p = (k / PAGE_SIZE).toNumber();
-        var idx = k - (p * PAGE_SIZE);
+        var local = k - first(itemId);
+        if (local < 0) {
+            System.println("saveChunk before first: " + k.toString());
+            return;
+        }
+        var p = (local / PAGE_SIZE).toNumber();
+        var idx = local - (p * PAGE_SIZE);
         var arr = Application.Storage.getValue(pageKey(itemId, p));
         if (arr == null) { arr = []; }
         if (idx < arr.size()) {
@@ -127,8 +155,8 @@ module BookStore {
             }
             arr[idx] = refId;
         } else {
-            // Defensive: pad any gap (shouldn't occur - downloads are strictly
-            // in-order) so position always equals chunk index.
+            // Defensive: pad any LOCAL gap (shouldn't occur - downloads are
+            // strictly in order) so position remains relative to first().
             while (arr.size() < idx) { arr.add(null); }
             arr.add(refId);
         }
@@ -210,16 +238,20 @@ module BookStore {
         var meta = get(itemId);
         if (meta == null) { return; }
         var starts = Chunks.starts(meta["durs"]);
-        var k = 0;
+        var firstChunk = first(itemId);
+        var local = 0;
         var p = 0;
         while (true) {
             var arr = Application.Storage.getValue(pageKey(itemId, p));
             if (arr == null) { break; }
             for (var i = 0; i < arr.size(); ++i) {
+                var k = firstChunk + local;
                 if ((arr[i] != null) && (k < starts.size())) {
-                    out[arr[i]] = [order, starts[k]];
+                    var c = Chunks.at(meta["durs"], k);
+                    var span = (c != null) ? (c["cend"] - c["cstart"]) : null;
+                    out[arr[i]] = [order, starts[k], span, k];
                 }
-                k += 1;
+                local += 1;
             }
             p += 1;
         }

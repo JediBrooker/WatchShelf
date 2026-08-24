@@ -39,6 +39,16 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.syncNow), null, "syncnow", null));
         }
 
+        // Firmware on some devices shows only the native "Transfer failed"
+        // heading and drops notifySyncComplete's descriptive string. Surface the
+        // persisted book/part/code here so the failure remains diagnosable after
+        // sync mode exits.
+        var lastError = Application.Storage.getValue(Store.LAST_SYNC_ERROR);
+        if (lastError != null) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.lastSyncError),
+                null, "syncerror", null));
+        }
+
         // Only offer to log out if actually logged in - avoids a pointless item
         // on a fresh, unconfigured install.
         if (AbsApi.isConfigured()) {

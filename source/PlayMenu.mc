@@ -30,7 +30,26 @@ class PlayMenu extends WatchUi.Menu2 {
             if (count == 0) { continue; }
             var meta = BookStore.get(itemId);
             var title = ((meta != null) && (meta["title"] != null)) ? meta["title"] : "Book";
-            var sub = count.toString() + " part" + ((count == 1) ? "" : "s");
+            var sub;
+            if ((meta != null) && (meta["durs"] != null)) {
+                // Percentage of the suffix intentionally selected for this
+                // watch. Already-listened head chunks are omitted, so a fully
+                // cached tail is 100% synced rather than (say) 40% of the whole
+                // book. Legacy records default first() to 0 and retain ordinary
+                // full-book percentage semantics.
+                var needed = Chunks.total(meta["durs"]) - BookStore.first(itemId);
+                if (needed > 0) {
+                    var pct = ((count * 100) / needed.toFloat()).toNumber();
+                    if ((count > 0) && (pct < 1)) { pct = 1; }
+                    if (pct > 100) { pct = 100; }
+                    sub = pct.toString() + "% " + WatchUi.loadResource(Rez.Strings.synced);
+                }
+            }
+            // Corrupt/pre-duration legacy metadata should stay visible rather
+            // than crashing the whole menu; retain the old count fallback.
+            if (sub == null) {
+                sub = count.toString() + " part" + ((count == 1) ? "" : "s");
+            }
             addItem(new WatchUi.MenuItem(title, sub, itemId, null));
         }
     }

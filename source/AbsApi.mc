@@ -51,6 +51,17 @@ module AbsApi {
             cb);
     }
 
+    // GET /continue -> { books: [{id, title, author}] }, limited to books in
+    // this library that the current ABS user has started but not finished.
+    function getContinueList(libId, cb) {
+        Communications.makeWebRequest(
+            sidecarBase() + "/continue",
+            { "lib" => libId, "token" => authToken() },
+            { :method => Communications.HTTP_REQUEST_METHOD_GET,
+              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            cb);
+    }
+
     // Lean group lists for browse-by: /authors, /series, /collections.
     function getGroups(path, libId, cb) {
         Communications.makeWebRequest(
@@ -64,7 +75,8 @@ module AbsApi {
     function getSeries(libId, cb)      { getGroups("/series", libId, cb); }
     function getCollections(libId, cb) { getGroups("/collections", libId, cb); }
 
-    // GET /files -> { title, files: [{ino, duration, size, codec}] } (tiny).
+    // GET /files -> { title, author, files:[{ino,duration}], progress } (tiny).
+    // progress is the slim server resume state, or null when never started.
     function getFiles(itemId, cb) {
         Communications.makeWebRequest(
             sidecarBase() + "/files",
@@ -127,12 +139,18 @@ module AbsApi {
     // with the same token). `lastUpdateSec` is the watch's listen time in epoch
     // SECONDS; the sidecar converts it to ABS's millisecond lastUpdate so
     // cross-device last-write-wins orders correctly - even for an offline listen
-    // flushed much later. `cb` receives (code, data): the live playback path
-    // passes a mark-clean listener; the sync flush passes its own step callback.
-    function postProgress(itemId, currentTimeSec, durationSec, lastUpdateSec, cb) {
+    // flushed much later. `cb` receives (code, data): the serialized live
+    // dispatcher and the sync flush each pass their own step callback.
+    function postProgress(itemId, currentTimeSec, durationSec, lastUpdateSec, isFinished, cb) {
         var params = { "itemId" => itemId, "currentTime" => currentTimeSec };
         if (durationSec != null) { params["duration"] = durationSec; }
         if (lastUpdateSec != null) { params["lastUpdateSec"] = lastUpdateSec; }
+        // Only authoritative final-part COMPLETE carries this field. A normal
+        // position change below ABS's completion threshold automatically
+        // reopens a completed book. Sending explicit false is unsafe on current
+        // ABS: its unfinish branch resets currentTime to zero and discards the
+        // position supplied in that same PATCH.
+        if (isFinished == true) { params["isFinished"] = true; }
         Communications.makeWebRequest(
             sidecarBase() + "/progress?token=" + authToken(),
             params,
@@ -140,14 +158,6 @@ module AbsApi {
               :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
               :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
             cb);
-    }
-
-    // Live playback push: fire, and clear the book's dirty flag on a confirmed
-    // 200 (so an online listen never needs a later flush; an offline one stays
-    // dirty and gets flushed on the next sync).
-    function patchProgress(itemId, currentTimeSec, durationSec, lastUpdateSec) {
-        postProgress(itemId, currentTimeSec, durationSec, lastUpdateSec,
-            new AbsProgressListener(itemId, lastUpdateSec).method(:onResponse));
     }
 
     // READ: GET the saved position for one book from the sidecar (which reads
@@ -163,13 +173,14 @@ module AbsApi {
             cb);
     }
 
-    // Parse a getProgress() response into [positionSec, lastUpdateSec], or null
+    // Parse a getProgress() response into
+    // [positionSec, lastUpdateSec, isFinished], or null
     // when the book has no server progress (empty {} or missing fields).
     function readProgress(data) {
         if ((data == null) || (data["currentTime"] == null) || (data["lastUpdate"] == null)) {
             return null;
         }
-        return [data["currentTime"], data["lastUpdate"]];
+        return [data["currentTime"], data["lastUpdate"], data["isFinished"] == true];
     }
 
     // ---- on-watch login ----------------------------------------------------
@@ -220,24 +231,91 @@ module AbsApi {
     }
 }
 
-// Owns the live-playback progress-update callback. AbsApi is a module (no
-// `self`), so `method(:...)` cannot resolve inside it; a class instance can. The
-// instance stays alive while the request is in flight because makeWebRequest
-// holds a reference to the Method it is given. On a confirmed 200 it clears the
-// book's dirty flag (markClean guards against clobbering a newer in-flight
-// write); a failure leaves it dirty for the next sync's flush.
-class AbsProgressListener {
-    private var mItemId;
-    private var mTsSec;
-    function initialize(itemId, tsSec) {
-        mItemId = itemId;
-        mTsSec = tsSec;
+// One app-wide live progress dispatcher. Playback callbacks can arrive faster
+// than HTTP responses (especially NOTIFY immediately followed by final
+// COMPLETE), and ABS applies PATCHes in arrival order rather than comparing
+// lastUpdate. Sending one at a time prevents an older ordinary position from
+// landing after isFinished:true and reopening the book. Every callback first
+// persists its latest state in Progress; the queue therefore coalesces repeated
+// events for a book without losing the newest position. It also spans delegate
+// replacement, so stop/start on the same book cannot race two HTTP writes.
+module LiveProgress {
+    var worker = null;
+
+    function submit(itemId) {
+        if (worker == null) { worker = new LiveProgressWorker(); }
+        worker.submit(itemId);
     }
+}
+
+class LiveProgressWorker {
+    private var mQueue;
+    private var mBusy;
+    private var mCurId;
+    private var mCurTs;
+    private var mCurPos;
+    private var mCurFinished;
+
+    function initialize() {
+        mQueue = [];
+        mBusy = false;
+    }
+
+    function submit(itemId) {
+        if (!isQueued(itemId)) { mQueue.add(itemId); }
+        drain();
+    }
+
+    function isQueued(itemId) {
+        for (var i = 0; i < mQueue.size(); ++i) {
+            if (mQueue[i].equals(itemId)) { return true; }
+        }
+        return false;
+    }
+
+    function shiftQueue() {
+        var itemId = mQueue[0];
+        var rest = [];
+        for (var i = 1; i < mQueue.size(); ++i) { rest.add(mQueue[i]); }
+        mQueue = rest;
+        return itemId;
+    }
+
+    function duration(itemId) {
+        var meta = BookStore.get(itemId);
+        if ((meta == null) || (meta["durs"] == null)) { return null; }
+        var total = 0;
+        var durs = meta["durs"];
+        for (var i = 0; i < durs.size(); ++i) { total += durs[i]; }
+        return (total > 0) ? total : null;
+    }
+
+    function drain() {
+        if (mBusy) { return; }
+        while (mQueue.size() > 0) {
+            mCurId = shiftQueue();
+            var e = Progress.get(mCurId);
+            if ((e == null) || !e[2]) { continue; }
+            mCurPos = e[0];
+            mCurTs = e[1];
+            mCurFinished = Progress.entryFinished(e);
+            mBusy = true;
+            AbsApi.postProgress(mCurId, mCurPos, duration(mCurId), mCurTs,
+                mCurFinished ? true : null, method(:onResponse));
+            return;
+        }
+    }
+
     function onResponse(code, data) {
         if (code == 200) {
-            Progress.markClean(mItemId, mTsSec);
+            // Exact-match guard leaves a newer queued callback dirty.
+            Progress.markClean(mCurId, mCurTs, mCurPos, mCurFinished);
         } else {
+            // Do not spin on a failed request. The persisted dirty state is
+            // retried by a later playback event or the next explicit sync.
             System.println("ABS progress update failed: " + code);
         }
+        mBusy = false;
+        drain();
     }
 }

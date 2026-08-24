@@ -12,10 +12,11 @@
 //   POST /login?  {username,password}   -> {user:{token}} (proxied to ABS /login)
 //   GET /libraries?token                -> {libraries:[{id,name}]}
 //   GET /list?lib&token[&author=id|&series=id|&collection=id]  -> {books:[{id,title,author}]}
+//   GET /continue?lib&token     -> {books:[{id,title,author}]} (started, unfinished)
 //   GET /authors?lib&token       -> {authors:[{id,name,count}]}
 //   GET /series?lib&token        -> {series:[{id,name,count}]}
 //   GET /collections?lib&token   -> {collections:[{id,name}]}
-//   GET /files?item&token        -> {title,author,files:[{ino,duration}]}
+//   GET /files?item&token        -> {title,author,files:[{ino,duration}],progress}
 //                                   (or {..,files:[],fileCount,tooManyFiles:true}
 //                                    when the book has > MAX_FILES audio files)
 //   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
@@ -23,7 +24,7 @@
 //                                   small JPEG (the watch decodes it in 512KB)
 //   GET  /progress?item&token -> {currentTime,duration,lastUpdate,isFinished}
 //                                (seconds) or {} - saved position for resume
-//   POST /progress?token  {itemId,currentTime,duration,lastUpdateSec}
+//   POST /progress?token  {itemId,currentTime,duration,lastUpdateSec,isFinished}
 //                                -> real PATCH to ABS (lastUpdateSec -> ms)
 
 import http from 'node:http';
@@ -310,6 +311,24 @@ async function list(req, res, u) {
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 
+// GET /continue?lib&token -> the current user's started, unfinished books in
+// this library. ABS returns minified items globally; filter before slimming so
+// the watch receives only a small book list for the library it is browsing.
+async function continueListening(req, res, u) {
+  const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
+  if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
+  try {
+    const d = await absJson('/api/me/items-in-progress?limit=1000', token);
+    const books = (d.libraryItems || [])
+      // items-in-progress also includes ebook-only progress. Garmin can only
+      // consume audio, so require a positive audio duration before offering a
+      // row that would inevitably fail at /files.
+      .filter((it) => it.libraryId === lib && it.mediaType === 'book' && Number((it.media || {}).duration) > 0)
+      .map(bookOf);
+    res.writeHead(200, jsonHead).end(JSON.stringify({ books }));
+  } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
+}
+
 async function groups(req, res, u, path, map) {
   const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
   if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
@@ -326,9 +345,11 @@ async function files(req, res, u) {
   const item = u.searchParams.get('item'), token = u.searchParams.get('token');
   if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
   try {
-    const m = (await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1`, token)).media || {};
+    const d = await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1&include=progress`, token);
+    const m = d.media || {};
     const meta = m.metadata || {};
     const all = m.audioFiles || [];
+    const progress = d.userMediaProgress ? slimProgress(d.userMediaProgress) : null;
     // Ship ONLY the two fields the watch actually uses: ino + duration (it
     // derives chunk boundaries itself). The old response also carried size +
     // codec - dead weight the watch ignored, but for a heavily chapterized book
@@ -340,8 +361,8 @@ async function files(req, res, u) {
     // being handed a huge array to parse to death.
     const MAX_FILES = 600;
     const out = (all.length > MAX_FILES)
-      ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true }
-      : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })) };
+      ? { title: meta.title || 'Book', author: meta.authorName || '', files: [], fileCount: all.length, tooManyFiles: true, progress }
+      : { title: meta.title || 'Book', author: meta.authorName || '', files: all.map((a) => ({ ino: a.ino, duration: a.duration })), progress };
     res.writeHead(200, jsonHead).end(JSON.stringify(out));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
@@ -365,7 +386,8 @@ function slimProgress(p) {
   };
 }
 
-// POST /progress?token {itemId,currentTime,duration,lastUpdateSec} -> PATCH ABS.
+// POST /progress?token
+// {itemId,currentTime,duration,lastUpdateSec,isFinished} -> PATCH ABS.
 // lastUpdateSec (epoch seconds, the watch's listen time) becomes ABS's
 // lastUpdate (ms). ABS honors a client-supplied lastUpdate ("for local sync"),
 // so an offline listen flushed later still orders correctly against other
@@ -380,11 +402,19 @@ function progress(req, res, u) {
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     if (typeof body.lastUpdateSec === 'number' && body.lastUpdateSec > 0) { payload.lastUpdate = Math.round(body.lastUpdateSec * 1000); }
+    // Only an authoritative final-part COMPLETE may set this flag. ABS already
+    // reopens a completed item when currentTime moves below its finish
+    // threshold. Explicit false is deliberately ignored because ABS resets
+    // currentTime to zero and discards the position in that same update.
+    if (body.isFinished === true) {
+      payload.isFinished = true;
+      payload.progress = 1;
+    }
     try {
       const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
         { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
-    } catch (e) { res.writeHead(502).end('ABS unreachable'); }
+    } catch (e) { fail(res, 502, 'ABS unreachable'); }
   });
 }
 
@@ -462,6 +492,7 @@ const server = http.createServer((req, res) => {
   if (p === '/login'       && req.method === 'POST') { login(req, res); return; }
   if (p === '/libraries'   && g) { libraries(req, res, u); return; }
   if (p === '/list'        && g) { list(req, res, u); return; }
+  if (p === '/continue'    && g) { continueListening(req, res, u); return; }
   if (p === '/authors'     && g) { authors(req, res, u); return; }
   if (p === '/series'      && g) { series(req, res, u); return; }
   if (p === '/collections' && g) { collections(req, res, u); return; }

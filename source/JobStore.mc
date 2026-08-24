@@ -5,7 +5,11 @@ using Toybox.Application;
 //
 //   "jobidx"        => [ itemId, ... ]
 //   "job:" + itemId => { "inos" => [str], "durs" => [num], "title" => str,
-//                        "author" => str or null, "done" => num, "gen" => num }
+//                        "author" => str or null, "base" => num,
+//                        "done" => num, "gen" => num }
+// `base` and `done` are GLOBAL chunk indexes. base is the first unlistened
+// chunk selected for a tail-only download; done is its persisted next cursor.
+// Jobs from older builds have no base and are read as base 0.
 //
 // One-job-per-key matters for the same reason BookStore pages do: a
 // chapterized book can be hundreds of per-chapter files, so a job's

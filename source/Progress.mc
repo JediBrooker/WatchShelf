@@ -5,7 +5,7 @@ using Toybox.Time;
 // itemId, never per-chunk (see Constants.mc for the OOM post-mortem that forced
 // O(books) everywhere). One entry per book the user has played or resumed:
 //
-//   { itemId => [ positionSec, tsSec, dirty ] }
+//   { itemId => [ positionSec, tsSec, dirty, finished? ] }
 //
 //   positionSec  book-absolute playback position in seconds - the resume point.
 //   tsSec        when that position was set, in EPOCH SECONDS. This is the same
@@ -16,7 +16,9 @@ using Toybox.Time;
 //   dirty        true  = written locally but not yet confirmed to ABS (must be
 //                        flushed on the next sync);
 //                false = in sync with ABS.
-//
+//   finished     optional Boolean. Missing on records from older builds and
+//                therefore treated as false. A final-part COMPLETE sets true;
+//                any later start-over playback clears it.
 // Seconds (not ms) is deliberate: an epoch-ms value overflows the watch's 32-bit
 // Number and JSON-decodes to a lossy Float, which would corrupt LWW ordering.
 // Epoch seconds stays an exact Number, and the sidecar does the *1000 / /1000.
@@ -40,11 +42,19 @@ module Progress {
         return all()[itemId];
     }
 
+    function entryFinished(e) {
+        return (e != null) && (e.size() > 3) && e[3];
+    }
+
+    function isFinished(itemId) {
+        return entryFinished(get(itemId));
+    }
+
     // Record a locally-observed position. Always marked dirty: the next sync
     // flushes it to ABS, and the live push (if online) clears it via markClean.
-    function record(itemId, positionSec, tsSec) {
+    function record(itemId, positionSec, tsSec, finished) {
         var m = all();
-        m[itemId] = [positionSec, tsSec, true];
+        m[itemId] = [positionSec, tsSec, true, finished == true];
         save(m);
     }
 
@@ -59,14 +69,17 @@ module Progress {
         }
     }
 
-    // Mark a book's write confirmed to ABS - but ONLY if no NEWER local write
-    // landed while the request was in flight. A later record() bumps tsSec, so a
-    // stale 200 for an older position must not clear the newer dirty one.
-    function markClean(itemId, tsSec) {
+    // Mark a book's write confirmed to ABS - but ONLY if the exact local write
+    // is still current. Epoch seconds are 32-bit-safe but allow two callbacks
+    // in one second; timestamp alone would let an older 200 clear a newer
+    // position or final COMPLETE that still needs a retry.
+    function markClean(itemId, tsSec, positionSec, finished) {
         var m = all();
         var e = m[itemId];
-        if ((e != null) && e[2] && (e[1] <= tsSec)) {
-            m[itemId] = [e[0], e[1], false];
+        if ((e != null) && e[2] && (e[1] == tsSec) &&
+            (e[0] == positionSec) &&
+            (entryFinished(e) == (finished == true))) {
+            m[itemId] = [e[0], e[1], false, entryFinished(e)];
             save(m);
         }
     }
@@ -74,11 +87,14 @@ module Progress {
     // Merge a position pulled from ABS, last-write-wins by tsSec: a strictly
     // newer server value replaces ours (and is clean - no need to push it back);
     // an equal/older one is ignored so a fresh local listen is never regressed.
-    function mergeServer(itemId, positionSec, tsSec) {
+    function mergeServer(itemId, positionSec, tsSec, finished) {
         var m = all();
         var e = m[itemId];
         if ((e == null) || (tsSec > e[1])) {
-            m[itemId] = [positionSec, tsSec, false];
+            // A null flag is tolerated for an older sidecar/watch protocol and
+            // preserves the local value. Current AbsApi always supplies it.
+            var f = (finished != null) ? (finished == true) : entryFinished(e);
+            m[itemId] = [positionSec, tsSec, false, f];
             save(m);
         }
     }
@@ -119,6 +135,7 @@ module Progress {
         for (var i = 0; i < ids.size(); ++i) {
             if (!_indexed(index, ids[i])) { continue; }
             var e = m[ids[i]];
+            if (entryFinished(e)) { continue; }
             if ((bestTs == null) || (e[1] > bestTs)) {
                 bestTs = e[1];
                 bestId = ids[i];

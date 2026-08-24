@@ -18,6 +18,7 @@ module Browse {
 
     function start(libId) {
         var m = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.browseLibrary) });
+        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.continueListening), null, "continue", null));
         m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.allBooks), null, "all", null));
         m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.byAuthor), null, "authors", null));
         m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.bySeries), null, "series", null));
@@ -29,8 +30,13 @@ module Browse {
     function showBooks(code, data) {
         // Session expired -> re-login instead of a dead-end error.
         if (code == 401) { Login.reauth(); return; }
-        if (code != 200 || data == null || data["books"] == null || data["books"].size() == 0) {
+        if (code != 200 || data == null || data["books"] == null) {
             WatchUi.pushView(new ErrorView(Errors.message(Rez.Strings.errItems, code)),
+                new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            return;
+        }
+        if (data["books"].size() == 0) {
+            WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.errNone)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
@@ -52,7 +58,8 @@ class BrowseDelegate extends WatchUi.Menu2InputDelegate {
     function initialize(libId) { Menu2InputDelegate.initialize(); mLib = libId; }
     function onSelect(item) {
         var mode = item.getId();
-        if (mode.equals("all")) { AbsApi.getBookList(mLib, null, null, method(:onBooks)); }
+        if (mode.equals("continue")) { AbsApi.getContinueList(mLib, method(:onBooks)); }
+        else if (mode.equals("all")) { AbsApi.getBookList(mLib, null, null, method(:onBooks)); }
         else if (mode.equals("authors")) { AbsApi.getAuthors(mLib, method(:onAuthors)); }
         else if (mode.equals("series")) { AbsApi.getSeries(mLib, method(:onSeries)); }
         else { AbsApi.getCollections(mLib, method(:onCollections)); }

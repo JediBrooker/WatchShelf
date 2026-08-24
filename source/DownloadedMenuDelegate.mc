@@ -44,6 +44,16 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // Persistent fallback for devices whose native sync screen suppresses
+        // the errorMessage passed to notifySyncComplete().
+        if ((id instanceof Toybox.Lang.String) && id.equals("syncerror")) {
+            var detail = Application.Storage.getValue(Store.LAST_SYNC_ERROR);
+            if (detail != null) {
+                WatchUi.pushView(new ErrorView(detail), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            }
+            return;
+        }
+
         // "Log out" -> clear the stored server/token and go straight to a fresh
         // on-watch login (switchToView, not push, so Back doesn't return to a
         // stale pre-logout menu - matches how LoginView.onLogin returns on success).

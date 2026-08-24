@@ -20,7 +20,9 @@ class LoginCreds {
 
 module Login {
     function start() {
-        WatchUi.pushView(new LoginView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
+        // Login replaces the screen that requested it. Keeping that stale
+        // loading/error screen underneath made Browse require an extra Back.
+        WatchUi.switchToView(new LoginView(), new LibraryViewDelegate(), WatchUi.SLIDE_LEFT);
     }
     // ABS reported our session dead (401). Drop the stale token (keep the server
     // URL) and restart login, so a data screen recovers cleanly instead of

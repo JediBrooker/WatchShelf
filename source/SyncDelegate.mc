@@ -1,6 +1,7 @@
 using Toybox.Application;
 using Toybox.Communications;
 using Toybox.Media;
+using Toybox.System;
 
 // Downloads queued books to the device media cache, one derived chunk at a
 // time. One chunk == one Media track, so the native player gives real chapter
@@ -57,6 +58,12 @@ class SyncDelegate extends Communications.SyncDelegate {
     }
 
     function onStartSync() {
+        // A delegate normally has one run, but resetting here also makes a
+        // simulator/manual re-entry deterministic and prevents stale progress
+        // or error state from leaking into a later run.
+        mTotal = 0;
+        mDone = 0;
+        mSyncError = null;
         // Consume the one-shot "Sync now" flag immediately so this sync can't be
         // re-triggered by it forever.
         Application.Storage.deleteValue(Store.FORCE_SYNC);
@@ -115,6 +122,11 @@ class SyncDelegate extends Communications.SyncDelegate {
     function onProgressDone() {
         // Report a download error (if any) only now - AFTER the progress exchange
         // has had its chance to flush a dirty offline listen. null on a clean sync.
+        // Do not clear a useful prior error after a no-op/force-progress sync;
+        // clear it only when real download/delete work completed cleanly.
+        if ((mSyncError == null) && (mDone > 0)) {
+            Application.Storage.deleteValue(Store.LAST_SYNC_ERROR);
+        }
         Communications.notifySyncComplete(mSyncError);
     }
 
@@ -248,14 +260,44 @@ class SyncDelegate extends Communications.SyncDelegate {
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
         if ((code != 200) || (data == null)) {
+            var itemId = context["item"];
+            var job = JobStore.get(itemId);
+            // A superseded/cancelled request can fail after the foreground has
+            // already replaced its job. Ignore that stale result exactly as the
+            // success path below ignores stale bytes; never remove the new job.
+            if ((job == null) || (context["gen"] != job["gen"]) || (context["k"] != job["done"])) {
+                downloadNext();
+                return;
+            }
+
             // Download failed. Do NOT end here: a dirty offline listen still needs
             // flushing and the progress exchange requires no successful download.
-            // Route through finishSync (which runs ProgressSync, then reports this
-            // error via onProgressDone). The failing job stays queued for the next
-            // sync to retry. ProgressSync always fires its continuation even if its
-            // own requests error, so this cannot hang.
-            var h = Errors.hint(code);
-            mSyncError = (h != null) ? h : ("Download failed (" + code + ")");
+            // Route through finishSync (which runs ProgressSync, then reports the
+            // error via onProgressDone). Remove ONLY this failed job first: its
+            // committed BookStore suffix remains playable and re-selecting the
+            // book resumes at first+count, but isSyncNeeded no longer retries the
+            // same bad transfer forever on every system sync.
+            mSyncError = Errors.downloadMessage(code);
+            var title = (job["title"] != null) ? job["title"] : "Book";
+            var total = Chunks.total(job["durs"]);
+            var detail = title + "\nPart " + (context["k"] + 1).toString()
+                + "/" + total.toString() + "\n" + mSyncError;
+            try {
+                Application.Storage.setValue(Store.LAST_SYNC_ERROR, detail);
+            } catch (e) {
+                // If Storage itself is full, the native error still gets the
+                // concise message below; never let diagnostics strand sync mode.
+                System.println("sync error save failed: " + e.getErrorMessage());
+            }
+            JobStore.remove(itemId);
+            // Heal the narrow crash window where a prior chunk was saved but
+            // the process died before addToIndex(): the valid partial suffix
+            // should remain visible/playable after this job is paused by removal.
+            if ((BookStore.get(itemId) != null) && (BookStore.count(itemId) > 0)) {
+                BookStore.addToIndex(itemId);
+            } else {
+                BookStore.dropArtIfUnindexed(itemId);
+            }
             finishSync();
             return;
         }
@@ -276,7 +318,8 @@ class SyncDelegate extends Communications.SyncDelegate {
         }
 
         var k = job["done"];
-        BookStore.ensureMeta(itemId, job["title"], job["author"], job["durs"]);
+        var base = (job["base"] != null) ? job["base"] : 0;
+        BookStore.ensureMeta(itemId, job["title"], job["author"], job["durs"], base);
         BookStore.saveChunk(itemId, k, refId);
         BookStore.addToIndex(itemId);
 

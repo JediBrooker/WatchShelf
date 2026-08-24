@@ -37,4 +37,28 @@ module Errors {
         var base = (h != null) ? h : WatchUi.loadResource(fallbackRezId);
         return base + "\n(" + code + ")";
     }
+
+    // Audio-transfer-specific wording. These codes are otherwise collapsed by
+    // the native player into an opaque "Transfer failed" screen on some
+    // firmware, so SyncDelegate persists this text for foreground inspection.
+    function downloadHint(code) {
+        if (code == -1000) { return "Watch storage is full"; }
+        if (code == -1001) { return "HTTPS is required"; }
+        if ((code == -1002) || (code == -1005)) { return "Watch rejected the audio file"; }
+        if ((code == -1004) || (code == -3) || (code == -2)) { return "Connection dropped or timed out"; }
+        if (code == -402) { return "Audio response was too large"; }
+        if (code == -403) { return "Not enough watch memory"; }
+        if (code == 400) { return "WatchShelf sidecar needs updating"; }
+        if (code == 401) { return "Session expired; open Browse library"; }
+        if (code == 404) { return "Book audio was not found"; }
+        if (code == 502) { return "Sidecar could not transcode audio"; }
+        var h = hint(code);
+        return (h != null) ? h : "Audio download failed";
+    }
+
+    // Always retain the raw callback code for support, including code 200 with
+    // null data (a malformed media response rather than a successful transfer).
+    function downloadMessage(code) {
+        return downloadHint(code) + " (" + code + ")";
+    }
 }

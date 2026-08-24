@@ -8,16 +8,18 @@ watch talks to only the sidecar** — ABS itself never has to be exposed to the
 internet:
 
 - **`/login`** — proxies to ABS `/login`, returns just `{user:{token}}`.
-- **`/libraries`, `/list`, `/authors`, `/series`, `/collections`, `/files`** — lean
-  JSON (a few KB) so listings never overflow the watch.
+- **`/libraries`, `/continue`, `/list`, `/authors`, `/series`, `/collections`,
+  `/files`** — lean JSON (a few KB) so listings never overflow the watch.
+  `/continue` returns the user's started, unfinished books; `/files` also includes
+  the saved position used to skip already-listened chunks.
 - **`/transcode`** — cuts a small on-demand AAC chunk (real M4A/MP4 container, so
   the watch's native player knows the exact duration and can show a position bar)
   out of any file using an HTTP Range request (it never downloads the whole
   gigabyte — a 3-min chunk is ~2 MB).
 - **`/cover`** — the book's cover image, resized by ABS, for menu thumbnails and
   the player's album art.
-- **`/progress`** — forwards the watch's progress as a real `PATCH` to ABS (Monkey C
-  has no PATCH method).
+- **`/progress`** — forwards the watch's position and final `isFinished` state as a
+  real `PATCH` to ABS (Monkey C has no PATCH method).
 
 It auths with the **watch's own ABS token** (obtained via `/login`, then passed
 per-request), so there is no separate secret to configure. The only required setting

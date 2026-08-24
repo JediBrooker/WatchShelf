@@ -9,21 +9,37 @@ using Toybox.WatchUi;
 // OOM post-mortem that forced this). Everything goes through the sidecar
 // because most books here are single 200MB-1GB files the watch cannot
 // download whole.
-class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
-
+class BookFilesListener {
+    private var mOwner;
     private var mItemId;
+
+    function initialize(owner, itemId) {
+        mOwner = owner;
+        mItemId = itemId;
+    }
+
+    function onResponse(code, data) {
+        // Carry the selected id with this specific request. A second rapid tap
+        // can start another /files request before this one returns; using one
+        // mutable delegate field would then queue the first book's file list
+        // under the second book's id and make every transcode fail.
+        mOwner.onFiles(mItemId, code, data);
+    }
+}
+
+class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function initialize() {
         Menu2InputDelegate.initialize();
-        mItemId = null;
     }
 
     function onSelect(item) {
-        mItemId = item.getId();
-        AbsApi.getFiles(mItemId, method(:onFiles));
+        var itemId = item.getId();
+        var listener = new BookFilesListener(self, itemId);
+        AbsApi.getFiles(itemId, listener.method(:onResponse));
     }
 
-    function onFiles(code, data) {
+    function onFiles(itemId, code, data) {
         // Session expired -> re-login instead of a dead-end error.
         if (code == 401) { Login.reauth(); return; }
         if (code != 200 || data == null) {
@@ -81,6 +97,44 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // /files carries the user's ABS position. Merge it into the same LWW
+        // store playback uses, then choose the local winner below. A finished
+        // winner means the user selected this title from All books for a reread:
+        // download from chunk 0 and hide Resume, never map its end cursor back to
+        // the final part. A genuinely newer local rewind still wins an equal or
+        // older server finish.
+        var remoteProgress = data["progress"];
+        var localProgress = Progress.get(itemId);
+        var forceFull = Progress.entryFinished(localProgress);
+        if (remoteProgress != null) {
+            if (remoteProgress["isFinished"] == true) {
+                var remoteTs = remoteProgress["lastUpdate"];
+                if ((localProgress == null) ||
+                    ((remoteTs != null) && (remoteTs > localProgress[1]))) {
+                    var finishedPull = AbsApi.readProgress(remoteProgress);
+                    if (finishedPull != null) {
+                        Progress.mergeServer(itemId, finishedPull[0],
+                            finishedPull[1], finishedPull[2]);
+                        localProgress = Progress.get(itemId);
+                    }
+                    forceFull = true;
+                }
+            } else {
+                var pulled = AbsApi.readProgress(remoteProgress);
+                if (pulled != null) {
+                    Progress.mergeServer(itemId, pulled[0], pulled[1], pulled[2]);
+                    localProgress = Progress.get(itemId);
+                }
+            }
+        }
+        if (Progress.entryFinished(localProgress)) { forceFull = true; }
+        var progressBase = (!forceFull && (localProgress != null))
+            ? Chunks.indexAt(durs, localProgress[0]) : 0;
+        if (progressBase >= expected) {
+            showNothingToDownload();
+            return;
+        }
+
         // GATE ORDER MATTERS: every early-return gate below runs BEFORE the
         // destructive drift wipe. Wiping first and then rejecting would strand
         // a live job pointing at deleted pages - the sync then resumes it
@@ -97,17 +151,38 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // a corrupt partial: records exist but the book isn't indexed AND
         // isn't queued (a crash artifact whose audio the orphan sweep may
         // already have evicted).
-        var meta = BookStore.get(mItemId);
+        var meta = BookStore.get(itemId);
+        var oldJob = JobStore.get(itemId);
         var drifted = false;
         if (meta != null) {
-            drifted = !Chunks.same(meta["durs"], durs)
-                || (!inBookIndex(mItemId) && !containsId(JobStore.list(), mItemId));
+            drifted = (forceFull && (BookStore.first(itemId) > 0))
+                || !Chunks.same(meta["durs"], durs)
+                || (!inBookIndex(itemId) && !containsId(JobStore.list(), itemId));
         }
+
+        // Preserve the original suffix base whenever this is an interrupted
+        // download. Changing it underneath already-local pages would reinterpret
+        // every cached refId as a different absolute chunk. Only a genuinely new
+        // (or drift-wiped) book derives its first required chunk from progress.
+        var base = 0;
+        if (!drifted && (meta != null)) {
+            base = BookStore.first(itemId);
+        } else if (!drifted && (oldJob != null) && (oldJob["base"] != null)) {
+            base = oldJob["base"];
+        } else {
+            base = progressBase;
+        }
+        if (base < 0) { base = 0; }
+        if (base >= expected) {
+            showNothingToDownload();
+            return;
+        }
+        var planned = expected - base;
 
         // Re-selecting an already-fully-downloaded book must not silently queue
         // a full re-download - tell the user it's already there instead. A
         // drifted book is never "already there": its data is scheduled to go.
-        if (!drifted && (BookStore.count(mItemId) >= expected)) {
+        if (!drifted && (BookStore.count(itemId) >= planned)) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.alreadyDownloaded)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
@@ -116,7 +191,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // Total-chunk cap: playback builds O(total chunks) structures inside
         // the 512KB audioContentProvider ceiling, so the watch-wide total
         // (downloaded + queued, all books) is bounded - see Chunks.MAX_TOTAL.
-        if (plannedChunks(mItemId) + expected > Chunks.MAX_TOTAL) {
+        if (plannedChunks(itemId) + planned > Chunks.MAX_TOTAL) {
             WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.downloadsFull)),
                 new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
             return;
@@ -125,7 +200,6 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // Read the superseded job's generation BEFORE the wipe removes it, so
         // "gen" always increments across a drift wipe too - an in-flight chunk
         // dispatched under the old job can then never collide with the new one.
-        var oldJob = JobStore.get(mItemId);
         var gen = ((oldJob != null) && (oldJob["gen"] != null)) ? oldJob["gen"] + 1 : 1;
 
         // All gates passed - NOW it is safe to destroy the drifted book's
@@ -139,9 +213,9 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // would make playback start a different book). Progress is NOT pruned:
         // it's the SAME book re-downloading, so its resume point stays valid.
         if (drifted) {
-            JobStore.remove(mItemId);
-            BookStore.removeFromIndex(mItemId);
-            BookStore.deleteBook(mItemId);
+            JobStore.remove(itemId);
+            BookStore.removeFromIndex(itemId);
+            BookStore.deleteBook(itemId);
         }
 
         // Queueing a book un-dooms it: if it's still sitting in DELETE_LIST
@@ -149,26 +223,28 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // would silently eat this fresh job and wipe the book right after
         // the user saw "Queued" - the newer intent (download) wins.
         var doomed = Application.Storage.getValue(Store.DELETE_LIST);
-        if ((doomed != null) && containsId(doomed, mItemId)) {
+        if ((doomed != null) && containsId(doomed, itemId)) {
             var kept = [];
             for (var i = 0; i < doomed.size(); ++i) {
-                if (!doomed[i].equals(mItemId)) { kept.add(doomed[i]); }
+                if (!doomed[i].equals(itemId)) { kept.add(doomed[i]); }
             }
             Application.Storage.setValue(Store.DELETE_LIST, kept);
         }
 
-        // One small job per book. "done" starts at the already-downloaded chunk
-        // count so an interrupted book resumes where it left off (chunks always
-        // download in order, so count == next index). "gen" increments on every
-        // re-queue so an in-flight chunk from a superseded job can never be
-        // recorded into the new one, even at the same cursor value.
-        var have = drifted ? 0 : BookStore.count(mItemId);
-        JobStore.put(mItemId, {
+        // One small job per book. `base` is the first GLOBAL chunk still needed
+        // when the job was created; listened head chunks are never downloaded.
+        // `done` is also GLOBAL, while BookStore pages are local to meta.first.
+        // An interrupted suffix therefore resumes at first+count without sparse
+        // pages or null placeholders. "gen" still invalidates in-flight bytes
+        // from every superseded job.
+        var done = (!drifted && (meta != null)) ? BookStore.nextChunk(itemId) : base;
+        JobStore.put(itemId, {
             "inos"   => inos,
             "durs"   => durs,
             "title"  => title,
             "author" => author,
-            "done"   => have,
+            "base"   => base,
+            "done"   => done,
             "gen"    => gen
         });
 
@@ -194,7 +270,11 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         for (var i = 0; i < jobIds.size(); ++i) {
             if (jobIds[i].equals(excludeId) || containsId(doomed, jobIds[i])) { continue; }
             var job = JobStore.get(jobIds[i]);
-            if (job != null) { total += Chunks.total(job["durs"]); }
+            if (job != null) {
+                var base = (job["base"] != null) ? job["base"] : 0;
+                var planned = Chunks.total(job["durs"]) - base;
+                if (planned > 0) { total += planned; }
+            }
         }
 
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
@@ -223,6 +303,11 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
     function numOr(v, dflt) {
         if (v == null) { return dflt; }
         return v;
+    }
+
+    function showNothingToDownload() {
+        WatchUi.pushView(new ErrorView(WatchUi.loadResource(Rez.Strings.nothingToDownload)),
+            new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
     }
 
     function onBack() {

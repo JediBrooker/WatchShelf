@@ -27,6 +27,8 @@ class ProgressSync {
     private var mIdx;
     private var mCurId;
     private var mCurTs;
+    private var mCurPos;
+    private var mCurFinished;
     private var mCb;
 
     function initialize() {
@@ -73,8 +75,15 @@ class ProgressSync {
             var e = Progress.get(mCurId);
             if (e == null) { step(); return; }
             mCurTs = e[1];
-            // duration unknown here -> null keeps ABS's stored duration.
-            AbsApi.postProgress(mCurId, e[0], null, e[1], method(:onPushDone));
+            mCurPos = e[0];
+            mCurFinished = Progress.entryFinished(e);
+            // Always carry duration when known so a first offline write has
+            // complete progress metadata. Ordinary positions omit isFinished;
+            // moving below ABS's completion threshold reopens a reread.
+            var duration = bookDuration(mCurId);
+            var finishValue = mCurFinished ? true : null;
+            AbsApi.postProgress(mCurId, e[0], duration, e[1],
+                finishValue, method(:onPushDone));
         } catch (ex) {
             System.println("ProgressSync step failed: " + ex.getErrorMessage());
             // Never let a progress hiccup strand the sync - advance regardless.
@@ -86,8 +95,11 @@ class ProgressSync {
     function onPullDone(code, data) {
         try {
             if (code == 200) {
-                var pr = AbsApi.readProgress(data); // [posSec, tsSec] or null
-                if (pr != null) { Progress.mergeServer(mCurId, pr[0], pr[1]); }
+                var pr = AbsApi.readProgress(data); // [posSec, tsSec, finished] or null
+                if (pr != null) {
+                    var finished = (pr.size() > 2) ? pr[2] : null;
+                    Progress.mergeServer(mCurId, pr[0], pr[1], finished);
+                }
             }
         } catch (ex) {
             System.println("ProgressSync pull failed: " + ex.getErrorMessage());
@@ -95,8 +107,19 @@ class ProgressSync {
         step();
     }
 
+    function bookDuration(itemId) {
+        var meta = BookStore.get(itemId);
+        if ((meta == null) || (meta["durs"] == null)) { return null; }
+        var total = 0;
+        var durs = meta["durs"];
+        for (var i = 0; i < durs.size(); ++i) { total += durs[i]; }
+        return (total > 0) ? total : null;
+    }
+
     function onPushDone(code, data) {
-        if (code == 200) { Progress.markClean(mCurId, mCurTs); }
+        if (code == 200) {
+            Progress.markClean(mCurId, mCurTs, mCurPos, mCurFinished);
+        }
         else { System.println("ProgressSync push failed: " + code); }
         step();
     }

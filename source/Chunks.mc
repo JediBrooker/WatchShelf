@@ -74,6 +74,33 @@ module Chunks {
         return out;
     }
 
+    // Global chunk index containing `positionSec`, except that an exact chunk
+    // boundary selects the NEXT chunk because the preceding one has been fully
+    // listened. Returns total(durs) when the position is at/past the book end,
+    // which lets queueing reject a finished book without downloading its tail.
+    // This deliberately walks the same derived boundaries as total()/at()
+    // instead of materializing the O(chunks) starts array in the 512KB UI heap.
+    function indexAt(durs, positionSec) {
+        if ((durs == null) || (positionSec == null) || (positionSec <= 0)) { return 0; }
+        var n = 0;
+        var bookOffset = 0;
+        for (var f = 0; f < durs.size(); ++f) {
+            var d = durs[f];
+            if (d <= 0) { continue; }
+            var pos = 0;
+            while (pos < d) {
+                var size = (n == 0) ? FIRST : LEN;
+                var end = pos + size;
+                if (end > d) { end = d; }
+                if (positionSec < (bookOffset + end)) { return n; }
+                n += 1;
+                pos = end;
+            }
+            bookOffset = bookOffset + d;
+        }
+        return n;
+    }
+
     // Boundaries of global chunk k, or null if k is out of range. Returns
     // { "file" => file index, "cstart"/"cend" => seconds within that file,
     //   "start" => absolute seconds within the whole book }.

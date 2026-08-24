@@ -3,10 +3,10 @@ using Toybox.Math;
 using Toybox.Media;
 using Toybox.System;
 
-// Yields cached chapter tracks to the player, grouped by book (alphabetical by
-// title), sorted within each book by absolute start offset - so with more than
-// one book downloaded, playback finishes one book before starting the next.
-// Shuffle is available but off by default (nobody shuffles an audiobook).
+// Yields the cached parts of ONE selected book, sorted by absolute start
+// offset. A playback session must never spill from the chosen audiobook into
+// the next downloaded title. Shuffle remains available for compatibility with
+// the native player, but is off by default (nobody shuffles an audiobook).
 //
 // MEMORY: this runs in the playback context, which shares the 512KB
 // audioContentProvider ceiling with the native player itself. Everything here
@@ -23,11 +23,12 @@ class ContentIterator extends Media.ContentIterator {
     private var mPlaylist;    // [ refId, ... ] in play order
     private var mOrders;      // [ BOOK_INDEX slot, ... ] parallel to mPlaylist
     private var mStarts;      // [ book-absolute start sec, ... ] parallel too
+    private var mSpans;       // [ exact playable seconds, ... ] parallel too
+    private var mGlobals;     // [ global derived chunk index, ... ] parallel
     private var mBookTitles;  // [ title, ... ]  indexed by BOOK_INDEX slot (O(books))
     private var mBookAuthors; // [ author or null, ... ] same indexing
+    private var mBookDurations; // [ total seconds, ... ] same indexing
     private var mShuffling;
-    private var mResumeRefId;  // the ONE chunk to start partway in (or null)
-    private var mResumeOffset; // seconds into that chunk (Number); 0 = none
     private var mStartItem;    // book itemId to start at (from startPlayback), or null
     private var mStartMode;    // "resume" | "start" | null
 
@@ -41,6 +42,22 @@ class ContentIterator extends Media.ContentIterator {
         if (args != null) {
             mStartItem = args["item"];
             mStartMode = args["mode"];
+        }
+        // A native-widget launch has no args. Resolve it to one concrete book
+        // here as a defensive fallback (ContentDelegate normally does this so
+        // a later reset can retain the same selection).
+        if (mStartItem == null) {
+            var r = Progress.bestResume();
+            if (r != null) {
+                mStartItem = r[0];
+                mStartMode = "resume";
+            } else {
+                var index = Application.Storage.getValue(Store.BOOK_INDEX);
+                if ((index != null) && (index.size() > 0)) {
+                    mStartItem = index[0];
+                    mStartMode = "start";
+                }
+            }
         }
         mIndex = 0;
         mShuffling = false;
@@ -73,34 +90,31 @@ class ContentIterator extends Media.ContentIterator {
         return profile;
     }
 
+    // Repeat is deliberately fixed off for audiobooks. The control is not
+    // exposed in the profile, and returning an explicit state prevents a
+    // repeat mode retained by the native player from looping the final part.
+    function repeatMode() {
+        return Media.REPEAT_MODE_OFF;
+    }
+
     function get() {
-        return objAt(mIndex);
+        return validForward(mIndex, true);
     }
 
     function next() {
-        if (mIndex < (mPlaylist.size() - 1)) {
-            ++mIndex;
-            clearResume(); // the mid-chunk offset applies only to the first chunk
-            return objAt(mIndex);
-        }
-        return null;
+        return validForward(mIndex + 1, true);
     }
 
     function previous() {
-        if (mIndex > 0) {
-            --mIndex;
-            clearResume();
-            return objAt(mIndex);
-        }
-        return null;
+        return validBackward(mIndex - 1, true);
     }
 
     function peekNext() {
-        return objAt(mIndex + 1);
+        return validForward(mIndex + 1, false);
     }
 
     function peekPrevious() {
-        return objAt(mIndex - 1);
+        return validBackward(mIndex - 1, false);
     }
 
     function canSkip() {
@@ -123,30 +137,44 @@ class ContentIterator extends Media.ContentIterator {
 
     // ---- helpers -----------------------------------------------------------
 
+    // A missing/corrupt cached object is not the end of the playlist. Walk to
+    // the next valid OS-owned Content object so one bad cache ref cannot make
+    // playback stop after the preceding part. Peeks perform the same search
+    // without moving the iterator cursor.
+    function validForward(idx, move) {
+        for (var i = idx; i < mPlaylist.size(); ++i) {
+            var obj = objAt(i);
+            if (obj != null) {
+                if (move) { mIndex = i; }
+                return obj;
+            }
+        }
+        if (move) { mIndex = mPlaylist.size(); }
+        return null;
+    }
+
+    function validBackward(idx, move) {
+        for (var i = idx; i >= 0; --i) {
+            var obj = objAt(i);
+            if (obj != null) {
+                if (move) { mIndex = i; }
+                return obj;
+            }
+        }
+        return null;
+    }
+
     function objAt(idx) {
         if ((idx >= 0) && (idx < mPlaylist.size())) {
             try {
                 var refId = mPlaylist[idx];
                 var ref = new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO);
-                // Precise resume: this ONE chunk starts partway in. ActiveContent
-                // (API 3.0.0+) carries a start position in seconds, so the native
-                // player begins there instead of at 0. If it's unsupported on this
-                // device or throws, fall through to the plain cached obj - playback
-                // then resumes at the chunk's start (~offset early), never crashes.
-                if ((mResumeRefId != null) && refId.equals(mResumeRefId) && (mResumeOffset > 0)) {
-                    try {
-                        return new Media.ActiveContent(ref, resumeMetadata(idx), mResumeOffset);
-                    } catch (e2) {
-                        // ActiveContent unsupported here: fall through to the plain
-                        // cached obj, which plays the chunk from 0. The offset was
-                        // NOT applied, so clear the resume state - otherwise
-                        // resumeOffsetFor() would keep reporting it and
-                        // ContentDelegate.syncProgress would add it back, pushing a
-                        // position ~offset seconds too far ahead to ABS.
-                        System.println("ActiveContent resume failed: " + e2.getErrorMessage());
-                        clearResume();
-                    }
-                }
+                // Always return the ordinary cached Content object. ActiveContent
+                // exact seeking is unreliable on FR965-class firmware: it can be
+                // accepted here but fail later inside the native decoder, beyond
+                // anything Monkey C can catch. Resume is therefore chunk-aligned
+                // (at most ~3 minutes early), with ContentDelegate guarding the
+                // exact saved position against progress regression.
                 var obj = Media.getCachedContentObj(ref);
                 if (obj != null) { decorate(obj, idx); }
                 return obj;
@@ -166,10 +194,11 @@ class ContentIterator extends Media.ContentIterator {
     // Garmin-confirmed bug makes certain ID3 text frames break native playback
     // on real hardware), so without this the player screen shows blank
     // title/artist. Attach metadata at hand-off instead (the SubMusic pattern):
-    // title = book name, artist = author, album = book name, trackNumber = the
-    // chunk's position within its book. (The title used to append the chunk's
-    // book-absolute timestamp as a coarse position readout; dropped for a clean
-    // "book - author" screen - the native player still shows within-chunk time.)
+    // title = book name, artist = "author - NN% of book", album = book name,
+    // trackNumber = the global part number. The native time/progress bar is
+    // always scoped to the current cached part and cannot be overridden by an
+    // audio provider, so the artist line carries coarse whole-book progress at
+    // each part boundary instead.
     function decorate(obj, idx) {
         try {
             var meta = obj.getMetadata();
@@ -178,7 +207,12 @@ class ContentIterator extends Media.ContentIterator {
             meta.title = title;
             meta.album = title;
             var author = mBookAuthors[mOrders[idx]];
-            if (author != null) { meta.artist = author; }
+            var progress = overallProgress(idx);
+            if ((author != null) && (author.length() > 0)) {
+                meta.artist = author + " - " + progress;
+            } else {
+                meta.artist = progress;
+            }
             // trackNo relies on a book's chunks being contiguous in the
             // playlist - shuffle breaks that, so skip the number rather than
             // caption chunks with garbage positions.
@@ -191,29 +225,21 @@ class ContentIterator extends Media.ContentIterator {
         }
     }
 
-    // Fresh ContentMetadata for a chunk, used for the ActiveContent resume path
-    // (which takes metadata at construction, unlike the cached-obj path that
-    // decorates in place). Cached chunks carry no tags - the sidecar strips them
-    // - so building fresh loses nothing. Mirrors decorate()'s captioning.
-    function resumeMetadata(idx) {
-        var meta = new Media.ContentMetadata();
-        var title = mBookTitles[mOrders[idx]];
-        meta.title = title;
-        meta.album = title;
-        var author = mBookAuthors[mOrders[idx]];
-        if (author != null) { meta.artist = author; }
-        if (!mShuffling) { meta.trackNumber = trackNo(idx); }
-        return meta;
+    function overallProgress(idx) {
+        var total = mBookDurations[mOrders[idx]];
+        var pct = 0;
+        if ((total != null) && (total > 0)) {
+            pct = ((mStarts[idx].toFloat() / total) * 100).toNumber();
+            if (pct < 0) { pct = 0; }
+            if (pct > 100) { pct = 100; }
+        }
+        return pct.toString() + "% of book";
     }
 
-    // 1-based position of chunk idx within its book (chunks of one book are
-    // contiguous in the sorted playlist; the backward scan is a few hundred
-    // integer compares at worst, once per track hand-off).
+    // 1-based GLOBAL part number. Carry the derived index with the cached ref:
+    // a missing earlier cache object must not renumber every later part.
     function trackNo(idx) {
-        var b = mOrders[idx];
-        var j = idx;
-        while ((j > 0) && (mOrders[j - 1] == b)) { --j; }
-        return idx - j + 1;
+        return mGlobals[idx] + 1;
     }
 
     // Build the ordered playlist. Ids come from the OS's OWN content cache
@@ -228,25 +254,36 @@ class ContentIterator extends Media.ContentIterator {
     // confirmed in the simulator), and identical titles would interleave two
     // books chunk-by-chunk.
     function buildPlaylist() {
-        clearResume();
         mPlaylist = [];
         mOrders = [];
         mStarts = [];
+        mSpans = [];
+        mGlobals = [];
         mBookTitles = [];
         mBookAuthors = [];
+        mBookDurations = [];
 
-        // One { refId => [bookOrder, start] } lookup across every downloaded
-        // book; bookOrder = the book's BOOK_INDEX position. Titles/authors are
-        // cached per book (O(books)) for the player metadata in decorate().
+        // Build lookup rows ONLY for the selected book. Arrays remain indexed
+        // by BOOK_INDEX slot because lookup values use that stable numeric slot.
+        // Keeping metadata for every slot is O(books), while cached content and
+        // playback iteration stay strictly one-book-only.
         var lookup = {};
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
+        var selectedSlot = slotOf(mStartItem);
         for (var b = 0; b < index.size(); ++b) {
-            BookStore.addLookup(index[b], b, lookup);
             var meta = BookStore.get(index[b]);
             var title = ((meta != null) && (meta["title"] != null)) ? meta["title"] : "Book";
             mBookTitles.add(title);
             mBookAuthors.add((meta != null) ? meta["author"] : null);
+            var total = null;
+            if ((meta != null) && (meta["durs"] != null)) {
+                total = 0;
+                var durs = meta["durs"];
+                for (var d = 0; d < durs.size(); ++d) { total += durs[d]; }
+            }
+            mBookDurations.add(total);
+            if (b == selectedSlot) { BookStore.addLookup(index[b], b, lookup); }
         }
 
         var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
@@ -259,18 +296,21 @@ class ContentIterator extends Media.ContentIterator {
                     mPlaylist.add(refId);
                     mOrders.add(info[0]);
                     mStarts.add(info[1]);
+                    mSpans.add(info[2]);
+                    mGlobals.add(info[3]);
                 }
                 ref = iter.next();
             }
         }
 
-        // In-place insertion sort on the three parallel arrays: stable, no
+        // In-place insertion sort on the five parallel arrays: stable, no
         // allocations, numeric compares only. Chunks download (and cache) in
         // playlist order, so the input is near-sorted and this stays ~O(n).
         for (var i = 1; i < mPlaylist.size(); ++i) {
             var j = i;
             while (j > 0 && after(mOrders[j - 1], mStarts[j - 1], mOrders[j], mStarts[j])) {
                 swap(mPlaylist, j); swap(mOrders, j); swap(mStarts, j);
+                swap(mSpans, j); swap(mGlobals, j);
                 --j;
             }
         }
@@ -278,31 +318,22 @@ class ContentIterator extends Media.ContentIterator {
         applyStart();
     }
 
-    // Position the cursor for THIS playback session. If a specific book was
-    // chosen (BookActionMenu -> startPlayback { item, mode }), start it at its
-    // synced position ("resume") or at 0 ("start"). With no book (native Music
-    // widget / null args), resume the most-recently-progressed book. Best-effort
-    // throughout: any problem leaves the cursor at 0, never a crash.
+    // Position the cursor for THIS playback session. "Resume" selects the
+    // ordinary cached part containing the exact saved position and begins that
+    // part at 0; ContentDelegate prevents this deliberate replay from regressing
+    // the exact ABS position. "Start" chooses the earliest downloaded part
+    // (which may be later than 0 for a tail-only download).
     function applyStart() {
         try {
-            var slot;
-            var target;
-            if (mStartItem != null) {
-                slot = slotOf(mStartItem);
-                if (slot < 0) { return; } // chosen book isn't downloaded
-                target = ((mStartMode != null) && mStartMode.equals("resume"))
-                    ? resumePosFor(mStartItem) : 0;
-            } else {
-                var r = Progress.bestResume(); // [itemId, positionSec] or null
-                if (r == null) { return; }
-                slot = slotOf(r[0]);
-                if (slot < 0) { return; }
-                target = r[1];
-            }
+            if (mStartItem == null) { mIndex = mPlaylist.size(); return; }
+            var slot = slotOf(mStartItem);
+            if (slot < 0) { mIndex = mPlaylist.size(); return; }
+            var target = ((mStartMode != null) && mStartMode.equals("resume"))
+                ? resumePosFor(mStartItem) : 0;
             positionAtBook(slot, target);
         } catch (e) {
             System.println("applyStart failed: " + e.getErrorMessage());
-            mIndex = 0;
+            mIndex = mPlaylist.size();
         }
     }
 
@@ -316,77 +347,43 @@ class ContentIterator extends Media.ContentIterator {
         return -1;
     }
 
-    // Saved book-absolute resume position (seconds) for a book, or 0.
+    // Saved book-absolute resume position (seconds) for a book, or 0. Finished
+    // books are normally offered only "Play from start" by BookActionMenu.
     function resumePosFor(itemId) {
-        var e = Progress.get(itemId); // [positionSec, tsSec, dirty] or null
+        var e = Progress.get(itemId); // [positionSec, tsSec, dirty, finished?]
         return (e != null) ? e[0] : 0;
     }
 
-    // Put mIndex on the chunk of book `slot` that contains `target` seconds, and
-    // (via ActiveContent, see objAt) start it partway in for an exact resume. A
-    // book's chunks are contiguous and ascending in the sorted playlist. Falls
-    // back to the book's first cached chunk when target precedes it (e.g. "start"
-    // on a book whose head isn't at absolute 0).
+    // Put mIndex on the cached chunk that actually contains `target`. If target
+    // precedes a tail-only download, choose its first available chunk. If target
+    // is at/after the end of cached coverage (including a finished book at exact
+    // duration), return an exhausted iterator instead of replaying the last part.
     function positionAtBook(slot, target) {
-        var first = -1;
         var pick = -1;
         for (var i = 0; i < mPlaylist.size(); ++i) {
             if (mOrders[i] == slot) {
-                if (first < 0) { first = i; }
-                if (mStarts[i] <= target) { pick = i; } else { break; }
-            } else if (first >= 0) {
-                break;
+                if (target < mStarts[i]) {
+                    // Start lies before the cached suffix, or inside a cache
+                    // gap: continue from the next available part.
+                    pick = i;
+                    break;
+                }
+                // Span travels with the refId from BookStore. Deriving it from
+                // the compressed playable ordinal is wrong after a corrupt or
+                // OS-evicted earlier ref is skipped: later ordinals shift and
+                // may cross a variable-length file boundary.
+                var span = mSpans[i];
+                if ((span > 0) && (target < (mStarts[i] + span))) {
+                    pick = i;
+                    break;
+                }
             }
         }
-        if (pick < 0) { pick = first; }
         if (pick >= 0) {
             mIndex = pick;
-            var off = (target - mStarts[pick]).toNumber(); // seconds into chunk
-            // Clamp to the picked chunk's REAL length. When the synced position
-            // lands in a chunk that isn't downloaded yet (a partially-downloaded
-            // book), the loop above picks the LAST cached chunk, whose start can
-            // be far below target - leaving off pointing past the chunk's end. An
-            // unclamped off makes ActiveContent overshoot AND makes syncProgress
-            // write that inflated position back to ABS (corrupting cross-device
-            // resume). If off reaches the chunk end, we can't resume precisely
-            // into audio we don't have: start cleanly at the chunk head (off = 0).
-            if (off > 0) {
-                var span = chunkLen(slot, pick - first);
-                if ((span <= 0) || (off >= span)) { off = 0; }
-            }
-            if (off > 0) {
-                mResumeRefId = mPlaylist[pick];
-                mResumeOffset = off;
-            }
+        } else {
+            mIndex = mPlaylist.size();
         }
-    }
-
-    // Exact playable length (seconds) of book `slot`'s chunk at in-book index
-    // `k`, or -1 if unknown. Chunks download strictly in order, so a cached
-    // chunk's offset from the book's first playlist row IS its true chunk index.
-    // Boundaries are DERIVED (Chunks.at), never stored per-chunk (OOM discipline);
-    // a fixed LEN guess would misjudge the short last chunk of each file.
-    function chunkLen(slot, k) {
-        var index = Application.Storage.getValue(Store.BOOK_INDEX);
-        if ((index == null) || (slot < 0) || (slot >= index.size())) { return -1; }
-        var meta = BookStore.get(index[slot]);
-        if ((meta == null) || (meta["durs"] == null)) { return -1; }
-        var c = Chunks.at(meta["durs"], k);
-        if (c == null) { return -1; }
-        return c["cend"] - c["cstart"];
-    }
-
-    // Resume offset (seconds) to add for `refId`, else 0. ContentDelegate needs
-    // it because ActiveContent reports onSong playbackPosition RELATIVE to the
-    // configured start, so the true in-chunk offset is start + position.
-    function resumeOffsetFor(refId) {
-        if ((mResumeRefId != null) && refId.equals(mResumeRefId)) { return mResumeOffset; }
-        return 0;
-    }
-
-    function clearResume() {
-        mResumeRefId = null;
-        mResumeOffset = 0;
     }
 
     // True if (orderA, startA) sorts AFTER (orderB, startB): by book first
@@ -413,9 +410,10 @@ class ContentIterator extends Media.ContentIterator {
             swapAt(mPlaylist, i, j);
             swapAt(mOrders, i, j);
             swapAt(mStarts, i, j);
+            swapAt(mSpans, i, j);
+            swapAt(mGlobals, i, j);
         }
         mIndex = 0;
-        clearResume(); // shuffled playback doesn't mid-chunk resume
     }
 
     function swapAt(arr, i, j) {
