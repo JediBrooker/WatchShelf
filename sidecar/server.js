@@ -158,6 +158,38 @@ function ffArgs(srcUrl, token, fmt, start, end, out) {
   return a;
 }
 
+// ffmpeg is the HTTP client for audio files, so an ABS authorization failure
+// reaches us through its stderr rather than as a fetch() response. Preserve a
+// small diagnostic tail (while still writing the full output to container
+// logs) so the watch can receive the actionable upstream status instead of an
+// opaque 502 "transcode failed". Keep the match deliberately specific: audio
+// inode values are numeric and may themselves contain strings like "403".
+function captureFfmpegStderr(ff) {
+  let stderr = '';
+  ff.stderr.on('data', (chunk) => {
+    process.stderr.write(chunk);
+    stderr = (stderr + chunk.toString()).slice(-4096);
+  });
+  return () => stderr;
+}
+
+function ffmpegHttpStatus(stderr) {
+  if (/\b(?:Server returned 403 Forbidden|HTTP error 403)\b/i.test(stderr)) { return 403; }
+  if (/\b(?:Server returned 401 Unauthorized|HTTP error 401)\b/i.test(stderr)) { return 401; }
+  if (/\b(?:Server returned 404 Not Found|HTTP error 404)\b/i.test(stderr)) { return 404; }
+  return 502;
+}
+
+function failTranscode(res, stderr) {
+  if (res.headersSent) { return; }
+  const status = ffmpegHttpStatus(stderr);
+  const message = status === 403 ? 'download permission denied'
+    : status === 401 ? 'audio authorization failed'
+    : status === 404 ? 'audio file not found'
+    : 'transcode failed';
+  res.writeHead(status, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }).end(message);
+}
+
 async function transcode(req, res, u) {
   const item = u.searchParams.get('item'), file = u.searchParams.get('file');
   const fmt = (u.searchParams.get('fmt') || 'mp3').toLowerCase();
@@ -182,7 +214,8 @@ async function transcode(req, res, u) {
   if (fmt === 'm4a2') {
     const out = join(tmpdir(), `watchshelf-${randomUUID()}.m4a`);
     const drop = () => unlink(out).catch(() => {});
-    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'inherit'] });
+    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'pipe'] });
+    const ffmpegStderr = captureFfmpegStderr(ff);
     let done = false;
     let cancelled = false;
     // IncomingMessage's `close` means the REQUEST stream finished/closed, not
@@ -207,7 +240,7 @@ async function transcode(req, res, u) {
       if (done) { return; }
       done = true;
       if (cancelled) { drop(); return; }
-      if (code !== 0) { drop(); if (!res.headersSent) { res.writeHead(502).end('transcode failed'); } return; }
+      if (code !== 0) { drop(); failTranscode(res, ffmpegStderr()); return; }
       try {
         const buf = await readFile(out);
         res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
@@ -220,7 +253,8 @@ async function transcode(req, res, u) {
     return;
   }
 
-  const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'inherit'] });
+  const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'pipe'] });
+  const ffmpegStderr = captureFfmpegStderr(ff);
   const parts = [];
   let done = false;
   let cancelled = false;
@@ -237,7 +271,7 @@ async function transcode(req, res, u) {
     if (done) { return; }
     done = true;
     if (cancelled) { return; }
-    if (code !== 0) { if (!res.headersSent) { res.writeHead(502).end('transcode failed'); } return; }
+    if (code !== 0) { failTranscode(res, ffmpegStderr()); return; }
     const buf = Buffer.concat(parts);
     res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
     res.end(buf);

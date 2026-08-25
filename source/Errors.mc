@@ -50,6 +50,7 @@ module Errors {
         if (code == -403) { return "Not enough watch memory"; }
         if (code == 400) { return "WatchShelf sidecar needs updating"; }
         if (code == 401) { return "Session expired; open Browse library"; }
+        if (code == 403) { return "Enable Download permission in Audiobookshelf"; }
         if (code == 404) { return "Book audio was not found"; }
         if (code == 502) { return "Sidecar could not transcode audio"; }
         var h = hint(code);
