@@ -184,16 +184,29 @@ async function transcode(req, res, u) {
     const drop = () => unlink(out).catch(() => {});
     const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'inherit'] });
     let done = false;
-    req.on('close', () => { if (!done) { done = true; ff.kill('SIGKILL'); drop(); } });
+    let cancelled = false;
+    // IncomingMessage's `close` means the REQUEST stream finished/closed, not
+    // necessarily that the client abandoned the RESPONSE. Reverse proxies
+    // commonly close that read side as soon as the GET has been forwarded;
+    // treating it as a disconnect killed ffmpeg before it could answer and
+    // surfaced publicly as a proxy-generated 502. ServerResponse `close`
+    // catches the event we actually care about: the response connection went
+    // away before res.end(). `done` is already true on normal completion.
+    // Let the child's close handler do the final unlink too: ffmpeg may create
+    // the output just after an eager unlink raced with SIGKILL.
+    res.on('close', () => {
+      if (!done && !res.writableEnded) { cancelled = true; ff.kill('SIGKILL'); drop(); }
+    });
     ff.on('error', () => {
       if (done) { return; }
       done = true;
       drop();
-      if (!res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
+      if (!cancelled && !res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
     });
     ff.on('close', async (code) => {
       if (done) { return; }
       done = true;
+      if (cancelled) { drop(); return; }
       if (code !== 0) { drop(); if (!res.headersSent) { res.writeHead(502).end('transcode failed'); } return; }
       try {
         const buf = await readFile(out);
@@ -210,16 +223,20 @@ async function transcode(req, res, u) {
   const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'inherit'] });
   const parts = [];
   let done = false;
+  let cancelled = false;
   ff.stdout.on('data', (c) => parts.push(c));
-  req.on('close', () => { if (!done) { done = true; ff.kill('SIGKILL'); } });
+  res.on('close', () => {
+    if (!done && !res.writableEnded) { cancelled = true; ff.kill('SIGKILL'); }
+  });
   ff.on('error', () => {
     if (done) { return; }
     done = true;
-    if (!res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
+    if (!cancelled && !res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
   });
   ff.on('close', (code) => {
     if (done) { return; }
     done = true;
+    if (cancelled) { return; }
     if (code !== 0) { if (!res.headersSent) { res.writeHead(502).end('transcode failed'); } return; }
     const buf = Buffer.concat(parts);
     res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
