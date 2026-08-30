@@ -303,17 +303,7 @@ class ContentIterator extends Media.ContentIterator {
             }
         }
 
-        // In-place insertion sort on the five parallel arrays: stable, no
-        // allocations, numeric compares only. Chunks download (and cache) in
-        // playlist order, so the input is near-sorted and this stays ~O(n).
-        for (var i = 1; i < mPlaylist.size(); ++i) {
-            var j = i;
-            while (j > 0 && after(mOrders[j - 1], mStarts[j - 1], mOrders[j], mStarts[j])) {
-                swap(mPlaylist, j); swap(mOrders, j); swap(mStarts, j);
-                swap(mSpans, j); swap(mGlobals, j);
-                --j;
-            }
-        }
+        sortPlaylist();
         mIndex = 0;
         applyStart();
     }
@@ -395,10 +385,50 @@ class ContentIterator extends Media.ContentIterator {
         return startA > startB;
     }
 
-    function swap(arr, j) {
-        var tmp = arr[j];
-        arr[j] = arr[j - 1];
-        arr[j - 1] = tmp;
+    // Heap sort (O(n log n) worst case) on an index array rather than the
+    // five parallel arrays directly - a swap during the sort only touches
+    // one small-int array, not five. Rebuilds the real arrays from the
+    // sorted index in one pass at the end.
+    function sortPlaylist() {
+        var n = mPlaylist.size();
+        var idx = [];
+        for (var i = 0; i < n; ++i) { idx.add(i); }
+
+        for (var i = (n / 2) - 1; i >= 0; --i) { siftDownIdx(idx, i, n); }
+        for (var last = n - 1; last > 0; --last) {
+            var tmp = idx[0]; idx[0] = idx[last]; idx[last] = tmp;
+            siftDownIdx(idx, 0, last);
+        }
+
+        var playlist = []; var orders = []; var starts = [];
+        var spans = []; var globals = [];
+        for (var i = 0; i < n; ++i) {
+            var k = idx[i];
+            playlist.add(mPlaylist[k]); orders.add(mOrders[k]); starts.add(mStarts[k]);
+            spans.add(mSpans[k]); globals.add(mGlobals[k]);
+        }
+        mPlaylist = playlist; mOrders = orders; mStarts = starts;
+        mSpans = spans; mGlobals = globals;
+    }
+
+    // Sift idx[root] down through the max-heap of size `heapSize`: compares
+    // dereference through idx into mOrders/mStarts, but the swap itself only
+    // ever touches idx.
+    function siftDownIdx(idx, root, heapSize) {
+        while (true) {
+            var largest = root;
+            var left = (2 * root) + 1;
+            var right = (2 * root) + 2;
+            if ((left < heapSize) && after(mOrders[idx[left]], mStarts[idx[left]], mOrders[idx[largest]], mStarts[idx[largest]])) {
+                largest = left;
+            }
+            if ((right < heapSize) && after(mOrders[idx[right]], mStarts[idx[right]], mOrders[idx[largest]], mStarts[idx[largest]])) {
+                largest = right;
+            }
+            if (largest == root) { return; }
+            var tmp = idx[root]; idx[root] = idx[largest]; idx[largest] = tmp;
+            root = largest;
+        }
     }
 
     // Fisher-Yates over ALL parallel arrays together - mOrders/mStarts must
