@@ -296,14 +296,40 @@ class LiveProgressWorker {
             mCurId = shiftQueue();
             var e = Progress.get(mCurId);
             if ((e == null) || !e[2]) { continue; }
-            mCurPos = e[0];
-            mCurTs = e[1];
-            mCurFinished = Progress.entryFinished(e);
             mBusy = true;
-            AbsApi.postProgress(mCurId, mCurPos, duration(mCurId), mCurTs,
-                mCurFinished ? true : null, method(:onResponse));
+            // Pull-before-push, same as ProgressSync: a live position event is
+            // stamped with the watch's OWN clock, which is always "now" - so a
+            // blind post here would beat a slightly-earlier-but-further-along
+            // write from another device on every single resume, not just a
+            // genuine race. Merge against the server's current value first and
+            // only push if this book is still dirty afterward (i.e. the local
+            // write is a real, further-along position - not a stale resume).
+            AbsApi.getProgress(mCurId, method(:onPullDone));
             return;
         }
+    }
+
+    function onPullDone(code, data) {
+        if (code == 200) {
+            var pr = AbsApi.readProgress(data); // [posSec, tsSec, finished] or null
+            if (pr != null) {
+                var finished = (pr.size() > 2) ? pr[2] : null;
+                Progress.mergeServer(mCurId, pr[0], pr[1], finished);
+            }
+        }
+        var e = Progress.get(mCurId);
+        if ((e == null) || !e[2]) {
+            // The pull already caught this book up to (or past) the server -
+            // nothing left to push.
+            mBusy = false;
+            drain();
+            return;
+        }
+        mCurPos = e[0];
+        mCurTs = e[1];
+        mCurFinished = Progress.entryFinished(e);
+        AbsApi.postProgress(mCurId, mCurPos, duration(mCurId), mCurTs,
+            mCurFinished ? true : null, method(:onResponse));
     }
 
     function onResponse(code, data) {
