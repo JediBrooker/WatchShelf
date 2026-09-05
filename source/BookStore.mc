@@ -51,19 +51,19 @@ module BookStore {
         return "arti:" + itemId;
     }
 
-    // Book metadata { "title", "author", "durs", "first" }, or null if
+    // Book metadata { "title", "author", "durs", "first", "speed" }, or null if
     // nothing recorded yet. "author" and "first" may be absent/null on records
     // written by older builds; an absent first means the legacy chunk 0.
     function get(itemId) {
         return Application.Storage.getValue(key(itemId));
     }
 
-    function ensureMeta(itemId, title, author, durs, firstChunk) {
+    function ensureMeta(itemId, title, author, durs, firstChunk, speed) {
         if (get(itemId) == null) {
             if (firstChunk == null) { firstChunk = 0; }
             Application.Storage.setValue(key(itemId),
                 { "title" => title, "author" => author, "durs" => durs,
-                  "first" => firstChunk });
+                  "first" => firstChunk, "speed" => PlaybackSpeed.normalize(speed) });
         }
     }
 

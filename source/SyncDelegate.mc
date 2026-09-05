@@ -251,7 +251,7 @@ class SyncDelegate extends Communications.SyncDelegate {
         var context = { "item" => itemId, "k" => job["done"], "gen" => job["gen"] };
         var delegate = new RequestDelegate(method(:onTrackDownloaded), context);
         var url = AbsApi.sidecarChunkUrl(itemId, job["inos"][c["file"]],
-                                        c["cstart"], c["cend"]);
+                                        c["cstart"], c["cend"], job["speed"]);
         delegate.makeWebRequest(url, null, options);
     }
 
@@ -319,7 +319,8 @@ class SyncDelegate extends Communications.SyncDelegate {
 
         var k = job["done"];
         var base = (job["base"] != null) ? job["base"] : 0;
-        BookStore.ensureMeta(itemId, job["title"], job["author"], job["durs"], base);
+        BookStore.ensureMeta(itemId, job["title"], job["author"], job["durs"],
+            base, PlaybackSpeed.normalize(job["speed"]));
         BookStore.saveChunk(itemId, k, refId);
         BookStore.addToIndex(itemId);
 

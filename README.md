@@ -62,6 +62,8 @@ Traefik** is in [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 - **Chunks** are ~3-min, 96 kbps mono AAC in a real M4A container (~2 MB) — the
   container is what lets the native player show a position/time indicator. Tune in
   `source/Chunks.mc`.
+- **Playback speed** is selected per book (1.0x–2.0x); progress stays on the
+  Audiobookshelf source timeline.
 - **State** lives in `Application.Storage` as chunk *params* (not URLs) to stay small.
 - **Playback** is restricted to the selected book. The native player still owns its
   part-local time bar, while the scrolling artist line shows `% of book`.

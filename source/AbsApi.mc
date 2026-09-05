@@ -88,13 +88,12 @@ module AbsApi {
 
     // One CHUNK of a file as a small AAC chunk in a REAL M4A container (the
     // container is what gives the native player a track duration - see
-    // SyncDelegate). fmt=m4a2 doubles as the watch/sidecar protocol-version
-    // guard: an older sidecar doesn't know it and 400s, so the sync fails
-    // VISIBLY instead of the old sidecar's raw ADTS being silently cached
-    // under ENCODING_M4A (which would poison every downloaded chunk).
-    function sidecarChunkUrl(itemId, ino, startSec, endSec) {
+    // SyncDelegate). fmt=m4a3 requires speed-aware sidecar support; an older
+    // sidecar returns 400 instead of silently serving incompatible audio.
+    function sidecarChunkUrl(itemId, ino, startSec, endSec, speed) {
         return sidecarBase() + "/transcode?item=" + itemId + "&file=" + ino
-            + "&fmt=m4a2&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&fmt=m4a3&start=" + startSec.toString() + "&end=" + endSec.toString()
+            + "&speed=" + PlaybackSpeed.normalize(speed).toString()
             + "&token=" + authToken();
     }
 
