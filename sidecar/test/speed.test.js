@@ -52,7 +52,7 @@ test('transcodes supported speeds and rejects unsupported ones', { skip: !hasFfm
   const output = join(work, 'output.m4a');
   const generated = spawnSync('ffmpeg', [
     '-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
-    '-i', 'sine=frequency=440:duration=4', '-ar', '44100', input,
+    '-i', 'sine=frequency=440:duration=12', '-ar', '44100', input,
   ]);
   assert.equal(generated.status, 0, generated.stderr.toString());
   const audio = readFileSync(input);
@@ -90,17 +90,21 @@ test('transcodes supported speeds and rejects unsupported ones', { skip: !hasFfm
     });
     assert.equal(login.status, 200);
     const sessionId = (await login.json()).user.token;
-    const encoded = await fetch(`http://127.0.0.1:${sidecarPort}/transcode?item=book&file=1&fmt=m4a3&start=0&end=4&speed=200&token=${sessionId}`);
-    assert.equal(encoded.status, 200);
-    assert.equal(encoded.headers.get('content-type'), 'audio/mp4');
-    writeFileSync(output, Buffer.from(await encoded.arrayBuffer()));
-    const probe = spawnSync('ffprobe', [
-      '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', output,
-    ]);
-    assert.equal(probe.status, 0, probe.stderr.toString());
-    const duration = Number(probe.stdout.toString().trim());
-    assert.ok(duration > 1.8 && duration < 2.2, `expected about 2s, received ${duration}s`);
-    const invalid = await fetch(`http://127.0.0.1:${sidecarPort}/transcode?item=book&file=1&fmt=m4a3&start=0&end=4&speed=130&token=${sessionId}`);
+    for (const speed of [100, 125, 150, 175, 200]) {
+      const encoded = await fetch(`http://127.0.0.1:${sidecarPort}/transcode?item=book&file=1&fmt=m4a3&start=2&end=6&speed=${speed}&token=${sessionId}`);
+      assert.equal(encoded.status, 200);
+      assert.equal(encoded.headers.get('content-type'), 'audio/mp4');
+      writeFileSync(output, Buffer.from(await encoded.arrayBuffer()));
+      const probe = spawnSync('ffprobe', [
+        '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', output,
+      ]);
+      assert.equal(probe.status, 0, probe.stderr.toString());
+      const duration = Number(probe.stdout.toString().trim());
+      const expected = 4 / (speed / 100);
+      assert.ok(Math.abs(duration - expected) < 0.2,
+        `expected about ${expected}s at ${speed}%, received ${duration}s`);
+    }
+    const invalid = await fetch(`http://127.0.0.1:${sidecarPort}/transcode?item=book&file=1&fmt=m4a3&start=2&end=6&speed=130&token=${sessionId}`);
     assert.equal(invalid.status, 400);
   } finally {
     sidecar.kill('SIGTERM');

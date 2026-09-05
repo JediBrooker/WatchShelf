@@ -119,9 +119,12 @@ function ffArgs(srcUrl, token, fmt, start, end, out, speed) {
     '-headers', `Authorization: Bearer ${token}\r\n`,
     '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '2'];
   if (start != null) { a.push('-ss', String(start)); }
-  a.push('-i', srcUrl);
+  // Bound the INPUT before changing tempo. An output-side -t is measured after
+  // atempo, so a 180s chunk at 1.5x would consume 270s and overlap the next
+  // chunk by 90s.
   if (start != null && end != null) { a.push('-t', String(Math.max(0, Number(end) - Number(start)))); }
   else if (end != null)            { a.push('-to', String(end)); }
+  a.push('-i', srcUrl);
   // Strip every inherited metadata field (title/author/comments/cover art/etc.) -
   // WatchShelf doesn't need it embedded (book metadata lives server-side), and a
   // Garmin-confirmed bug (certain characters, e.g. (c) or curly quotes, in MP3
