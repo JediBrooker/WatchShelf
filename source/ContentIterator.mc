@@ -242,17 +242,7 @@ class ContentIterator extends Media.ContentIterator {
         return mGlobals[idx] + 1;
     }
 
-    // Build the ordered playlist. Ids come from the OS's OWN content cache
-    // (Media.getContentRefIter - mirrors MonkeyMusic), never our bookkeeping;
-    // BookStore supplies only sort metadata (book order, chunk start). A
-    // cached id BookStore doesn't know is SKIPPED - it's an orphan from a
-    // crash window (cached but never recorded), not playable content we can
-    // name or order. Sorted in place by (bookOrder, start) with parallel
-    // arrays and swaps - NUMERIC keys only. Never sort on title strings:
-    // Monkey C String has no relational operators at runtime (throws
-    // UnexpectedTypeException, invisible at typecheck=0 - empirically
-    // confirmed in the simulator), and identical titles would interleave two
-    // books chunk-by-chunk.
+    // Build the selected book playlist from BookStore's sequential pages.
     function buildPlaylist() {
         mPlaylist = [];
         mOrders = [];
@@ -263,11 +253,6 @@ class ContentIterator extends Media.ContentIterator {
         mBookAuthors = [];
         mBookDurations = [];
 
-        // Build lookup rows ONLY for the selected book. Arrays remain indexed
-        // by BOOK_INDEX slot because lookup values use that stable numeric slot.
-        // Keeping metadata for every slot is O(books), while cached content and
-        // playback iteration stay strictly one-book-only.
-        var lookup = {};
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
         var selectedSlot = slotOf(mStartItem);
@@ -283,27 +268,11 @@ class ContentIterator extends Media.ContentIterator {
                 for (var d = 0; d < durs.size(); ++d) { total += durs[d]; }
             }
             mBookDurations.add(total);
-            if (b == selectedSlot) { BookStore.addLookup(index[b], b, lookup); }
-        }
-
-        var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
-        if (iter != null) {
-            var ref = iter.next();
-            while (ref != null) {
-                var refId = ref.getId();
-                var info = lookup[refId];
-                if (info != null) {
-                    mPlaylist.add(refId);
-                    mOrders.add(info[0]);
-                    mStarts.add(info[1]);
-                    mSpans.add(info[2]);
-                    mGlobals.add(info[3]);
-                }
-                ref = iter.next();
+            if (b == selectedSlot) {
+                BookStore.appendPlaylist(index[b], b, mPlaylist, mOrders,
+                    mStarts, mSpans, mGlobals);
             }
         }
-
-        sortPlaylist();
         mIndex = 0;
         applyStart();
     }
@@ -373,61 +342,6 @@ class ContentIterator extends Media.ContentIterator {
             mIndex = pick;
         } else {
             mIndex = mPlaylist.size();
-        }
-    }
-
-    // True if (orderA, startA) sorts AFTER (orderB, startB): by book first
-    // (one book's chapters never interleave with another's), then start.
-    function after(orderA, startA, orderB, startB) {
-        if (orderA != orderB) {
-            return orderA > orderB;
-        }
-        return startA > startB;
-    }
-
-    // Heap sort (O(n log n) worst case) on an index array rather than the
-    // five parallel arrays directly - a swap during the sort only touches
-    // one small-int array, not five. Rebuilds the real arrays from the
-    // sorted index in one pass at the end.
-    function sortPlaylist() {
-        var n = mPlaylist.size();
-        var idx = [];
-        for (var i = 0; i < n; ++i) { idx.add(i); }
-
-        for (var i = (n / 2) - 1; i >= 0; --i) { siftDownIdx(idx, i, n); }
-        for (var last = n - 1; last > 0; --last) {
-            var tmp = idx[0]; idx[0] = idx[last]; idx[last] = tmp;
-            siftDownIdx(idx, 0, last);
-        }
-
-        var playlist = []; var orders = []; var starts = [];
-        var spans = []; var globals = [];
-        for (var i = 0; i < n; ++i) {
-            var k = idx[i];
-            playlist.add(mPlaylist[k]); orders.add(mOrders[k]); starts.add(mStarts[k]);
-            spans.add(mSpans[k]); globals.add(mGlobals[k]);
-        }
-        mPlaylist = playlist; mOrders = orders; mStarts = starts;
-        mSpans = spans; mGlobals = globals;
-    }
-
-    // Sift idx[root] down through the max-heap of size `heapSize`: compares
-    // dereference through idx into mOrders/mStarts, but the swap itself only
-    // ever touches idx.
-    function siftDownIdx(idx, root, heapSize) {
-        while (true) {
-            var largest = root;
-            var left = (2 * root) + 1;
-            var right = (2 * root) + 2;
-            if ((left < heapSize) && after(mOrders[idx[left]], mStarts[idx[left]], mOrders[idx[largest]], mStarts[idx[largest]])) {
-                largest = left;
-            }
-            if ((right < heapSize) && after(mOrders[idx[right]], mStarts[idx[right]], mOrders[idx[largest]], mStarts[idx[largest]])) {
-                largest = right;
-            }
-            if (largest == root) { return; }
-            var tmp = idx[root]; idx[root] = idx[largest]; idx[largest] = tmp;
-            root = largest;
         }
     }
 
