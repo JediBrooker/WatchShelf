@@ -238,6 +238,7 @@ module BookStore {
         var meta = get(itemId);
         if (meta == null) { return; }
         var starts = Chunks.starts(meta["durs"]);
+        var spans = Chunks.spans(meta["durs"]);
         var firstChunk = first(itemId);
         var local = 0;
         var p = 0;
@@ -247,9 +248,35 @@ module BookStore {
             for (var i = 0; i < arr.size(); ++i) {
                 var k = firstChunk + local;
                 if ((arr[i] != null) && (k < starts.size())) {
-                    var c = Chunks.at(meta["durs"], k);
-                    var span = (c != null) ? (c["cend"] - c["cstart"]) : null;
+                    var span = (k < spans.size()) ? spans[k] : null;
                     out[arr[i]] = [order, starts[k], span, k];
+                }
+                local += 1;
+            }
+            p += 1;
+        }
+    }
+
+    // Append recorded refs in their download order.
+    function appendPlaylist(itemId, order, playlist, orders, startsOut, spansOut, globalsOut) {
+        var meta = get(itemId);
+        if (meta == null) { return; }
+        var starts = Chunks.starts(meta["durs"]);
+        var spans = Chunks.spans(meta["durs"]);
+        var firstChunk = first(itemId);
+        var local = 0;
+        var p = 0;
+        while (true) {
+            var arr = Application.Storage.getValue(pageKey(itemId, p));
+            if (arr == null) { break; }
+            for (var i = 0; i < arr.size(); ++i) {
+                var k = firstChunk + local;
+                if ((arr[i] != null) && (k < starts.size())) {
+                    playlist.add(arr[i]);
+                    orders.add(order);
+                    startsOut.add(starts[k]);
+                    spansOut.add((k < spans.size()) ? spans[k] : null);
+                    globalsOut.add(k);
                 }
                 local += 1;
             }

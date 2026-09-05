@@ -242,17 +242,7 @@ class ContentIterator extends Media.ContentIterator {
         return mGlobals[idx] + 1;
     }
 
-    // Build the ordered playlist. Ids come from the OS's OWN content cache
-    // (Media.getContentRefIter - mirrors MonkeyMusic), never our bookkeeping;
-    // BookStore supplies only sort metadata (book order, chunk start). A
-    // cached id BookStore doesn't know is SKIPPED - it's an orphan from a
-    // crash window (cached but never recorded), not playable content we can
-    // name or order. Sorted in place by (bookOrder, start) with parallel
-    // arrays and swaps - NUMERIC keys only. Never sort on title strings:
-    // Monkey C String has no relational operators at runtime (throws
-    // UnexpectedTypeException, invisible at typecheck=0 - empirically
-    // confirmed in the simulator), and identical titles would interleave two
-    // books chunk-by-chunk.
+    // Build the selected book playlist from BookStore's sequential pages.
     function buildPlaylist() {
         mPlaylist = [];
         mOrders = [];
@@ -263,11 +253,6 @@ class ContentIterator extends Media.ContentIterator {
         mBookAuthors = [];
         mBookDurations = [];
 
-        // Build lookup rows ONLY for the selected book. Arrays remain indexed
-        // by BOOK_INDEX slot because lookup values use that stable numeric slot.
-        // Keeping metadata for every slot is O(books), while cached content and
-        // playback iteration stay strictly one-book-only.
-        var lookup = {};
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
         var selectedSlot = slotOf(mStartItem);
@@ -283,35 +268,9 @@ class ContentIterator extends Media.ContentIterator {
                 for (var d = 0; d < durs.size(); ++d) { total += durs[d]; }
             }
             mBookDurations.add(total);
-            if (b == selectedSlot) { BookStore.addLookup(index[b], b, lookup); }
-        }
-
-        var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
-        if (iter != null) {
-            var ref = iter.next();
-            while (ref != null) {
-                var refId = ref.getId();
-                var info = lookup[refId];
-                if (info != null) {
-                    mPlaylist.add(refId);
-                    mOrders.add(info[0]);
-                    mStarts.add(info[1]);
-                    mSpans.add(info[2]);
-                    mGlobals.add(info[3]);
-                }
-                ref = iter.next();
-            }
-        }
-
-        // In-place insertion sort on the five parallel arrays: stable, no
-        // allocations, numeric compares only. Chunks download (and cache) in
-        // playlist order, so the input is near-sorted and this stays ~O(n).
-        for (var i = 1; i < mPlaylist.size(); ++i) {
-            var j = i;
-            while (j > 0 && after(mOrders[j - 1], mStarts[j - 1], mOrders[j], mStarts[j])) {
-                swap(mPlaylist, j); swap(mOrders, j); swap(mStarts, j);
-                swap(mSpans, j); swap(mGlobals, j);
-                --j;
+            if (b == selectedSlot) {
+                BookStore.appendPlaylist(index[b], b, mPlaylist, mOrders,
+                    mStarts, mSpans, mGlobals);
             }
         }
         mIndex = 0;
@@ -384,21 +343,6 @@ class ContentIterator extends Media.ContentIterator {
         } else {
             mIndex = mPlaylist.size();
         }
-    }
-
-    // True if (orderA, startA) sorts AFTER (orderB, startB): by book first
-    // (one book's chapters never interleave with another's), then start.
-    function after(orderA, startA, orderB, startB) {
-        if (orderA != orderB) {
-            return orderA > orderB;
-        }
-        return startA > startB;
-    }
-
-    function swap(arr, j) {
-        var tmp = arr[j];
-        arr[j] = arr[j - 1];
-        arr[j - 1] = tmp;
     }
 
     // Fisher-Yates over ALL parallel arrays together - mOrders/mStarts must

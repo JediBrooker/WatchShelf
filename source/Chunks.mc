@@ -101,6 +101,25 @@ module Chunks {
         return n;
     }
 
+    // Span (seconds) of EVERY chunk, in one pass: [ span0, span1, ... ].
+    // Companion to starts() - lets a caller avoid calling at() per chunk.
+    function spans(durs) {
+        var out = [];
+        for (var f = 0; f < durs.size(); ++f) {
+            var d = durs[f];
+            if (d <= 0) { continue; }
+            var pos = 0;
+            while (pos < d) {
+                var size = (out.size() == 0) ? FIRST : LEN;
+                var end = pos + size;
+                if (end > d) { end = d; }
+                out.add(end - pos);
+                pos = end;
+            }
+        }
+        return out;
+    }
+
     // Boundaries of global chunk k, or null if k is out of range. Returns
     // { "file" => file index, "cstart"/"cend" => seconds within that file,
     //   "start" => absolute seconds within the whole book }.
