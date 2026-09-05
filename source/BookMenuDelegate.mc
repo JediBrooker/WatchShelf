@@ -12,10 +12,12 @@ using Toybox.WatchUi;
 class BookFilesListener {
     private var mOwner;
     private var mItemId;
+    private var mSpeed;
 
-    function initialize(owner, itemId) {
+    function initialize(owner, itemId, speed) {
         mOwner = owner;
         mItemId = itemId;
+        mSpeed = speed;
     }
 
     function onResponse(code, data) {
@@ -23,7 +25,39 @@ class BookFilesListener {
         // can start another /files request before this one returns; using one
         // mutable delegate field would then queue the first book's file list
         // under the second book's id and make every transcode fail.
-        mOwner.onFiles(mItemId, code, data);
+        mOwner.onFiles(mItemId, mSpeed, code, data);
+    }
+}
+
+class BookSpeedMenu extends WatchUi.Menu2 {
+    function initialize(title) {
+        Menu2.initialize({ :title => title });
+        addItem(new WatchUi.MenuItem("1.0x", null, "100", null));
+        addItem(new WatchUi.MenuItem("1.25x", null, "125", null));
+        addItem(new WatchUi.MenuItem("1.5x", null, "150", null));
+        addItem(new WatchUi.MenuItem("1.75x", null, "175", null));
+        addItem(new WatchUi.MenuItem("2.0x", null, "200", null));
+    }
+}
+
+class BookSpeedMenuDelegate extends WatchUi.Menu2InputDelegate {
+    private var mOwner;
+    private var mItemId;
+
+    function initialize(owner, itemId) {
+        Menu2InputDelegate.initialize();
+        mOwner = owner;
+        mItemId = itemId;
+    }
+
+    function onSelect(item) {
+        var speed = item.getId().toNumber();
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+        mOwner.downloadAtSpeed(mItemId, PlaybackSpeed.normalize(speed));
+    }
+
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 }
 
@@ -35,11 +69,16 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item) {
         var itemId = item.getId();
-        var listener = new BookFilesListener(self, itemId);
+        WatchUi.pushView(new BookSpeedMenu(WatchUi.loadResource(Rez.Strings.chooseSpeed)),
+            new BookSpeedMenuDelegate(self, itemId), WatchUi.SLIDE_LEFT);
+    }
+
+    function downloadAtSpeed(itemId, speed) {
+        var listener = new BookFilesListener(self, itemId, speed);
         AbsApi.getFiles(itemId, listener.method(:onResponse));
     }
 
-    function onFiles(itemId, code, data) {
+    function onFiles(itemId, speed, code, data) {
         // Session expired -> re-login instead of a dead-end error.
         if (code == 401) { Login.reauth(); return; }
         if (code != 200 || data == null) {
@@ -157,6 +196,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         if (meta != null) {
             drifted = (forceFull && (BookStore.first(itemId) > 0))
                 || !Chunks.same(meta["durs"], durs)
+                || (PlaybackSpeed.normalize(meta["speed"]) != speed)
                 || (!inBookIndex(itemId) && !containsId(JobStore.list(), itemId));
         }
 
@@ -243,6 +283,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
             "durs"   => durs,
             "title"  => title,
             "author" => author,
+            "speed"  => speed,
             "base"   => base,
             "done"   => done,
             "gen"    => gen

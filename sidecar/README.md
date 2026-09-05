@@ -12,7 +12,8 @@ internet:
   `/files`** — lean JSON (a few KB) so listings never overflow the watch.
   `/continue` returns the user's started, unfinished books; `/files` also includes
   the saved position used to skip already-listened chunks.
-- **`/transcode`** — cuts a small on-demand AAC chunk (real M4A/MP4 container, so
+- **`/transcode`** — cuts a small on-demand AAC chunk at the selected speed (real
+  M4A/MP4 container, so
   the watch's native player knows the exact duration and can show a position bar)
   out of any file using an HTTP Range request (it never downloads the whole
   gigabyte — a 3-min chunk is ~2 MB).
@@ -70,3 +71,5 @@ PATH), then expose it the same way (step 3 above).
 - **Quality** is 96 kbps mono AAC in an M4A container (spoken-word sweet spot;
   the real container is what gives the player a duration). Change in `server.js`
   `ffArgs`.
+- **Playback speed** supports 1.0x, 1.25x, 1.5x, 1.75x, and 2.0x via ffmpeg
+  `atempo`; progress remains on the original timeline.

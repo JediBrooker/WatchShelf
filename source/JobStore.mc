@@ -5,7 +5,8 @@ using Toybox.Application;
 //
 //   "jobidx"        => [ itemId, ... ]
 //   "job:" + itemId => { "inos" => [str], "durs" => [num], "title" => str,
-//                        "author" => str or null, "base" => num,
+//                        "author" => str or null, "speed" => integer percent,
+//                        "base" => num,
 //                        "done" => num, "gen" => num }
 // `base` and `done` are GLOBAL chunk indexes. base is the first unlistened
 // chunk selected for a tail-only download; done is its persisted next cursor.

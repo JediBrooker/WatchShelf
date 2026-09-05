@@ -19,7 +19,7 @@
 //   GET /files?item&token        -> {title,author,files:[{ino,duration}],progress}
 //                                   (or {..,files:[],fileCount,tooManyFiles:true}
 //                                    when the book has > MAX_FILES audio files)
-//   GET /transcode?item&file&fmt&start&end&token -> a small audio chunk
+//   GET /transcode?item&file&fmt&start&end&speed&token -> a small audio chunk
 //   GET /cover?item&token[&w]    -> the book's cover, hard-resized by us to a
 //                                   small JPEG (the watch decodes it in 512KB)
 //   GET  /progress?item&token -> {currentTime,duration,lastUpdate,isFinished}
@@ -72,13 +72,11 @@ function saveSessions() {
 const jwtExp = (t) => { try { return JSON.parse(Buffer.from(String(t).split('.')[1], 'base64url').toString()).exp || 0; } catch (e) { return 0; } };
 if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); process.exit(1); }
 
-// fmt values double as the watch/sidecar PROTOCOL VERSION guard: the watch
-// (b29+) requests fmt=m4a2; an older sidecar has no such CT entry and 400s,
-// so a stale sidecar fails the sync visibly instead of feeding raw ADTS that
-// the watch would mis-cache as ENCODING_M4A (silent cache poisoning). 'm4a'
-// keeps the legacy ADTS behavior so older watch builds stay correct too.
-const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4' };
+// fmt=m4a2/m4a3 are protocol guards; m4a3 additionally carries playback speed.
+// 'm4a' keeps the legacy ADTS behavior for older watch builds.
+const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4', m4a3: 'audio/mp4' };
 const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
+const SPEEDS = new Set([100, 125, 150, 175, 200]);
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
 // Renew one session's accessToken using its (rotating) refreshToken. ABS
@@ -116,7 +114,7 @@ const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-stor
 // the real HTTP status - which masked an ABS 401 as "-400" in the field.
 const fail = (res, code, msg) => { res.writeHead(code, jsonHead).end(JSON.stringify({ error: msg })); };
 
-function ffArgs(srcUrl, token, fmt, start, end, out) {
+function ffArgs(srcUrl, token, fmt, start, end, out, speed) {
   const a = ['-hide_banner', '-loglevel', 'error', '-user_agent', UA,
     '-headers', `Authorization: Bearer ${token}\r\n`,
     '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '2'];
@@ -131,6 +129,7 @@ function ffArgs(srcUrl, token, fmt, start, end, out) {
   // error surfaced to the app. -id3v2_version 0 additionally suppresses ffmpeg's
   // own default encoder tag, so the mp3 output carries no ID3 tag at all.
   a.push('-map_metadata', '-1', '-id3v2_version', '0');
+  if (speed !== 100) { a.push('-filter:a', `atempo=${speed / 100}`); }
   // Always TRANSCODE to AAC (not stream-copy) regardless of source codec -
   // "always re-encode to a known-good target", so any book (mp3-sourced or
   // aac-sourced) lands in the same format. m4a2 is a REAL M4A/MP4 container
@@ -143,7 +142,7 @@ function ffArgs(srcUrl, token, fmt, start, end, out) {
   // finalized at the end; +faststart then rewrites it to the front), so this
   // branch writes to a temp file (`out`) instead of pipe:1 - transcode()
   // already buffers fully anyway.
-  if (fmt === 'm4a2') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-movflags', '+faststart', '-f', 'ipod', out); }
+  if (fmt === 'm4a2' || fmt === 'm4a3') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-movflags', '+faststart', '-f', 'ipod', out); }
   // Legacy ADTS for watch builds <= b28, which cache this as ENCODING_ADTS.
   else if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-f', 'adts', 'pipe:1'); }
   // 44100Hz/96kbps instead of the original 22050Hz/64kbps: the file itself was
@@ -194,8 +193,10 @@ async function transcode(req, res, u) {
   const item = u.searchParams.get('item'), file = u.searchParams.get('file');
   const fmt = (u.searchParams.get('fmt') || 'mp3').toLowerCase();
   const start = u.searchParams.get('start'), end = u.searchParams.get('end');
+  const speedRaw = u.searchParams.get('speed') || '100';
+  const speed = NUM.test(speedRaw) ? Number(speedRaw) : NaN;
   const token = u.searchParams.get('token');
-  if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file)) { res.writeHead(400).end('bad params'); return; }
+  if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file) || !SPEEDS.has(speed)) { res.writeHead(400).end('bad params'); return; }
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
   // Fresh token BEFORE ffmpeg fetches (ffmpeg's internal request can't refresh
   // itself; over a long download the accessToken would otherwise expire mid-book).
@@ -211,10 +212,10 @@ async function transcode(req, res, u) {
   // OS with a file it can't validate/size correctly, which surfaces as a
   // native "Media Error Occurred" well after the download itself already
   // reported success to the app.
-  if (fmt === 'm4a2') {
+  if (fmt === 'm4a2' || fmt === 'm4a3') {
     const out = join(tmpdir(), `watchshelf-${randomUUID()}.m4a`);
     const drop = () => unlink(out).catch(() => {});
-    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out), { stdio: ['ignore', 'ignore', 'pipe'] });
+    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out, speed), { stdio: ['ignore', 'ignore', 'pipe'] });
     const ffmpegStderr = captureFfmpegStderr(ff);
     let done = false;
     let cancelled = false;
@@ -253,7 +254,7 @@ async function transcode(req, res, u) {
     return;
   }
 
-  const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null), { stdio: ['ignore', 'pipe', 'pipe'] });
+  const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, null, speed), { stdio: ['ignore', 'pipe', 'pipe'] });
   const ffmpegStderr = captureFfmpegStderr(ff);
   const parts = [];
   let done = false;
