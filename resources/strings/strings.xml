@@ -48,6 +48,11 @@
     <string id="fieldServer">WatchShelf URL</string>
     <string id="fieldUser">Username</string>
     <string id="fieldPass">Password</string>
+
+    <!-- on-watch character wheel, used where WatchUi.TextPicker is absent
+         (vivoactive4/4s, venu/venud) - see source/TextEntry.mc -->
+    <string id="kbDone">DONE</string>
+    <string id="kbDelete">DEL</string>
     <string id="allBooks">All books</string>
     <string id="continueListening">Continue listening</string>
     <string id="byAuthor">By author</string>
