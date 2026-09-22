@@ -82,4 +82,5 @@ happened to build for at the time, which is exactly why b29–b34 are gone.
 | b29–b34 | **none**, and not reproducible: archiving had lapsed and these commits aren't tagged |
 | b36 | `fenix8solar51mm` — never shipped |
 | b37 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` |
-| b38 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` — the current store build |
+| b38 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` |
+| b39 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` — the current store build |
