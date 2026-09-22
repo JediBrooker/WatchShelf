@@ -301,16 +301,57 @@ module LiveProgress {
 }
 
 class LiveProgressWorker {
+    // Seconds before the watch re-checks the server for a book it has already
+    // exchanged with in this session. See needsPull().
+    const PULL_TTL = 300;
+
     private var mQueue;
     private var mBusy;
     private var mCurId;
     private var mCurTs;
     private var mCurPos;
     private var mCurFinished;
+    private var mChecked;   // itemId -> epoch sec of last confirmed exchange
 
     function initialize() {
         mQueue = [];
         mBusy = false;
+        mChecked = {};
+    }
+
+    // Record that we have fresh knowledge of the server's state for a book -
+    // either we just pulled it, or we just pushed to it successfully.
+    function noteChecked(itemId, tsSec) {
+        mChecked[itemId] = tsSec;
+    }
+
+    // Should this push be preceded by a server pull?
+    //
+    // The pull exists to stop a STALE resume position clobbering a newer
+    // position set on another device. That can only happen on the FIRST
+    // exchange for a book, before the watch has established itself as the most
+    // recent writer. Afterwards every position in the same listening session is
+    // strictly newer AND from this same device, so a pull costs a round trip
+    // and learns nothing.
+    //
+    // That distinction matters because live events are NOT occasional:
+    // PLAYBACK_NOTIFY fires every ~15s of playback (see
+    // ContentIterator.playbackNotificationThreshold), so an hour of listening is
+    // ~240 pushes. Pulling before every one would make it ~480 requests over the
+    // phone bridge. With the TTL it is ~12 pulls an hour and the pull that
+    // actually protects anything - the first - still happens.
+    //
+    // The TTL covers the other direction: a long pause during which another
+    // device moved on. After PULL_TTL the watch stops assuming it is still the
+    // most recent writer.
+    function needsPull(itemId, nowSec) {
+        var last = mChecked[itemId];
+        if (last == null) { return true; }
+        // A clock that jumped BACKWARD (manual set, or a firmware time
+        // correction) must not pin this false until the TTL elapses in the new
+        // frame - re-check instead of trusting arithmetic on a moved clock.
+        if (nowSec < last) { return true; }
+        return (nowSec - last) >= PULL_TTL;
     }
 
     function submit(itemId) {
@@ -356,13 +397,21 @@ class LiveProgressWorker {
             // genuine race. Merge against the server's current value first and
             // only push if this book is still dirty afterward (i.e. the local
             // write is a real, further-along position - not a stale resume).
-            AbsApi.getProgress(mCurId, method(:onPullDone));
+            // Throttled - see needsPull().
+            if (needsPull(mCurId, Progress.nowSec())) {
+                AbsApi.getProgress(mCurId, method(:onPullDone));
+            } else {
+                pushCurrent();
+            }
             return;
         }
     }
 
     function onPullDone(code, data) {
         if (code == 200) {
+            // Only a SUCCESSFUL pull counts as fresh knowledge; a failed one
+            // must not suppress the next attempt for a whole TTL.
+            noteChecked(mCurId, Progress.nowSec());
             var pr = AbsApi.readProgress(data); // [posSec, tsSec, finished] or null
             if (pr != null) {
                 var finished = (pr.size() > 2) ? pr[2] : null;
@@ -377,6 +426,14 @@ class LiveProgressWorker {
             drain();
             return;
         }
+        pushCurrent();
+    }
+
+    // Send the book's current local state. Split out of onPullDone so the
+    // throttled path can reach it without a pull.
+    function pushCurrent() {
+        var e = Progress.get(mCurId);
+        if (e == null) { mBusy = false; drain(); return; }
         mCurPos = e[0];
         mCurTs = e[1];
         mCurFinished = Progress.entryFinished(e);
@@ -386,6 +443,9 @@ class LiveProgressWorker {
 
     function onResponse(code, data) {
         if (code == 200) {
+            // A successful push makes the watch the most recent writer, which
+            // is exactly the state needsPull() may skip a pull for.
+            noteChecked(mCurId, Progress.nowSec());
             // Exact-match guard leaves a newer queued callback dirty.
             Progress.markClean(mCurId, mCurTs, mCurPos, mCurFinished);
         } else {
