@@ -51,6 +51,9 @@
 
     <!-- on-watch character wheel, used where WatchUi.TextPicker is absent
          (vivoactive4/4s, venu/venud) - see source/TextEntry.mc -->
+    <!-- progress-conflict diagnostic (issue #61); only shown if it ever fires -->
+    <string id="progressConflicts">Progress conflicts</string>
+
     <!-- optional reverse-proxy auth header (see source/ProxyHeader.mc) -->
     <string id="proxyHeader">Proxy header</string>
     <string id="proxyNotSet">Not set</string>

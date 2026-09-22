@@ -57,6 +57,10 @@ module Store {
     // string passed to notifySyncComplete(), so keep the same detail here for
     // DownloadedMenu -> "Last sync failed".
     const LAST_SYNC_ERROR = "syncError";
+    // Diagnostic for issue #61: how often a server position has displaced an
+    // UNFLUSHED local listen, plus the shape of the last one. Absent until it
+    // actually happens, and O(1) - a count and three numbers, never a list.
+    const MERGE_CONFLICT  = "mergeConflict";
 }
 
 // ---------------------------------------------------------------------------
