@@ -358,10 +358,18 @@ async function libType(lib, sid) {
 const epBook = (itemId, show, ep) => ({ id: `${itemId}${SEP}${ep.id}`, title: ep.title || '?', author: show || '' });
 const byNewest = (a, b) => (b.publishedAt || 0) - (a.publishedAt || 0);
 // A podcast episode's progress lives in the user's mediaProgress rows, not on
-// item detail like a book's.
+// item detail like a book's - but ABS exposes a row directly, so ask for the
+// one row rather than pulling the user's ENTIRE mediaProgress array (this is
+// on the hot path: every episode open and every progress read during a sync).
+// A 404 here simply means nothing has been recorded for the episode yet.
 async function episodeProgress(itemId, episode, sid) {
-  const me = await absJson('/api/me', sid);
-  return (me.mediaProgress || []).find((x) => x.libraryItemId === itemId && x.episodeId === episode) || null;
+  try {
+    const p = await absJson(`/api/me/progress/${encodeURIComponent(itemId)}/${encodeURIComponent(episode)}`, sid);
+    return (p && p.libraryItemId) ? p : null;
+  } catch (e) {
+    if (e.status === 404) { return null; }
+    throw e;
+  }
 }
 
 // `sid` is the watch's session id. Resolve it to a fresh accessToken, and if

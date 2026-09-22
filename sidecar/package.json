@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Tiny ffmpeg transcode/chapter-cut sidecar bridging Audiobookshelf to Garmin WatchShelf.",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/"
   }
 }

@@ -81,6 +81,14 @@ see it). WatchShelf appears under the watch's **Music / audio providers**. Open 
 library** → **Continue listening / All books / By author / By series / By collection**
 → pick a book → its unlistened tail downloads in chunks.
 
+## Podcasts
+
+Podcast libraries show up alongside audiobooks with no extra setup: the sidecar
+presents each **show** where authors normally appear and each **episode** as a
+book, so browsing, downloading and two-way progress sync all work as they do for
+books. Episodes must already be downloaded in ABS (or auto-download enabled for
+the show) before the watch can fetch them.
+
 ## Known limitations
 
 - **Long books = many chunks** (a 25-hour book → ~50). Sync is slow but works; each
