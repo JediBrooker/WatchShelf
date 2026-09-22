@@ -1,4 +1,5 @@
 using Toybox.Application;
+using Toybox.System;
 using Toybox.Time;
 
 // Two-way play-progress state. O(books) - ONE small Storage dictionary keyed by
@@ -84,6 +85,47 @@ module Progress {
         }
     }
 
+    // Count a server value displacing a DIRTY local write - listening that
+    // happened on this watch and had not yet reached ABS.
+    //
+    // Why this exists (issue #61): the merge below trusts tsSec, and local
+    // writes are stamped with the WATCH's clock. A watch running behind real
+    // time can therefore lose genuine listening to an older server position,
+    // silently and with no retry. Nobody has reported that - it was found by
+    // reading the rule - so this measures it BEFORE anyone changes
+    // last-write-wins semantics. If it never fires, the rule was fine.
+    //
+    // `skew` is how far ahead of our clock the server claims to be; `lost` is
+    // how much further along we were. Positive `skew` together with positive
+    // `lost` is the signature of clock skew rather than a genuine remote
+    // update, because a real update from elsewhere normally moves progress
+    // FORWARD, not backward.
+    function noteConflict(localPos, localTs, serverPos, serverTs) {
+        try {
+            var prev = Application.Storage.getValue(Store.MERGE_CONFLICT);
+            var count = ((prev != null) && (prev["count"] != null)) ? prev["count"] + 1 : 1;
+            Application.Storage.setValue(Store.MERGE_CONFLICT, {
+                "count" => count,
+                "skew"  => serverTs - localTs,
+                "lost"  => localPos - serverPos,
+                "at"    => serverTs
+            });
+        } catch (ex) {
+            // A diagnostic must never be able to break a sync.
+            System.println("conflict note failed: " + ex.getErrorMessage());
+        }
+        System.println("progress conflict: local " + localPos + "@" + localTs
+            + " displaced by server " + serverPos + "@" + serverTs);
+    }
+
+    // Read the diagnostic, or null if it has never fired.
+    function conflicts() {
+        return Application.Storage.getValue(Store.MERGE_CONFLICT);
+    }
+    function clearConflicts() {
+        Application.Storage.deleteValue(Store.MERGE_CONFLICT);
+    }
+
     // Merge a position pulled from ABS, last-write-wins by tsSec: a strictly
     // newer server value replaces ours (and is clean - no need to push it back);
     // an equal/older one is ignored so a fresh local listen is never regressed.
@@ -91,6 +133,12 @@ module Progress {
         var m = all();
         var e = m[itemId];
         if ((e == null) || (tsSec > e[1])) {
+            // Displacing a CLEAN entry is ordinary cross-device sync and is not
+            // worth counting. Displacing a DIRTY one discards local listening -
+            // that is the case #61 is about.
+            if ((e != null) && e[2]) {
+                noteConflict(e[0], e[1], positionSec, tsSec);
+            }
             // A null flag is tolerated for an older sidecar/watch protocol and
             // preserves the local value. Current AbsApi always supplies it.
             var f = (finished != null) ? (finished == true) : entryFinished(e);

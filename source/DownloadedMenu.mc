@@ -55,6 +55,17 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.logOut), null, "logout", null));
         }
 
+        // Progress-conflict diagnostic (issue #61). Only ever appears if a
+        // server position has actually displaced unflushed local listening -
+        // on a healthy watch this row does not exist. Reachable in the field
+        // matters: System.println is only visible in the simulator, so without
+        // a row here the counter could never be read off a real device, which
+        // would make the instrumentation pointless.
+        if (Progress.conflicts() != null) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.progressConflicts),
+                null, "conflicts", null));
+        }
+
         // Optional reverse-proxy header (issue #41). Always offered, including
         // on a fresh install: someone whose proxy requires the header cannot
         // log in at all until it is set, so this must NOT be gated on

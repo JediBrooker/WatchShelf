@@ -63,6 +63,22 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Progress conflicts" -> show the diagnostic counters (issue #61).
+        // A positive "server ahead" together with a positive "lost" is the
+        // clock-skew signature: a genuine remote update normally moves progress
+        // forward, not backward.
+        if ((id instanceof Toybox.Lang.String) && id.equals("conflicts")) {
+            var c = Progress.conflicts();
+            if (c != null) {
+                var text = WatchUi.loadResource(Rez.Strings.progressConflicts)
+                    + ": " + c["count"].toString()
+                    + "\nServer ahead: " + c["skew"].toString() + "s"
+                    + "\nLost: " + c["lost"].toString() + "s";
+                WatchUi.pushView(new ErrorView(text), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            }
+            return;
+        }
+
         // "Proxy header" -> set/clear the optional reverse-proxy credential.
         // The row itself is handed over so its subtitle can be refreshed in
         // place when the flow saves.
