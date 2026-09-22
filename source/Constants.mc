@@ -98,7 +98,9 @@ module Versions {
     // shape. b37 adds per-book "speed" to BookStore metadata, which is also
     // additive - a book recorded before b37 has no speed key, normalize(null)
     // returns 100, and its chunks really were encoded at 1.0x, so they stay
-    // valid and must NOT be wiped. Changing speed re-downloads that one book
-    // (BookMenuDelegate), which is the correct granularity.
-    const tag = "b37";
+    // valid and must NOT be wiped. b38 adds alt/altFirst/active for the second
+    // playback-speed encoding: also additive, and the PRIMARY slot deliberately
+    // keeps the original page keys, so every existing record reads correctly
+    // with no migration at all.
+    const tag = "b38";
 }
