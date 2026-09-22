@@ -201,7 +201,9 @@ async function transcode(req, res, u) {
   // itself; over a long download the accessToken would otherwise expire mid-book).
   const tok = await freshAccess(token);
   if (!tok) { res.writeHead(401).end('unauthorized'); return; }
-  const src = `${ABS}/api/items/${encodeURIComponent(item)}/file/${encodeURIComponent(file)}/download`;
+  // Composite podcast id: only the item half names the ABS resource - the
+  // episode's audio is still fetched by file ino, same as a book's.
+  const src = `${ABS}/api/items/${encodeURIComponent(splitId(item).item)}/file/${encodeURIComponent(file)}/download`;
 
   // m4a writes a REAL MP4 container to a temp file (the mp4 muxer needs
   // seekable output for the moov atom - see ffArgs), then serves the file
@@ -300,7 +302,7 @@ async function cover(req, res, u) {
   const access = await freshAccess(token);
   if (!access) { res.writeHead(401).end('unauthorized'); return; }
   try {
-    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(item)}/cover?format=jpeg`, { headers: bearer(access) });
+    const r = await fetch(`${ABS}/api/items/${encodeURIComponent(splitId(item).item)}/cover?format=jpeg`, { headers: bearer(access) });
     if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502).end('ABS ' + r.status); return; }
     const src = Buffer.from(await r.arrayBuffer());
     // Downscale to w px wide (aspect preserved), re-encode as a small JPEG.
@@ -331,6 +333,45 @@ const bookOf = (it) => ({
   author: ((it.media || {}).metadata || {}).authorName || '',
 });
 
+// ---- Podcast support -------------------------------------------------------
+// The watch only understands book libraries, so podcast libraries are DISGUISED
+// as book libraries and the watch app stays UNCHANGED: /libraries reports them
+// as mediaType 'book', each SHOW is listed as an "author" to drill into, and
+// each EPISODE as a "book" whose id is 'itemId__episodeId'. ABS ids are
+// underscore-free UUIDs, so '__' splits unambiguously and the composite still
+// passes IDRE. /files, /cover, /transcode and /progress split the composite id
+// and hit ABS's per-episode endpoints.
+const SEP = '__';
+const splitId = (id) => {
+  const i = String(id).indexOf(SEP);
+  return i < 0 ? { item: id, episode: null } : { item: id.slice(0, i), episode: id.slice(i + SEP.length) };
+};
+const libTypes = {};   // libId -> 'book' | 'podcast' (cached; libraries change rarely)
+async function libType(lib, sid) {
+  if (libTypes[lib]) { return libTypes[lib]; }
+  const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}`, sid);
+  const t = (((d || {}).library || d || {}).mediaType === 'podcast') ? 'podcast' : 'book';
+  libTypes[lib] = t;
+  return t;
+}
+// One episode as a watch-visible "book". Callers handle newest-first order.
+const epBook = (itemId, show, ep) => ({ id: `${itemId}${SEP}${ep.id}`, title: ep.title || '?', author: show || '' });
+const byNewest = (a, b) => (b.publishedAt || 0) - (a.publishedAt || 0);
+// A podcast episode's progress lives in the user's mediaProgress rows, not on
+// item detail like a book's - but ABS exposes a row directly, so ask for the
+// one row rather than pulling the user's ENTIRE mediaProgress array (this is
+// on the hot path: every episode open and every progress read during a sync).
+// A 404 here simply means nothing has been recorded for the episode yet.
+async function episodeProgress(itemId, episode, sid) {
+  try {
+    const p = await absJson(`/api/me/progress/${encodeURIComponent(itemId)}/${encodeURIComponent(episode)}`, sid);
+    return (p && p.libraryItemId) ? p : null;
+  } catch (e) {
+    if (e.status === 404) { return null; }
+    throw e;
+  }
+}
+
 // `sid` is the watch's session id. Resolve it to a fresh accessToken, and if
 // ABS still 401s (token died early), refresh once and retry before giving up.
 async function absJson(path, sid) {
@@ -350,7 +391,20 @@ async function list(req, res, u) {
   if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
   try {
     let books;
-    if (collection && IDRE.test(collection)) {
+    if ((await libType(lib, token)) === 'podcast') {
+      if (author && IDRE.test(author)) {
+        // One show (its item id rides in the 'author' param): episodes, newest first.
+        const d = await absJson(`/api/items/${encodeURIComponent(author)}?expanded=1`, token);
+        const show = (((d.media || {}).metadata) || {}).title || '';
+        books = (((d.media || {}).episodes) || []).slice().sort(byNewest).map((ep) => epBook(d.id, show, ep));
+      } else if (series || collection) {
+        books = [];   // podcasts have no series/collections
+      } else {
+        // "All": latest episodes across the whole library.
+        const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/recent-episodes?limit=200`, token);
+        books = (d.episodes || []).map((ep) => epBook(ep.libraryItemId, (((ep.podcast || {}).metadata) || {}).title || '', ep));
+      }
+    } else if (collection && IDRE.test(collection)) {
       books = ((await absJson(`/api/collections/${encodeURIComponent(collection)}`, token)).books || []).map(bookOf);
     } else {
       let filter = '';
@@ -370,12 +424,17 @@ async function continueListening(req, res, u) {
   if (!lib || !token || !IDRE.test(lib)) { fail(res, 400, 'bad params'); return; }
   try {
     const d = await absJson('/api/me/items-in-progress?limit=1000', token);
+    // For podcast items ABS attaches the in-progress episode as recentEpisode;
+    // shim it into the same episode-as-book shape the rest of the routes use.
     const books = (d.libraryItems || [])
-      // items-in-progress also includes ebook-only progress. Garmin can only
-      // consume audio, so require a positive audio duration before offering a
-      // row that would inevitably fail at /files.
-      .filter((it) => it.libraryId === lib && it.mediaType === 'book' && Number((it.media || {}).duration) > 0)
-      .map(bookOf);
+      .filter((it) => it.libraryId === lib && ((it.mediaType === 'podcast' && it.recentEpisode)
+        // items-in-progress also includes ebook-only progress. Garmin can only
+        // consume audio, so require a positive audio duration before offering a
+        // row that would inevitably fail at /files.
+        || (it.mediaType === 'book' && Number((it.media || {}).duration) > 0)))
+      .map((it) => (it.mediaType === 'podcast')
+        ? epBook(it.id, (((it.media || {}).metadata) || {}).title || '', it.recentEpisode)
+        : bookOf(it));
     res.writeHead(200, jsonHead).end(JSON.stringify({ books }));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
@@ -388,17 +447,46 @@ async function groups(req, res, u, path, map) {
     res.writeHead(200, jsonHead).end(JSON.stringify(map(d)));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
-const authors     = (q, s, u) => groups(q, s, u, 'authors', (d) => ({ authors: (d.authors || []).map((a) => ({ id: a.id, name: a.name, count: a.numBooks })).sort((x, y) => String(x.name).localeCompare(String(y.name))) }));
-const series      = (q, s, u) => groups(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }));
-const collections = (q, s, u) => groups(q, s, u, 'collections', (d) => ({ collections: (d.results || []).map((c) => ({ id: c.id, name: c.name })) }));
+// For a podcast library, answer with `pod` (shows-as-authors, or empty lists)
+// instead of the book-library ABS call. Any libType error falls through to
+// groups(), which surfaces the same ABS error properly.
+async function groupsOrPod(q, s, u, path, map, pod) {
+  const lib = u.searchParams.get('lib'), token = u.searchParams.get('token');
+  if (lib && token && IDRE.test(lib)) {
+    try {
+      if ((await libType(lib, token)) === 'podcast') {
+        s.writeHead(200, jsonHead).end(JSON.stringify(await pod(lib, token)));
+        return;
+      }
+    } catch (e) { /* fall through - groups() reports the error */ }
+  }
+  return groups(q, s, u, path, map);
+}
+const authors     = (q, s, u) => groupsOrPod(q, s, u, 'authors', (d) => ({ authors: (d.authors || []).map((a) => ({ id: a.id, name: a.name, count: a.numBooks })).sort((x, y) => String(x.name).localeCompare(String(y.name))) }),
+  // Each SHOW as an "author" the watch can drill into (id = the show's item id).
+  async (lib, token) => {
+    const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title`, token);
+    return { authors: (d.results || []).map((it) => ({ id: it.id, name: (((it.media || {}).metadata) || {}).title || '?', count: (it.media || {}).numEpisodes || 0 })) };
+  });
+const series      = (q, s, u) => groupsOrPod(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }), async () => ({ series: [] }));
+const collections = (q, s, u) => groupsOrPod(q, s, u, 'collections', (d) => ({ collections: (d.results || []).map((c) => ({ id: c.id, name: c.name })) }), async () => ({ collections: [] }));
 
 async function files(req, res, u) {
   const item = u.searchParams.get('item'), token = u.searchParams.get('token');
   if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
   try {
-    const d = await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1&include=progress`, token);
+    const { item: itemId, episode } = splitId(item);
+    const d = await absJson(`/api/items/${encodeURIComponent(itemId)}?expanded=1&include=progress`, token);
     const m = d.media || {};
     const meta = m.metadata || {};
+    if (episode) {
+      // A podcast episode is a one-file "book": title = episode, author = show.
+      const ep = (m.episodes || []).find((x) => x.id === episode);
+      if (!ep || !ep.audioFile) { fail(res, 404, 'episode not found'); return; }
+      const p = await episodeProgress(itemId, episode, token);
+      res.writeHead(200, jsonHead).end(JSON.stringify({ title: ep.title || 'Episode', author: meta.title || '', files: [{ ino: ep.audioFile.ino, duration: ep.audioFile.duration }], progress: p ? slimProgress(p) : null }));
+      return;
+    }
     const all = m.audioFiles || [];
     const progress = d.userMediaProgress ? slimProgress(d.userMediaProgress) : null;
     // Ship ONLY the two fields the watch actually uses: ino + duration (it
@@ -462,7 +550,9 @@ function progress(req, res, u) {
       payload.progress = 1;
     }
     try {
-      const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(body.itemId)}`,
+      // Composite podcast id -> ABS's per-episode progress endpoint.
+      const { item: pItem, episode: pEp } = splitId(body.itemId);
+      const r = await fetch(`${ABS}/api/me/progress/${encodeURIComponent(pItem)}${pEp ? `/${encodeURIComponent(pEp)}` : ''}`,
         { method: 'PATCH', headers: { ...bearer(access), 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
       if (r.ok) { res.writeHead(200, jsonHead).end(JSON.stringify({ ok: true })); } else { fail(res, 502, 'ABS ' + r.status); }
     } catch (e) { fail(res, 502, 'ABS unreachable'); }
@@ -477,7 +567,13 @@ async function progressRead(req, res, u) {
   const item = u.searchParams.get('item'), token = u.searchParams.get('token');
   if (!item || !token || !IDRE.test(item)) { fail(res, 400, 'bad params'); return; }
   try {
-    const d = await absJson(`/api/items/${encodeURIComponent(item)}?expanded=1&include=progress`, token);
+    const { item: itemId, episode } = splitId(item);
+    if (episode) {
+      const p2 = await episodeProgress(itemId, episode, token);
+      res.writeHead(200, jsonHead).end(JSON.stringify(p2 ? slimProgress(p2) : {}));
+      return;
+    }
+    const d = await absJson(`/api/items/${encodeURIComponent(itemId)}?expanded=1&include=progress`, token);
     const p = d.userMediaProgress;
     res.writeHead(200, jsonHead).end(JSON.stringify(p ? slimProgress(p) : {}));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
@@ -518,14 +614,19 @@ function login(req, res) {
 }
 
 // GET /libraries?token -> slim {libraries:[{id,name,mediaType}]} (proxied from
-// ABS /api/libraries). mediaType is passed through - the watch uses it to skip
-// podcast libraries and only list book libraries.
+// ABS /api/libraries). The watch skips anything that isn't mediaType 'book',
+// so podcast libraries are REPORTED AS 'book' - the podcast shim (see splitId)
+// makes every other route book-shaped for them. The real type is cached here
+// so list/authors/etc. know which libraries to shim.
 async function libraries(req, res, u) {
   const token = u.searchParams.get('token');
   if (!token) { fail(res, 400, 'bad params'); return; }
   try {
     const d = await absJson('/api/libraries', token);
-    res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => ({ id: l.id, name: l.name, mediaType: l.mediaType })) }));
+    res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => {
+      libTypes[l.id] = (l.mediaType === 'podcast') ? 'podcast' : 'book';
+      return { id: l.id, name: l.name, mediaType: 'book' };
+    }) }));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
 

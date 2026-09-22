@@ -21,6 +21,12 @@ internet:
 - **`/progress`** — forwards the watch's position and final `isFinished` state as a
   real `PATCH` to ABS (Monkey C has no PATCH method).
 
+**Podcasts** work too. The watch app only understands book libraries, so the
+sidecar presents a podcast library as one: each **show** appears where authors
+normally would, and each **episode** as a book. Progress syncs per-episode in
+both directions. Episodes must already be downloaded in ABS (or auto-download
+enabled for the show) before the watch can fetch them.
+
 It auths with the **watch's own ABS token** (obtained via `/login`, then passed
 per-request), so there is no separate secret to configure. The only required setting
 is `ABS_URL` — Audiobookshelf's address *as seen from this container/host* (an
