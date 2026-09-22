@@ -97,6 +97,14 @@ class ContentIterator extends Media.ContentIterator {
         return Media.REPEAT_MODE_OFF;
     }
 
+    // Read-only test seams. The playlist arrays are private, but their SIZE
+    // and per-index ordering are exactly the contract the long-book watchdog
+    // fix has to preserve - and the simulator offers no scripted UI driver to
+    // observe them through, so IntegrationTests reads them here.
+    function size()      { return mPlaylist.size(); }
+    function startAt(i)  { return mStarts[i]; }
+    function globalAt(i) { return mGlobals[i]; }
+
     function get() {
         return validForward(mIndex, true);
     }

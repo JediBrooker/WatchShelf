@@ -116,6 +116,10 @@ class LoginView extends WatchUi.View {
             mMessage, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
+    // Read-only test seams - see ContentIterator for why these exist.
+    function state() { return mState; }
+    function creds() { return mCreds; }
+
     // Called by a FieldDelegate when a field is confirmed.
     function setField(field, text) {
         if (field == 0) { mCreds.server = text; }

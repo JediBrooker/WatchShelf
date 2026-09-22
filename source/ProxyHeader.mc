@@ -126,6 +126,11 @@ class ProxyHeaderView extends WatchUi.View {
         }
     }
 
+    // Read-only test seams - see ContentIterator for why these exist.
+    function state() { return mState; }
+    function name()  { return mName; }
+    function value() { return mValue; }
+
     // TextEntry callbacks - same contract LoginView implements.
     function setField(field, text) {
         if (field == 0) {
