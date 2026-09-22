@@ -1,0 +1,37 @@
+# Run the sidecar from the PREBUILT image instead of building it locally.
+#
+#   docker compose -f docker-compose.ghcr.yml up -d
+#
+# Same settings as docker-compose.yml - the only difference is `image:` in place
+# of `build:`, so there is no source checkout or build step. Update with:
+#
+#   docker compose -f docker-compose.ghcr.yml pull && \
+#     docker compose -f docker-compose.ghcr.yml up -d
+#
+# Tags: :latest and :main follow the main branch, :X.Y.Z pins a release.
+# Built for linux/amd64 and linux/arm64, so a Raspberry Pi or ARM NAS works too.
+#
+# ABS_URL is read from a ".env" file next to this one - copy .env.example to
+# .env and edit it. See docker-compose.yml for which value to use.
+services:
+  watchshelf-sidecar:
+    image: ghcr.io/jedibrooker/watchshelf:latest
+    container_name: watchshelf-sidecar
+    environment:
+      - ABS_URL=${ABS_URL:-http://host.docker.internal:13378}
+      - BIND=0.0.0.0
+      - PORT=8081
+      # Where the sidecar persists per-user login sessions (each user's ABS
+      # refresh token) so it can silently renew expiring access tokens and
+      # nobody has to re-login - even across container restarts/redeploys.
+      - SESSIONS_FILE=/data/sessions.json
+    volumes:
+      - watchshelf-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+volumes:
+  watchshelf-data:

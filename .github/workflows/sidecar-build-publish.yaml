@@ -1,0 +1,86 @@
+name: Build and Push Sidecar Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+    # The watch app and the sidecar share this repo, and only the sidecar is in
+    # the image. Without this filter every Monkey C commit republishes an
+    # identical sidecar under a new :sha tag.
+    paths:
+      - 'sidecar/**'
+      - '.github/workflows/sidecar-build-publish.yaml'
+  release:
+    types: [ "published" ]
+  # So a publish can be re-run without an empty commit (e.g. after fixing
+  # registry permissions, or to rebuild on a new base image for a CVE).
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # -> ghcr.io/jedibrooker/watchshelf. metadata-action lowercases the repository
+  # name, which ghcr requires.
+  IMAGE_NAME: ${{ github.repository }}
+
+# A quick follow-up push shouldn't leave two multi-arch builds racing to tag
+# :latest - the loser would win the race about half the time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # arm64 is emulated, which is why this is here. It costs little: the
+      # sidecar image only apk-installs ffmpeg and copies two files - nothing
+      # is compiled - so the emulated leg is not meaningfully slower.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # latest=false disables the default "a semver tag also moves :latest"
+          # behaviour, so :latest is set in exactly one place below.
+          flavor: latest=false
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=WatchShelf sidecar
+            org.opencontainers.image.description=Node + ffmpeg sidecar bridging Audiobookshelf to the WatchShelf Garmin app
+
+      - name: Build and push Sidecar Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: sidecar
+          # Self-hosted Audiobookshelf very often runs on a Raspberry Pi or an
+          # ARM NAS, and that is exactly the audience for a prebuilt image.
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

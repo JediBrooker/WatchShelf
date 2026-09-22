@@ -27,6 +27,10 @@ the sidecar**:
 - `/login` + `/progress` proxy to ABS, so **Audiobookshelf itself never has to be
   exposed to the internet** — it can stay fully private.
 
+The sidecar ships as a prebuilt multi-arch image —
+`ghcr.io/jedibrooker/watchshelf:latest` (amd64 + arm64) — if you'd rather drop it
+into an existing Docker stack than build it.
+
 You expose the **sidecar** at any HTTPS URL and enter *that* URL on the watch. One
 command installs the sidecar and walks you through exposing it:
 
