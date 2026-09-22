@@ -7,7 +7,7 @@ using Toybox.System;
 class ContentDelegate extends Media.ContentDelegate {
 
     private var mIterator;
-    private var mProgressLookup; // refId => [item,start,duration,isFinal,span], lazy
+    private var mProgressLookup; // refId => [item,start,duration,isFinal,span,speed], lazy
     private var mArtItemId;      // book whose cover is currently on the player
     private var mArgs;           // args for the NEXT iterator reset
     private var mSelectedItem;   // one book for this playback session
@@ -121,7 +121,7 @@ class ContentDelegate extends Media.ContentDelegate {
         }
     }
 
-    // { refId => [itemId,start,bookDuration,isActualFinalPart,chunkSpan] },
+    // { refId => [itemId,start,bookDuration,isActualFinalPart,chunkSpan,speed] },
     // built once
     // per playback
     // session (the downloaded set can't change while the player is running -
@@ -158,7 +158,8 @@ class ContentDelegate extends Media.ContentDelegate {
                 var start = perBook[refIds[i]][1];
                 var span = (perBook[refIds[i]].size() > 2) ? perBook[refIds[i]][2] : null;
                 mProgressLookup[refIds[i]] = [index[b], start, total,
-                    (finalStart != null) && (start == finalStart), span];
+                    (finalStart != null) && (start == finalStart), span,
+                    PlaybackSpeed.normalize((meta != null) ? meta["speed"] : null)];
             }
         }
     }
@@ -178,7 +179,8 @@ class ContentDelegate extends Media.ContentDelegate {
             hit[0].equals(mSessionFinishedItem)) {
             return;
         }
-        var absolute = hit[1] + positionInChapter;
+        var speed = (hit.size() > 5) ? PlaybackSpeed.normalize(hit[5]) : PlaybackSpeed.NORMAL;
+        var absolute = hit[1] + PlaybackSpeed.sourceSeconds(positionInChapter, speed);
         // A final COMPLETE is authoritative even on firmware that reports a
         // zero/rounded playbackPosition for AAC. Garmin also permits the
         // PLAYBACK_POSITION_END sentinel (-1) on COMPLETE; use the derived
