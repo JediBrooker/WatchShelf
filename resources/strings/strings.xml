@@ -52,6 +52,12 @@
 
     <!-- on-watch character wheel, used where WatchUi.TextPicker is absent
          (vivoactive4/4s, venu/venud) - see source/TextEntry.mc -->
+    <!-- first-run setup chooser (see source/Setup.mc) -->
+    <string id="setupTitle">Set up</string>
+    <string id="setupOnPhone">Use phone (faster)</string>
+    <string id="setupOnWatch">Type on watch</string>
+    <string id="setupPhoneHelp">On your phone:\nGarmin Connect\n> WatchShelf\n> Settings\n\nStore installs only</string>
+
     <!-- per-book playback speed, chosen AFTER download (see BookStore variants) -->
     <string id="playbackSpeed">Playback speed</string>
     <string id="speedCurrent">playing</string>

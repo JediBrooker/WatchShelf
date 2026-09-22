@@ -1,20 +1,30 @@
 <settings>
     <!-- Phone/Garmin-Connect config, only reachable once published to the Connect
-         IQ Store (a sideloaded app has no phone settings - use on-watch login). -->
-    <setting propertyKey="@Properties.absServerUrl" title="@Strings.settingServerUrl">
+         IQ Store (a sideloaded app has no phone settings - use on-watch login).
+         Filling BOTH of these configures the app completely: AbsApi.serverUrl()
+         falls back to absServerUrl and authToken() to absApiKey, so
+         isConfigured() is satisfied and the watch never asks for anything. That
+         avoids ~359 button presses on the on-watch character wheel, which is why
+         the first-run chooser (source/Setup.mc) offers this route first. The
+         prompts matter: without them the phone shows two unexplained boxes. -->
+    <setting propertyKey="@Properties.absServerUrl" title="@Strings.settingServerUrl"
+             prompt="@Strings.settingServerUrlPrompt">
         <settingConfig type="alphaNumeric"/>
     </setting>
-    <setting propertyKey="@Properties.absApiKey" title="@Strings.settingApiKey">
+    <setting propertyKey="@Properties.absApiKey" title="@Strings.settingApiKey"
+             prompt="@Strings.settingApiKeyPrompt">
         <settingConfig type="alphaNumeric"/>
     </setting>
     <!-- Optional: gate the sidecar behind a reverse proxy that requires a
          shared-secret header. Both must be set for anything to be sent. The
          same pair can be entered on the watch (Downloaded -> Proxy header),
          which is the only route for a sideloaded install. -->
-    <setting propertyKey="@Properties.absProxyHeader" title="@Strings.settingProxyHeader">
+    <setting propertyKey="@Properties.absProxyHeader" title="@Strings.settingProxyHeader"
+             prompt="@Strings.settingProxyHeaderPrompt">
         <settingConfig type="alphaNumeric"/>
     </setting>
-    <setting propertyKey="@Properties.absProxySecret" title="@Strings.settingProxySecret">
+    <setting propertyKey="@Properties.absProxySecret" title="@Strings.settingProxySecret"
+             prompt="@Strings.settingProxySecretPrompt">
         <settingConfig type="alphaNumeric"/>
     </setting>
 </settings>
