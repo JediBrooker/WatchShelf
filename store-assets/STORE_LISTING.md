@@ -67,48 +67,76 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ## What's New — b39
 
-> **The backend announcement is the first line on purpose.** Anyone updating
-> the app without updating the sidecar loses all downloads, so it must not be
-> buried under the feature list.
+> Covers **everything since b35**, the previous public build. Several releases
+> landed the same day, so most users are jumping the whole span at once and the
+> notes have to read as one list rather than a changelog.
+>
+> The backend line is first on purpose: anyone updating the app without updating
+> the sidecar loses all downloads, so it must not sit under the features.
 
 ```
 UPDATE YOUR SIDECAR FIRST
 
 This release needs a newer WatchShelf sidecar. If you update the watch app
-without updating the sidecar, downloads will fail until you do.
+without updating the sidecar, your downloads will fail until you do.
 
   docker compose pull && docker compose up -d
 
-Or use the prebuilt image, new in this release:
+Or switch to the prebuilt image, new in this release:
   ghcr.io/jedibrooker/watchshelf:latest   (amd64 and arm64)
 
-NEW
-  - Set up from your phone. Garmin Connect > WatchShelf > Settings takes your
-    WatchShelf URL and an Audiobookshelf API key, and the watch then needs no
-    typing at all. The app now offers this when you first open it, instead of
-    sending you straight to the on-watch keyboard.
-  - Playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x, 2.0x. Choose it from a
-    downloaded book's menu, next to Resume and Play from start - not only when
-    you download it.
+Everything below is new since b35.
 
-    A watch cannot change the speed of audio it is holding, so a speed you have
-    not used before has to be fetched. WatchShelf keeps the previous one when
-    there is room, so switching BACK to a speed you already have is instant.
-    The menu shows which speeds are on the watch.
-  - Podcast libraries: each show browses like an author, each episode like a
-    book, with per-episode progress sync.
-  - Optional shared-secret header, so a reverse proxy can reject anything that
-    is not your watch.
-  - Prebuilt sidecar Docker images for amd64 and arm64 (Raspberry Pi, ARM NAS).
+NEW
+
+  Set up from your phone
+  Garmin Connect > WatchShelf > Settings takes your WatchShelf URL and an
+  Audiobookshelf API key, and the watch then needs no typing at all. The app
+  offers this the first time you open it, instead of sending you straight to
+  the on-watch keyboard. (Connect IQ Store installs only.)
+
+  Playback speed, per book
+  1.0x, 1.25x, 1.5x, 1.75x or 2.0x, chosen from a downloaded book's own menu
+  next to Resume and Play from start. A watch cannot change the speed of audio
+  it is already holding, so a speed you have not used before has to be fetched -
+  but WatchShelf keeps the previous one when there is room, so switching BACK to
+  a speed you already have is instant. The menu shows which speeds are on the
+  watch.
+
+  Podcasts
+  Podcast libraries appear alongside your audiobooks. Each show browses like an
+  author and each episode like a book, with progress syncing per episode.
+  Episodes must already be downloaded in Audiobookshelf.
+
+  Lock the sidecar to your watch
+  Optional shared-secret header, so a reverse proxy can reject anything that is
+  not your watch. Set it under Downloaded > Proxy header, or from Garmin
+  Connect.
+
+  Prebuilt sidecar images
+  ghcr.io/jedibrooker/watchshelf:latest, for amd64 and arm64 - so a Raspberry Pi
+  or ARM NAS works without building anything.
 
 FIXED
-  - Long books could hang or fail to play on the watch. Building the playlist
-    was too slow on books with several hundred parts and the watchdog killed
-    playback. Thanks to @Ayfteyd7Od and @idanbauer for finding and fixing it.
-  - Login crashed on vivoactive 4 / 4s and Venu / Venu D, which have no
-    on-screen keyboard. Those watches now get an on-watch character wheel.
-  - Listening on the watch could overwrite newer progress from another device.
 
-With thanks to @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl for the fixes and
-features in this release.
+  Long books would not play
+  Books with several hundred parts could hang on a blank player screen or fail
+  outright. Building the playlist was too slow and the watch killed it. Found
+  and fixed by @Ayfteyd7Od and @idanbauer.
+
+  Login crashed on vivoactive 4 / 4s and Venu / Venu D
+  Those watches have no on-screen keyboard, and the app crashed the moment you
+  started logging in. They now get an on-watch character wheel - though the
+  phone setup above is far quicker if you can use it.
+
+  Progress could go backwards
+  Listening on the watch could overwrite a newer position set on another device.
+  The watch now checks the server before pushing.
+
+  Also: if a progress conflict is ever detected, a "Progress conflicts" row
+  appears under Downloaded. It is diagnostic only - if you see it, please open
+  an issue on GitHub.
+
+With thanks to @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
+features make up most of this release.
 ```
