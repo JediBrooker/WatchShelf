@@ -3,6 +3,11 @@
 Copy blocks below straight into the store fields. Keep this file updated with
 the listing so the two never drift.
 
+**The store rejects `<` and `>`** ("Illegal characters found") - the menu
+separators here are spelled out in words for that reason. Keep every block
+plain ASCII: em dashes and curly quotes are not worth risking a second
+rejection round-trip. "What's New" allows 4000 characters.
+
 ---
 
 ## App name
@@ -37,7 +42,7 @@ WHY A SIDECAR?
 Audiobooks are often single files of 200 MB - 1 GB. A watch cannot download a
 file that size, or even accept a list of a many-file book. The sidecar cuts
 small on-demand chunks and serves lean listings, so Audiobookshelf itself never
-has to be exposed to the internet — only the sidecar does.
+has to be exposed to the internet - only the sidecar does.
 
 WHAT YOU CAN DO
   - Browse your whole library: all books, by author, by series, by collection
@@ -45,7 +50,7 @@ WHAT YOU CAN DO
   - Download only the part you have not heard yet
   - Choose playback speed per book - 1.0x, 1.25x, 1.5x, 1.75x or 2.0x - from
     the book's own menu, after it is already on your watch
-  - Podcast libraries work too — each show browses like an author, each
+  - Podcast libraries work too - each show browses like an author, each
     episode like a book
   - Chapter skip, 30-second jumps, and whole-book progress on the player
   - Two-way progress sync: finish a chapter on the watch, carry on in the car
@@ -54,7 +59,7 @@ WHAT YOU CAN DO
     your watch alone
 
 GOOD TO KNOW
-  - Downloads take a while. A long book is many small chunks by design — that
+  - Downloads take a while. A long book is many small chunks by design - that
     is what keeps it within a watch's memory.
   - Podcast episodes must already be downloaded in Audiobookshelf.
   - The player's time bar covers the current part; whole-book percentage is
@@ -90,10 +95,10 @@ Everything below is new since b35.
 NEW
 
   Set up from your phone
-  Garmin Connect > WatchShelf > Settings takes your WatchShelf URL and an
-  Audiobookshelf API key, and the watch then needs no typing at all. The app
-  offers this the first time you open it, instead of sending you straight to
-  the on-watch keyboard. (Connect IQ Store installs only.)
+  Garmin Connect, then WatchShelf, then Settings, takes your WatchShelf URL
+  and an Audiobookshelf API key, and the watch then needs no typing at all.
+  The app offers this the first time you open it, instead of sending you
+  straight to the on-watch keyboard. (Connect IQ Store installs only.)
 
   Playback speed, per book
   1.0x, 1.25x, 1.5x, 1.75x or 2.0x, chosen from a downloaded book's own menu
@@ -110,7 +115,7 @@ NEW
 
   Lock the sidecar to your watch
   Optional shared-secret header, so a reverse proxy can reject anything that is
-  not your watch. Set it under Downloaded > Proxy header, or from Garmin
+  not your watch. Set it under Downloaded, then Proxy header, or from Garmin
   Connect.
 
   Prebuilt sidecar images
