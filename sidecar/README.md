@@ -27,6 +27,34 @@ is `ABS_URL` — Audiobookshelf's address *as seen from this container/host* (an
 internal address is fine and preferred, since the sidecar is now the only thing that
 needs to be public).
 
+## Deploy — prebuilt image
+
+Published to GitHub Container Registry on every change to `sidecar/`, for
+**linux/amd64 and linux/arm64** (so a Raspberry Pi or ARM NAS works):
+
+```
+ghcr.io/jedibrooker/watchshelf:latest
+```
+
+| Tag | Points at |
+|---|---|
+| `:latest`, `:main` | current `main` |
+| `:X.Y.Z`, `:X.Y` | a published release |
+| `:sha-abc1234` | one exact commit |
+
+Drop it into an existing stack, or use the ready-made compose file — no source
+checkout, no build:
+
+```
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+Update with `docker compose -f docker-compose.ghcr.yml pull && docker compose -f docker-compose.ghcr.yml up -d`.
+
+> **Maintainer note:** GHCR creates a package **private** on first publish. Until
+> it is switched to public (package → Package settings → Change visibility),
+> `docker pull` fails for everyone else with `denied` / `unauthorized`.
+
 ## Deploy — one command
 
 ```
