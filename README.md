@@ -5,7 +5,7 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Status (build `b38`):** compiles clean across the supported watch package and is
+> **Status (build `b39`):** compiles clean across the supported watch package and is
 > exercised end-to-end in the Forerunner 965 simulator. Login, Continue Listening,
 > tail-only downloads, part-to-part playback, whole-book progress, completion, and
 > two-way ABS progress sync are covered by the current test flow.
