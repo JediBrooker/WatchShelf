@@ -1,4 +1,4 @@
-# Connect IQ store listing — b38
+# Connect IQ store listing — b39
 
 Copy blocks below straight into the store fields. Keep this file updated with
 the listing so the two never drift.
@@ -65,7 +65,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b38
+## What's New — b39
 
 > **The backend announcement is the first line on purpose.** Anyone updating
 > the app without updating the sidecar loses all downloads, so it must not be
@@ -83,6 +83,10 @@ Or use the prebuilt image, new in this release:
   ghcr.io/jedibrooker/watchshelf:latest   (amd64 and arm64)
 
 NEW
+  - Set up from your phone. Garmin Connect > WatchShelf > Settings takes your
+    WatchShelf URL and an Audiobookshelf API key, and the watch then needs no
+    typing at all. The app now offers this when you first open it, instead of
+    sending you straight to the on-watch keyboard.
   - Playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x, 2.0x. Choose it from a
     downloaded book's menu, next to Resume and Play from start - not only when
     you download it.

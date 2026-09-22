@@ -101,6 +101,7 @@ module Versions {
     // valid and must NOT be wiped. b38 adds alt/altFirst/active for the second
     // playback-speed encoding: also additive, and the PRIMARY slot deliberately
     // keeps the original page keys, so every existing record reads correctly
-    // with no migration at all.
-    const tag = "b38";
+    // with no migration at all. b39 changes no stored shape at all - it only
+    // adds a first-run setup chooser and wires up settings prompts.
+    const tag = "b39";
 }
