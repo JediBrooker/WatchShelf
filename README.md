@@ -38,6 +38,11 @@ Or do it by hand — a plain, step-by-step guide (including *why* the sidecar is
 needed at all) for each of **Cloudflare Tunnel, nginx, Apache, Caddy, and
 Traefik** is in [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 
+If you'd rather the sidecar didn't answer strangers at all, the watch can send a
+**secret header** on every request for your proxy to require — optional, set
+on-watch under **Downloaded → Proxy header**, with per-proxy snippets in the
+same guide.
+
 ## How it works
 
 ```

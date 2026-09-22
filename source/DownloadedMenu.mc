@@ -55,6 +55,14 @@ class DownloadedMenu extends WatchUi.Menu2 {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.logOut), null, "logout", null));
         }
 
+        // Optional reverse-proxy header (issue #41). Always offered, including
+        // on a fresh install: someone whose proxy requires the header cannot
+        // log in at all until it is set, so this must NOT be gated on
+        // isConfigured() the way "Log out" is. Its subtitle shows the header
+        // name in use, or "Not set".
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.proxyHeader),
+            ProxyHeader.summary(), "proxyheader", null));
+
         // A crashed/interrupted sync can leave queued jobs behind, which then
         // get reprocessed on every future sync alongside anything new. Offer a
         // way to wipe just the pending queue - sideloaded apps can't be cleanly

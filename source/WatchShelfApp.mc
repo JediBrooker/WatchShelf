@@ -15,10 +15,18 @@ class WatchShelfApp extends Application.AudioContentProviderApp {
         if (version != Versions.current) {
             var server = Application.Storage.getValue(Store.SERVER);
             var token = Application.Storage.getValue(Store.TOKEN);
+            // The proxy header rides along with the login for the same reason,
+            // and more urgently: without it a user behind a reverse proxy
+            // cannot reach the sidecar AT ALL, so dropping it on a version bump
+            // would lock them out with no way back in from the watch.
+            var proxyName = Application.Storage.getValue(Store.PROXY_NAME);
+            var proxyValue = Application.Storage.getValue(Store.PROXY_VALUE);
             Application.Storage.clearValues();
             Media.resetContentCache();
             if (server != null) { Application.Storage.setValue(Store.SERVER, server); }
             if (token != null) { Application.Storage.setValue(Store.TOKEN, token); }
+            if (proxyName != null) { Application.Storage.setValue(Store.PROXY_NAME, proxyName); }
+            if (proxyValue != null) { Application.Storage.setValue(Store.PROXY_VALUE, proxyValue); }
             Application.Storage.setValue(Store.APP_VERSION, Versions.current);
         }
         // NOTE: MonkeyMusic hardcoded a fake auth token here. WatchShelf does NOT:

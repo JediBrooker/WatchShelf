@@ -31,6 +31,54 @@ module AbsApi {
         if (v == null) { v = _prop(Settings.API_KEY); }
         return v;
     }
+
+    // ---- optional reverse-proxy header (issue #41) -------------------------
+    // Users who expose the sidecar to the internet may want to gate it at a
+    // reverse proxy: set a header here and have Caddy/nginx/Traefik drop any
+    // request that lacks it. Both halves must be present or nothing is sent -
+    // a name with no secret would just advertise the scheme.
+    function proxyName()  { return _cfg(Store.PROXY_NAME, Settings.PROXY_NAME); }
+    function proxyValue() { return _cfg(Store.PROXY_VALUE, Settings.PROXY_VALUE); }
+    function hasProxyHeader() {
+        return (proxyName() != null) && (proxyValue() != null);
+    }
+
+    // { name => secret } for the request options, or null when unconfigured.
+    function proxyHeaders() {
+        if (!hasProxyHeader()) { return null; }
+        return { proxyName() => proxyValue() };
+    }
+
+    // GET/POST option builders. Every watch->sidecar call goes through these so
+    // the proxy header cannot be forgotten on a new route - the failure mode
+    // otherwise is a single unguarded request that the proxy rejects, which
+    // looks like an unrelated intermittent fault. :headers is OMITTED entirely
+    // rather than passed as null/{} when there is no header to send, keeping
+    // the request byte-identical to before this feature for everyone else.
+    function getOptions() {
+        var o = { :method => Communications.HTTP_REQUEST_METHOD_GET,
+                  :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON };
+        var h = proxyHeaders();
+        if (h != null) { o[:headers] = h; }
+        return o;
+    }
+
+    function postOptions() {
+        var headers = { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON };
+        if (hasProxyHeader()) { headers[proxyName()] = proxyValue(); }
+        return { :method => Communications.HTTP_REQUEST_METHOD_POST,
+                 :headers => headers,
+                 :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON };
+    }
+
+    // Storage (entered on the watch) wins over Properties (phone settings),
+    // matching serverUrl()/authToken(). Empty strings count as unset.
+    function _cfg(storeKey, settingKey) {
+        var v = Application.Storage.getValue(storeKey);
+        if ((v != null) && (v instanceof Lang.String) && (v.length() == 0)) { v = null; }
+        if (v == null) { v = _prop(settingKey); }
+        return v;
+    }
     // ---- sidecar (server.js behind {server}/watchshelf-transcode) ----------
     // ALL heavy operations route through the sidecar: most books here are single
     // 200MB-1GB files the watch cannot download whole, so the sidecar serves lean
@@ -46,8 +94,7 @@ module AbsApi {
         if (filterType != null && filterId != null) { params[filterType] = filterId; }
         Communications.makeWebRequest(
             sidecarBase() + "/list", params,
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             cb);
     }
 
@@ -57,8 +104,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + "/continue",
             { "lib" => libId, "token" => authToken() },
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             cb);
     }
 
@@ -67,8 +113,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + path,
             { "lib" => libId, "token" => authToken() },
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             cb);
     }
     function getAuthors(libId, cb)     { getGroups("/authors", libId, cb); }
@@ -81,8 +126,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + "/files",
             { "item" => itemId, "token" => authToken() },
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             cb);
     }
 
@@ -100,7 +144,12 @@ module AbsApi {
 
     // Cover image URL for Communications.makeImageRequest. Image requests
     // cannot send custom headers (no :headers option exists on them), so auth
-    // rides in the URL like every other watch-facing sidecar route. `px`
+    // rides in the URL like every other watch-facing sidecar route.
+    // CAUTION: that also means an image request CANNOT carry the optional
+    // reverse-proxy header, so it would be rejected by a proxy configured per
+    // issue #41. Nothing calls this today (cover fetching was removed from the
+    // sync path in b35), but anything that revives it must either pass the
+    // secret some other way or accept that covers break behind a proxy. `px`
     // bounds what ABS ships over the wire; Garmin Connect Mobile then scales/
     // dithers to the device's actual capability.
     function coverUrl(itemId, px) {
@@ -127,8 +176,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + "/libraries",
             { "token" => authToken() },
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             callback);
     }
 
@@ -154,9 +202,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + "/progress?token=" + authToken(),
             params,
-            { :method => Communications.HTTP_REQUEST_METHOD_POST,
-              :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            postOptions(),
             cb);
     }
 
@@ -168,8 +214,7 @@ module AbsApi {
         Communications.makeWebRequest(
             sidecarBase() + "/progress",
             { "item" => itemId, "token" => authToken() },
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            getOptions(),
             cb);
     }
 
@@ -194,19 +239,26 @@ module AbsApi {
     // ABS URL -> caught here before credentials are sent.
     function checkHealth(server, cb) {
         Communications.makeWebRequest(
-            _noSlash(server) + "/health", null,
-            { :method => Communications.HTTP_REQUEST_METHOD_GET,
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN },
-            cb);
+            _noSlash(server) + "/health", null, healthOptions(), cb);
+    }
+
+    // /health is text/plain, not JSON, so it needs its own options - but it is
+    // also the FIRST request of a login and therefore the first thing a proxy
+    // sees. It must carry the header or login preflight fails before the user
+    // has any way to discover why.
+    function healthOptions() {
+        var o = { :method => Communications.HTTP_REQUEST_METHOD_GET,
+                  :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN };
+        var h = proxyHeaders();
+        if (h != null) { o[:headers] = h; }
+        return o;
     }
 
     function login(server, username, password, cb) {
         Communications.makeWebRequest(
             _noSlash(server) + "/login",
             { "username" => username, "password" => password },
-            { :method => Communications.HTTP_REQUEST_METHOD_POST,
-              :headers => { "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON },
-              :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON },
+            postOptions(),
             cb);
     }
     function saveLogin(server, token) {

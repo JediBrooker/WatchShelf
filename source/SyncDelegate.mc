@@ -241,6 +241,13 @@ class SyncDelegate extends Communications.SyncDelegate {
             // exact duration, so the position indicator works.
             :mediaEncoding => Media.ENCODING_M4A
         };
+        // The optional reverse-proxy header (issue #41) must ride on the AUDIO
+        // download too - it is by far the most requests the watch makes, and a
+        // proxy that rejects them turns into "Transfer failed" with no clue as
+        // to why. Added conditionally so a request without the feature stays
+        // byte-identical to before.
+        var proxy = AbsApi.proxyHeaders();
+        if (proxy != null) { options[:headers] = proxy; }
 
         // "k" pins WHICH chunk this request is for and "gen" pins WHICH job
         // generation dispatched it: if the cursor moved, or the job was
