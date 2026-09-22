@@ -80,4 +80,6 @@ happened to build for at the time, which is exactly why b29–b34 are gone.
 | b24–b28 | `fenix8solar51mm` only (part number `006-B4533-00`) — the old files predate per-device naming |
 | b35 | `fenix8solar51mm`, `fenix7`, `fr965` — the build most reports come from, so extra devices are kept here |
 | b29–b34 | **none**, and not reproducible: archiving had lapsed and these commits aren't tagged |
-| b36, b37 | `fenix8solar51mm` (b36 was never shipped; b37 is the store build) |
+| b36 | `fenix8solar51mm` — never shipped |
+| b37 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` |
+| b38 | `fenix8solar51mm`, `vivoactive4`, `fr965`, `fenix7` — the current store build |
