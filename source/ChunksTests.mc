@@ -31,6 +31,21 @@ function chunksTailCoordinates(logger) {
     return true;
 }
 
+(:test)
+function playbackSpeedTimelineMapping(logger) {
+    Test.assertEqual(PlaybackSpeed.normalize(null), 100);
+    Test.assertEqual(PlaybackSpeed.normalize(130), 100);
+    Test.assertEqual(PlaybackSpeed.normalize(125), 125);
+    Test.assertEqual(PlaybackSpeed.normalize(200), 200);
+    Test.assertEqual(PlaybackSpeed.sourceSeconds(60, 100), 60);
+    Test.assertEqual(PlaybackSpeed.sourceSeconds(60, 125), 75);
+    Test.assertEqual(PlaybackSpeed.sourceSeconds(60, 150), 90);
+    Test.assertEqual(PlaybackSpeed.sourceSeconds(59, 125), 74);
+    Test.assertEqual(PlaybackSpeed.sourceSeconds(60, null), 60);
+    logger.debug("compressed playback maps to the source timeline");
+    return true;
+}
+
 // Restarting a completed book becomes an ordinary dirty position write. The
 // client deliberately omits isFinished:false: current ABS resets currentTime
 // and discards the supplied position when that explicit flag is used.
