@@ -12,6 +12,12 @@ using Toybox.WatchUi;
 // there makes the system pop the TOP view, which would be the keyboard we just
 // pushed ("checkmark does nothing"). So the keyboard is opened from a timer
 // callback AFTER the previous one has closed.
+//
+// WHICH keyboard is TextEntry's problem, not ours: WatchUi.TextPicker does not
+// exist on vivoactive4/4s or venu/venud, where constructing it used to kill
+// this flow outright (issue #48). TextEntry.open() picks the system keyboard
+// or its own character wheel and calls back into setField/cancelFlow either
+// way, so the state machine below is identical on every device.
 
 class LoginCreds {
     var server; var username; var password;
@@ -90,16 +96,16 @@ class LoginView extends WatchUi.View {
         return WatchUi.loadResource(Rez.Strings.fieldPass);
     }
 
-    // Timer callback: open the keyboard for the current field.
+    // Timer callback: open text entry for the current field. The password
+    // deliberately starts EMPTY and masked - it is never seeded from storage
+    // (only the token is kept) and must not be shown back on screen.
     function openField() {
         mTimer = null;
-        if (mState == 0) {
-            WatchUi.pushView(new WatchUi.TextPicker(mCreds.server), new FieldDelegate(self, 0), WatchUi.SLIDE_LEFT);
-        } else if (mState == 1) {
-            WatchUi.pushView(new WatchUi.TextPicker(mCreds.username), new FieldDelegate(self, 1), WatchUi.SLIDE_LEFT);
-        } else if (mState == 2) {
-            WatchUi.pushView(new WatchUi.TextPicker(""), new FieldDelegate(self, 2), WatchUi.SLIDE_LEFT);
-        }
+        if (mState > 2) { return; }
+        var initial = "";
+        if (mState == 0) { initial = mCreds.server; }
+        else if (mState == 1) { initial = mCreds.username; }
+        TextEntry.open(self, mState, initial, labelFor(mState), mState == 2);
     }
 
     function onUpdate(dc) {
@@ -133,25 +139,5 @@ class LoginView extends WatchUi.View {
             mMessage = Errors.message(Rez.Strings.loginFailed, code);
             WatchUi.requestUpdate();
         }
-    }
-}
-
-class FieldDelegate extends WatchUi.TextPickerDelegate {
-    private var mView;
-    private var mField;
-    function initialize(view, field) {
-        TextPickerDelegate.initialize();
-        mView = view;
-        mField = field;
-    }
-    // Record the value + advance state, then return true so THIS keyboard closes.
-    // Do NOT push the next keyboard here (see file header).
-    function onTextEntered(text, changed) {
-        mView.setField(mField, text);
-        return true;
-    }
-    function onCancel() {
-        mView.cancelFlow();
-        return true;
     }
 }
