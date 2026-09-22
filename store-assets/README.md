@@ -7,6 +7,10 @@ that script and re-run it to change branding, then commit the regenerated PNGs.
 Brand: orange `#FF8000` + charcoal + cream, bookshelf-with-play-badge motif
 (matches the in-app launcher/provider icons under `resources/drawables/`).
 
+The listing TEXT (description and "What's New") lives in
+[`STORE_LISTING.md`](STORE_LISTING.md) so it is version-controlled alongside the
+artwork. Update it in the same commit as the build it describes.
+
 ## Files and where each one goes
 
 | File | Size | Connect IQ store slot |

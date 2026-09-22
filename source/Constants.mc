@@ -95,6 +95,10 @@ module Versions {
     // b35 left it alone because tail-only metadata and finished progress only
     // append optional fields with legacy defaults. b36 likewise: the proxy
     // header added NEW Storage keys rather than changing any existing value's
-    // shape, and nothing else since b35 touches stored data at all.
-    const tag = "b36";
+    // shape. b37 adds per-book "speed" to BookStore metadata, which is also
+    // additive - a book recorded before b37 has no speed key, normalize(null)
+    // returns 100, and its chunks really were encoded at 1.0x, so they stay
+    // valid and must NOT be wiped. Changing speed re-downloads that one book
+    // (BookMenuDelegate), which is the correct granularity.
+    const tag = "b37";
 }
