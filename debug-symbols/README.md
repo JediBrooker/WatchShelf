@@ -59,15 +59,25 @@ Symbols are reproducible from source, so any missing tag+device can be rebuilt
 make build DEVICE=vivoactive4      # writes debug-symbols/<tag>-vivoactive4.debug.xml
 ```
 
-`b35` is the current `main`, so its symbols can be produced for any device on
-demand. **Earlier builds are not tagged in git**, which is the real gap — please
-`git tag b36`, `b37`, … as you ship, so a future crash report stays decodable
-even for a device nobody built at the time.
+`b35` and `b37` are **tagged**, so symbols for any device can be regenerated from
+either on demand. Note that b35 predates the `symbols` make target, so there the
+copy is manual:
+
+```bash
+git checkout b35
+make build DEVICE=<id>
+cp bin/WatchShelf.prg.debug.xml debug-symbols/b35-<id>.debug.xml
+```
+
+From b36 onwards `make build` writes the file itself. **Keep tagging each build
+you ship** — an untagged build cannot be rebuilt later for a device nobody
+happened to build for at the time, which is exactly why b29–b34 are gone.
 
 ## Coverage
 
 | Tag | Devices |
 |---|---|
 | b24–b28 | `fenix8solar51mm` only (part number `006-B4533-00`) — the old files predate per-device naming |
+| b35 | `fenix8solar51mm`, `fenix7`, `fr965` — the build most reports come from, so extra devices are kept here |
 | b29–b34 | **none**, and not reproducible: archiving had lapsed and these commits aren't tagged |
-| b35 | `fenix8solar51mm`; any other device is one `make build DEVICE=…` away |
+| b36, b37 | `fenix8solar51mm` (b36 was never shipped; b37 is the store build) |
