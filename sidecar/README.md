@@ -51,9 +51,12 @@ docker compose -f docker-compose.ghcr.yml up -d
 
 Update with `docker compose -f docker-compose.ghcr.yml pull && docker compose -f docker-compose.ghcr.yml up -d`.
 
-> **Maintainer note:** GHCR creates a package **private** on first publish. Until
-> it is switched to public (package → Package settings → Change visibility),
-> `docker pull` fails for everyone else with `denied` / `unauthorized`.
+> **Maintainer note:** check the package is **public** before pointing anyone at
+> it — a private package fails `docker pull` for everyone else with `denied`.
+> The badge on the package page says which it is; to change it, use the gear
+> icon → Package settings → Danger Zone → Change visibility. Note that GitHub
+> documents public → private as not reversible, so verify before publishing a
+> link.
 
 ## Deploy — one command
 
