@@ -193,11 +193,19 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         var meta = BookStore.get(itemId);
         var oldJob = JobStore.get(itemId);
         var drifted = false;
+        var speedOnly = false;
         if (meta != null) {
-            drifted = (forceFull && (BookStore.first(itemId) > 0))
+            // Separate a pure SPEED change from the destructive kinds. Duration
+            // drift and crash artifacts invalidate the recorded offsets and must
+            // wipe; a different speed does not - the same audio is simply wanted
+            // at a different tempo, and the existing encoding is still perfectly
+            // good for the speed it was made at.
+            var hardDrift = (forceFull && (BookStore.first(itemId) > 0))
                 || !Chunks.same(meta["durs"], durs)
-                || (PlaybackSpeed.normalize(meta["speed"]) != speed)
                 || (!inBookIndex(itemId) && !containsId(JobStore.list(), itemId));
+            var speedDrift = (BookStore.activeSpeed(itemId) != speed);
+            drifted = hardDrift || speedDrift;
+            speedOnly = speedDrift && !hardDrift;
         }
 
         // Preserve the original suffix base whenever this is an interrupted
@@ -254,8 +262,22 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         // it's the SAME book re-downloading, so its resume point stays valid.
         if (drifted) {
             JobStore.remove(itemId);
-            BookStore.removeFromIndex(itemId);
-            BookStore.deleteBook(itemId);
+            if (speedOnly) {
+                // Park the encoding being replaced in the other slot so
+                // switching back to it is instant, but ONLY if both fit under
+                // Chunks.MAX_TOTAL - a parked variant is still cached audio and
+                // the cap exists to keep playback inside the 512KB ceiling.
+                // When there is no room it is evicted instead, which degrades to
+                // exactly the old behaviour rather than failing the download.
+                var keep = (plannedChunks(itemId) + planned + BookStore.count(itemId))
+                    <= Chunks.MAX_TOTAL;
+                BookStore.beginVariant(itemId, speed, base, keep);
+                // NOT un-indexed: the book still exists and, when kept, still
+                // has real playable audio in the other slot.
+            } else {
+                BookStore.removeFromIndex(itemId);
+                BookStore.deleteBook(itemId);
+            }
         }
 
         // Queueing a book un-dooms it: if it's still sitting in DELETE_LIST
@@ -323,7 +345,7 @@ class BookMenuDelegate extends WatchUi.Menu2InputDelegate {
         for (var i = 0; i < index.size(); ++i) {
             if (index[i].equals(excludeId) || containsId(jobIds, index[i])
                 || containsId(doomed, index[i])) { continue; }
-            total += BookStore.count(index[i]);
+            total += BookStore.totalChunks(index[i]);
         }
         return total;
     }

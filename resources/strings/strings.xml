@@ -52,6 +52,13 @@
 
     <!-- on-watch character wheel, used where WatchUi.TextPicker is absent
          (vivoactive4/4s, venu/venud) - see source/TextEntry.mc -->
+    <!-- per-book playback speed, chosen AFTER download (see BookStore variants) -->
+    <string id="playbackSpeed">Playback speed</string>
+    <string id="speedCurrent">playing</string>
+    <string id="speedReady">on watch</string>
+    <string id="speedSwitched">Speed changed</string>
+    <string id="confirmSpeedFetch">Not on watch.\nDownload at this speed?</string>
+
     <!-- progress-conflict diagnostic (issue #61); only shown if it ever fires -->
     <string id="progressConflicts">Progress conflicts</string>
 
