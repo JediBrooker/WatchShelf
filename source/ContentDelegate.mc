@@ -157,9 +157,11 @@ class ContentDelegate extends Media.ContentDelegate {
             for (var i = 0; i < refIds.size(); ++i) {
                 var start = perBook[refIds[i]][1];
                 var span = (perBook[refIds[i]].size() > 2) ? perBook[refIds[i]][2] : null;
+                // ACTIVE variant's speed - meta["speed"] is only the primary
+                // slot's, and the book may be playing the alternate.
                 mProgressLookup[refIds[i]] = [index[b], start, total,
                     (finalStart != null) && (start == finalStart), span,
-                    PlaybackSpeed.normalize((meta != null) ? meta["speed"] : null)];
+                    BookStore.activeSpeed(index[b])];
             }
         }
     }
