@@ -5,7 +5,7 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Status (build `b37`):** compiles clean across the supported watch package and is
+> **Status (build `b38`):** compiles clean across the supported watch package and is
 > exercised end-to-end in the Forerunner 965 simulator. Login, Continue Listening,
 > tail-only downloads, part-to-part playback, whole-book progress, completion, and
 > two-way ABS progress sync are covered by the current test flow.
@@ -16,8 +16,10 @@ whole library, download a book, and listen offline — with two-way progress syn
 > progress pushes that no longer clobber another device's newer position. The
 > unit suite (`monkeyc -t`) is 27 tests, plus 11 sidecar tests (`npm test`).
 >
-> b37 adds per-book playback speed (1.0x–2.0x). **It requires an updated
-> sidecar** — the watch asks for `fmt=m4a3`, which older sidecars reject.
+> b37/b38 add per-book playback speed (1.0x–2.0x), chosen from a downloaded
+> book's playback menu. The watch keeps the previous encoding when there is
+> room, so switching back to a speed you already have is instant. **Requires an
+> updated sidecar** — the watch asks for `fmt=m4a3`, which older ones reject.
 
 ## Architecture — the watch talks only to the sidecar
 

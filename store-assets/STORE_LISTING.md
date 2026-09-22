@@ -1,4 +1,4 @@
-# Connect IQ store listing — b37
+# Connect IQ store listing — b38
 
 Copy blocks below straight into the store fields. Keep this file updated with
 the listing so the two never drift.
@@ -43,7 +43,8 @@ WHAT YOU CAN DO
   - Browse your whole library: all books, by author, by series, by collection
   - Continue Listening picks up what you started on any device
   - Download only the part you have not heard yet
-  - Choose playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x or 2.0x
+  - Choose playback speed per book - 1.0x, 1.25x, 1.5x, 1.75x or 2.0x - from
+    the book's own menu, after it is already on your watch
   - Podcast libraries work too — each show browses like an author, each
     episode like a book
   - Chapter skip, 30-second jumps, and whole-book progress on the player
@@ -64,7 +65,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b37
+## What's New — b38
 
 > **The backend announcement is the first line on purpose.** Anyone updating
 > the app without updating the sidecar loses all downloads, so it must not be
@@ -82,8 +83,14 @@ Or use the prebuilt image, new in this release:
   ghcr.io/jedibrooker/watchshelf:latest   (amd64 and arm64)
 
 NEW
-  - Playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x, 2.0x. Pick it when you
-    download a book; changing it re-downloads that book.
+  - Playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x, 2.0x. Choose it from a
+    downloaded book's menu, next to Resume and Play from start - not only when
+    you download it.
+
+    A watch cannot change the speed of audio it is holding, so a speed you have
+    not used before has to be fetched. WatchShelf keeps the previous one when
+    there is room, so switching BACK to a speed you already have is instant.
+    The menu shows which speeds are on the watch.
   - Podcast libraries: each show browses like an author, each episode like a
     book, with per-episode progress sync.
   - Optional shared-secret header, so a reverse proxy can reject anything that
