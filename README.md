@@ -77,8 +77,13 @@ same guide.
 ```
 
 - **The watch only ever talks to the sidecar.** ABS can stay on a private network.
-- **Login is on the watch** (`TextPicker`), because a sideloaded app can't use Garmin
-  Connect phone settings. Only the ABS token is stored, never the password.
+- **Two ways to set up.** From the Connect IQ Store, fill `WatchShelf URL` and
+  `Audiobookshelf API key` in **Garmin Connect → WatchShelf → Settings** and the
+  watch never asks for anything. Sideloaded, there are no phone settings, so log
+  in on the watch instead — a system keyboard where the device has one, and a
+  character wheel on `vivoactive4/4s` and `venu/venud`, which don't. A first run
+  offers the choice; a re-login keeps the URL and only asks for what's missing.
+  Only the ABS token is stored, never the password.
 - **Chunks** are ~3-min, 96 kbps mono AAC in a real M4A container (~2 MB) — the
   container is what lets the native player show a position/time indicator. Tune in
   `source/Chunks.mc`.
@@ -117,5 +122,7 @@ the show) before the watch can fetch them.
   chunk is a small independent download.
 - Garmin's native elapsed/total bar is scoped to the current downloaded part. WatchShelf
   adds whole-book percentage to the player metadata but cannot replace that native bar.
-- **No phone/Garmin-Connect settings** (sideloaded apps can't). All config is on-watch;
-  publishing to the Connect IQ Store would enable phone settings later.
+- **Sideloaded installs have no phone settings** (a Connect IQ limitation), so
+  their setup is typed on the watch. Entering a URL, username and password on
+  the character wheel is roughly 359 button presses — which is why a Store
+  install, where Garmin Connect can supply the same values, is worth preferring.

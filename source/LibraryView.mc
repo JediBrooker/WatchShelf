@@ -40,6 +40,14 @@ class LibraryView extends WatchUi.View {
 
     function openLogin() {
         mLoginTimer = null;
+        // Nothing configured at all: offer the phone route before the wheel,
+        // which costs ~359 button presses for a first login. A re-login after
+        // an expired session keeps the server URL, so it skips this and goes
+        // straight to the missing fields.
+        if (Setup.isUnconfigured()) {
+            Setup.start();
+            return;
+        }
         Login.start();
     }
 

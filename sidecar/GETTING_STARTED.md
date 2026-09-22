@@ -578,6 +578,12 @@ Once you see `ok`, type `https://watchshelf.yourdomain.com` into your watch app'
 
 ## Step 3 — log into the watch
 
+**Faster, if you installed from the Connect IQ Store:** on your phone, open
+**Garmin Connect → WatchShelf → Settings**, and fill in the WatchShelf URL from
+Step 2 plus an Audiobookshelf **API key** (Audiobookshelf → Settings → Users →
+your user → API keys). The watch then needs no typing at all. A sideloaded app
+has no phone settings — use the on-watch route below.
+
 1. Open **WatchShelf** on the watch (under Music / audio providers).
 2. Tap **Log in**.
 3. Enter the **web address you just set up in Step 2** — not your Audiobookshelf
