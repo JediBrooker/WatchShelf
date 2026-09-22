@@ -86,8 +86,11 @@ module Versions {
     const current = V4;
     // Visible build tag - bump every build so we can confirm on-watch which
     // build is actually running (the MTP transfer is unreliable). `current` is
-    // NOT bumped for b35: tail-only metadata and finished progress append
-    // optional fields with legacy defaults, so forcing every book to re-download
-    // would be needless. The visible tag still distinguishes the tested build.
-    const tag = "b35";
+    // deliberately NOT bumped alongside it unless a STORED SHAPE changed, since
+    // bumping it wipes Storage and forces every downloaded book to re-download.
+    // b35 left it alone because tail-only metadata and finished progress only
+    // append optional fields with legacy defaults. b36 likewise: the proxy
+    // header added NEW Storage keys rather than changing any existing value's
+    // shape, and nothing else since b35 touches stored data at all.
+    const tag = "b36";
 }

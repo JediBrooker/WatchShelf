@@ -5,10 +5,16 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Status (build `b35`):** compiles clean across the supported watch package and is
+> **Status (build `b36`):** compiles clean across the supported watch package and is
 > exercised end-to-end in the Forerunner 965 simulator. Login, Continue Listening,
 > tail-only downloads, part-to-part playback, whole-book progress, completion, and
 > two-way ABS progress sync are covered by the current test flow.
+>
+> Since b35: a long-book playback crash fixed, on-watch login no longer requires a
+> system keyboard (vívoactive 4 / 4s, Venu / Venu D), an optional reverse-proxy
+> auth header, podcast libraries, prebuilt multi-arch sidecar images, and live
+> progress pushes that no longer clobber another device's newer position. The
+> unit suite (`monkeyc -t`) is 21 tests.
 
 ## Architecture — the watch talks only to the sidecar
 
