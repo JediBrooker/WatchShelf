@@ -67,6 +67,22 @@ symbols:
 	@mkdir -p $(SYMS)
 	@cp "$(BIN)/$(APP).prg.debug.xml" "$(SYMS)/$(TAG)-$(DEVICE).debug.xml"
 	@echo "archived $(SYMS)/$(TAG)-$(DEVICE).debug.xml - COMMIT IT with the build"
+	@# If a tag named after Versions.tag already exists, this build must BE it.
+	@# Building later source while the tag still says $(TAG) produces a file
+	@# labelled $(TAG) whose addresses do not match the released binary - it
+	@# decodes crash logs to confident, WRONG lines. Measured once: 515 of 1607
+	@# shared entries moved between the b37 tag and two commits after it.
+	@if git rev-parse --git-dir >/dev/null 2>&1 && \
+	    git rev-parse -q --verify "refs/tags/$(TAG)" >/dev/null 2>&1 && \
+	    [ "$$(git rev-parse HEAD)" != "$$(git rev-parse "$(TAG)^{commit}")" ]; then \
+	  echo ""; \
+	  echo "  WARNING: tag $(TAG) exists but HEAD is NOT that commit."; \
+	  echo "  These symbols are labelled $(TAG) yet were built from different"; \
+	  echo "  source, so they will mis-decode crash logs from the released"; \
+	  echo "  $(TAG) build. Either bump Versions.tag, or build from the tag:"; \
+	  echo "      git checkout $(TAG) && make build DEVICE=$(DEVICE)"; \
+	  echo ""; \
+	fi
 
 # Build then launch the simulator (leave the sim window open).
 sim: build
