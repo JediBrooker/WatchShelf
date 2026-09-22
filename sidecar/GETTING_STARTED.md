@@ -587,6 +587,95 @@ Once you see `ok`, type `https://watchshelf.yourdomain.com` into your watch app'
 That's it — **Browse library** should now show your books, with options to browse
 by all books, author, series, or collection.
 
+## Optional — lock the sidecar to your watch with a secret header
+
+Everything above puts the sidecar on the public internet. Anyone who finds the
+address can reach it — they still can't get at your books without an
+Audiobookshelf login, but you may not want it answering strangers at all.
+
+The watch can send a **secret header** on every request, and your proxy can drop
+anything that doesn't carry it. Requests without the header never reach the
+sidecar.
+
+**This is optional.** Skip it unless you want it — it's one more thing to get
+wrong, and a mistyped secret locks the watch out until you fix or clear it.
+
+### 1. Make up a secret
+
+Any long random string. For example:
+
+```
+openssl rand -hex 32
+```
+
+### 2. Tell the watch
+
+On the watch: **WatchShelf → Downloaded → Proxy header**. Enter the header name
+(the default, `X-Client-Authentication`, is fine) and then the secret. The row
+shows the header name once it's set.
+
+To turn it off again, open it and leave the **name** empty — that clears the
+secret too.
+
+> If you installed from the Connect IQ Store you can set the same two values from
+> Garmin Connect on your phone instead. A sideloaded app has no phone settings,
+> so use the watch.
+
+Set this **before** you log in. Once your proxy requires the header, login itself
+won't get through without it.
+
+### 3. Tell your proxy
+
+**Caddy** — inside the `watchshelf.yourdomain.com` block, before `reverse_proxy`:
+
+```caddyfile
+@noauth not header X-Client-Authentication "YOUR-SECRET-HERE"
+respond @noauth 403
+```
+
+**nginx** — inside the `location /` block:
+
+```nginx
+if ($http_x_client_authentication != "YOUR-SECRET-HERE") { return 403; }
+```
+
+**Traefik** — add the header to the router's own rule, so a request without it
+simply doesn't match the route. Extend the `rule=` label you added earlier:
+
+```yaml
+- "traefik.http.routers.watchshelf.rule=Host(`watchshelf.yourdomain.com`) && Header(`X-Client-Authentication`, `YOUR-SECRET-HERE`)"
+```
+
+On **Traefik v2** that matcher is spelled `Headers(...)` instead of `Header(...)`.
+Requests without the header get a 404 rather than a 403, because the router
+never matches them — that's fine, and arguably better.
+
+**Apache** — inside the `<VirtualHost *:443>` block:
+
+```apache
+SetEnvIf X-Client-Authentication "^YOUR-SECRET-HERE$" watchshelf_ok=1
+<Location />
+    Require env watchshelf_ok
+</Location>
+```
+
+### 4. Check it
+
+From any other machine — this should now be rejected:
+
+```
+curl -i https://watchshelf.yourdomain.com/health
+```
+
+and this should print `ok`:
+
+```
+curl -i -H "X-Client-Authentication: YOUR-SECRET-HERE" https://watchshelf.yourdomain.com/health
+```
+
+If the first one still prints `ok`, your proxy rule isn't being applied — fix
+that before relying on it.
+
 ## Something not working?
 
 - Re-check the exact `curl .../health` command from your proxy's section above — if
@@ -594,4 +683,8 @@ by all books, author, series, or collection.
 - Make sure you entered the **sidecar's** address on the watch, not Audiobookshelf's.
 - If the watch shows a login error, double check your Audiobookshelf username and
   password work by logging into Audiobookshelf's own web page normally.
+- If you set up the optional secret header and the watch now can't reach the
+  server at all, check the secret matches on both sides exactly. To rule it out,
+  open **Downloaded → Proxy header** on the watch and leave the name empty to
+  turn it off, then remove the rule from your proxy and try again.
 

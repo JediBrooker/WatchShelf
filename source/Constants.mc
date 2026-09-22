@@ -32,6 +32,15 @@ module Store {
     const APP_VERSION = "appVersion";  // Number, see Versions
     const SERVER      = "absServer";   // server URL saved by on-watch login
     const TOKEN       = "absToken";    // bearer token saved by on-watch login
+    // Optional reverse-proxy credential, set on-watch (see ProxyHeader.mc).
+    // A proxy in front of the sidecar can require this header before it
+    // forwards anything, so the sidecar can be exposed without being open to
+    // the internet. Both are needed for the header to be sent.
+    // NOTE: these MUST survive the version-change wipe in WatchShelfApp - a
+    // user behind a proxy who lost them could not reach the server to re-enter
+    // them, which is a lockout, not an inconvenience.
+    const PROXY_NAME  = "proxyHdrName";
+    const PROXY_VALUE = "proxyHdrValue";
 
     // Two-way play-progress state, O(books): one small dictionary keyed by
     // itemId (never per-chunk - see the OOM post-mortem above). See Progress.mc
@@ -58,6 +67,8 @@ module Store {
 module Settings {
     const SERVER_URL  = "absServerUrl";  // the sidecar's public URL (no trailing slash)
     const API_KEY     = "absApiKey";     // ABS long-lived API key, used as Bearer token
+    const PROXY_NAME  = "absProxyHeader";  // e.g. "X-Client-Authentication"
+    const PROXY_VALUE = "absProxySecret";  // the shared secret the proxy checks
 }
 
 // Bump `current` whenever the stored data shape changes so stale caches reset.

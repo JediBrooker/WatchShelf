@@ -63,6 +63,14 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Proxy header" -> set/clear the optional reverse-proxy credential.
+        // The row itself is handed over so its subtitle can be refreshed in
+        // place when the flow saves.
+        if ((id instanceof Toybox.Lang.String) && id.equals("proxyheader")) {
+            ProxyHeader.start(item);
+            return;
+        }
+
         // "Clear queue" -> abandon anything pending (a crashed/interrupted sync
         // can leave queued jobs behind, since they're only cleared as each book
         // finishes) WITHOUT starting a sync - we want to drop them, not process

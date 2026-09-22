@@ -7,4 +7,14 @@
     <setting propertyKey="@Properties.absApiKey" title="@Strings.settingApiKey">
         <settingConfig type="alphaNumeric"/>
     </setting>
+    <!-- Optional: gate the sidecar behind a reverse proxy that requires a
+         shared-secret header. Both must be set for anything to be sent. The
+         same pair can be entered on the watch (Downloaded -> Proxy header),
+         which is the only route for a sideloaded install. -->
+    <setting propertyKey="@Properties.absProxyHeader" title="@Strings.settingProxyHeader">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.absProxySecret" title="@Strings.settingProxySecret">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
 </settings>

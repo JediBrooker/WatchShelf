@@ -51,6 +51,17 @@
 
     <!-- on-watch character wheel, used where WatchUi.TextPicker is absent
          (vivoactive4/4s, venu/venud) - see source/TextEntry.mc -->
+    <!-- optional reverse-proxy auth header (see source/ProxyHeader.mc) -->
+    <string id="proxyHeader">Proxy header</string>
+    <string id="proxyNotSet">Not set</string>
+    <string id="proxyFieldName">Header name\n(empty = off)</string>
+    <string id="proxyFieldValue">Header secret</string>
+    <string id="proxySaved">Proxy header saved</string>
+    <string id="settingProxyHeader">Proxy auth header name</string>
+    <string id="settingProxyHeaderPrompt">e.g. X-Client-Authentication</string>
+    <string id="settingProxySecret">Proxy auth header secret</string>
+    <string id="settingProxySecretPrompt">Shared secret your proxy checks</string>
+
     <string id="kbDone">DONE</string>
     <string id="kbDelete">DEL</string>
     <string id="allBooks">All books</string>
