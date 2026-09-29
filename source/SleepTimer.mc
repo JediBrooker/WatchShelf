@@ -10,7 +10,7 @@ using Toybox.WatchUi;
 module SleepTimer {
     // Minutes offered in the picker; 0 = off. Must match the listEntry
     // values in settings.xml (phone), which edits the same property.
-    const ALL = [ 0, 15, 30, 60 ];
+    const ALL = [ 0, 5, 15, 20, 30, 45, 60, 90, 120 ];
 
     var deadline = null; // epoch seconds, null = not armed
 
@@ -25,7 +25,7 @@ module SleepTimer {
 
     function label(m) {
         if (m <= 0) { return WatchUi.loadResource(Rez.Strings.sleepOff); }
-        if (m == 60) { return "1h"; }
+        if ((m >= 60) && (m % 60 == 0)) { return (m / 60).toString() + "h"; }
         return m.toString() + " min";
     }
 

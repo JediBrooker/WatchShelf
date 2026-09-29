@@ -22,6 +22,16 @@ function sleepTimerFiresOnce(logger) {
 }
 
 (:test)
+function sleepTimerLabels(logger) {
+    Test.assertEqual(SleepTimer.label(5), "5 min");
+    Test.assertEqual(SleepTimer.label(60), "1h");
+    Test.assertEqual(SleepTimer.label(90), "90 min");
+    Test.assertEqual(SleepTimer.label(120), "2h");
+    logger.debug("watch labels stay short; whole hours read as h");
+    return true;
+}
+
+(:test)
 function sleepTimerMinutesUsePhoneProperty(logger) {
     SleepTimer.setMinutes(30);
     Test.assertEqual(Application.Properties.getValue(Settings.SLEEP_MINUTES), 30);
