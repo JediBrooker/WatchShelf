@@ -93,6 +93,24 @@ same guide.
 - **Playback** is restricted to the selected book. The native player still owns its
   part-local time bar, while the scrolling artist line shows `% of book`.
 
+## Compatible watches
+
+The manifest covers all **93 audio-content-provider device targets** in Garmin's
+SDK device catalog checked on **6 October 2026**, including every fēnix 9, fēnix 9
+Pro (43/47/51 mm), and fēnix 9 Pro Solar (47/51 mm) target. It also includes the
+compatible fēnix E, Approach, D2, Forerunner, Venu, vívoactive, epix, Enduro,
+Descent, MARQ, and legacy music editions. Some targets cover several watch models
+(for example, tactix and quatix variants share fēnix/epix targets).
+
+Compatibility requires Garmin's **Audio Content Provider** app support and
+Connect IQ API 3.1.0 or later. Music-control-only watches and the fēnix 7 Pro
+no-Wi-Fi variants do not qualify. Garmin publishes the supported audio devices in
+its [Media API documentation](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media.html).
+
+Newly added watches become available in the Connect IQ Store only after the
+updated `.iq` package is uploaded and accepted by Garmin. Package compilation
+checks every target; it does not replace playback testing on physical watches.
+
 ## Build & run
 
 CLI only, no editor — see [BUILD.md](BUILD.md).
