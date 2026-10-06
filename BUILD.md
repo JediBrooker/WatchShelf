@@ -88,15 +88,36 @@ Expose it over HTTPS with whatever reverse proxy you already run - a plain
 step-by-step guide for Cloudflare Tunnel, nginx, Apache, Caddy, and Traefik is in
 [sidecar/GETTING_STARTED.md](sidecar/GETTING_STARTED.md).
 
-## 7. Store package (later)
+## 7. Store package
 
 ```
 make package              # -> bin/WatchShelf.iq
 ```
 
-Compiles for **every** device in `manifest.xml`, so all their bundles must be
-installed in the SDK Manager first (some may still be downloading). The Connect
-IQ Store upload also validates which listed devices can actually run an audio app.
+Compiles for **every** device in `manifest.xml` (93 targets as of 6 October 2026).
+Open SDK Manager and let all device downloads/updates finish before building;
+building during a refresh can temporarily report installed devices as unrecognized.
+The Connect IQ Store upload also validates which listed devices can run an audio app.
+
+For future watches, refresh SDK Manager's device catalog, then inspect each new
+device's `compiler.json` under
+`~/Library/Application Support/Garmin/ConnectIQ/Devices/`. Add its exact `deviceId`
+to the manifest only if `appTypes` contains `audioContentProvider` and a supported
+`partNumbers[].connectIQVersion` meets the manifest's minimum API version. Use the
+`displayName` to identify shared targets; do not invent separate IDs for every
+marketed size or brand. Compare with Garmin's
+[Media API supported devices](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media.html),
+then run `make package` to validate the entire set.
+
+Upload `bin/WatchShelf.iq` as an update to the existing Connect IQ Store app, using
+the existing app ID and signing key. The manifest change alone does not update
+the live store listing. Check the store's compatible-device list after acceptance.
+
+Compatibility build verified on 6 October 2026 with SDK 9.2.0: all 151 eligible
+device/firmware builds across 93 manifest targets passed. Warnings were limited
+to automatic launcher-icon scaling and one D2 Delta PX firmware variant on API
+3.0.3 being skipped (below our 3.1.0 minimum). This verifies compilation, not
+physical-watch playback or acceptance of the update by the store.
 
 ## Make targets
 
