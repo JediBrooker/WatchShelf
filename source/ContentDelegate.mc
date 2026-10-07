@@ -32,6 +32,7 @@ class ContentDelegate extends Media.ContentDelegate {
         mSessionFinishedItem = null;
         mAwaitingResetStart = false;
         setResumeGuard(mArgs);
+        SleepTimer.arm();
         resetContentIterator();
     }
 

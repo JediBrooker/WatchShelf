@@ -110,6 +110,8 @@ class ContentIterator extends Media.ContentIterator {
     }
 
     function next() {
+        // Sleep timer expired: end playback after the current part.
+        if (SleepTimer.fire()) { return null; }
         return validForward(mIndex + 1, true);
     }
 
