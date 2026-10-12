@@ -15,4 +15,8 @@
     <!-- Placeholder book-cover glyph for menu rows whose real cover hasn't
          been fetched yet (or failed to). Same colors as the provider icon. -->
     <bitmap id="bookIcon" filename="book_icon.png" dithering="none"/>
+
+    <!-- Australian flag (32x16) on the "Made in Australia" row at the foot of
+         the Downloaded menu. -->
+    <bitmap id="flagAu" filename="flag_au.png" dithering="none"/>
 </drawables>

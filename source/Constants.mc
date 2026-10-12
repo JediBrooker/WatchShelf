@@ -102,6 +102,7 @@ module Versions {
     // playback-speed encoding: also additive, and the PRIMARY slot deliberately
     // keeps the original page keys, so every existing record reads correctly
     // with no migration at all. b39 changes no stored shape at all - it only
-    // adds a first-run setup chooser and wires up settings prompts.
-    const tag = "b39";
+    // adds a first-run setup chooser and wires up settings prompts. b40 changes
+    // no stored shape either - it only adds the "Made in Australia" menu row.
+    const tag = "b40";
 }
