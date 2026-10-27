@@ -101,4 +101,22 @@
     <string id="byCollection">By collection</string>
     <string id="errNone">None found</string>
     <string id="madeInAustralia">Made in Australia</string>
+    <!-- Automatic podcast downloads are opt-in per show. -->
+    <string id="podcastDownloads">Podcast downloads</string>
+    <string id="podcastAddShow">Add a show</string>
+    <string id="podcastShows">Shows</string>
+    <string id="podcastEpisodes">Episodes</string>
+    <string id="podcastAutomatic">Automatic downloads</string>
+    <string id="podcastOn">On</string>
+    <string id="podcastKeepLatest">Keep latest unfinished</string>
+    <string id="podcastUnfinished">unfinished episodes</string>
+    <string id="podcastDownloadSpeed">Download speed</string>
+    <string id="podcastOrder">Download order</string>
+    <string id="podcastNewest">Newest first</string>
+    <string id="podcastOldest">Oldest first</string>
+    <string id="podcastRemoveFinished">Remove finished downloads</string>
+    <string id="podcastKeepOnWatch">Keep on watch</string>
+    <string id="podcastKept">Kept on watch</string>
+    <string id="podcastShowLimit">Limit of 10 shows.\nTurn off another first.</string>
+    <string id="podcastUpdateSidecar">Update sidecar</string>
 </strings>

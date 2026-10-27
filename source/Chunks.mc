@@ -8,7 +8,7 @@
 // The very FIRST chunk of a book is deliberately short so there's something
 // to test playback with almost immediately; all later chunks are song-length
 // (~3 min, ~2MB at 96kbps mono), matching how proven ACP apps like Spotify
-// download audio. Both loops below MUST stay identical to each other.
+// download audio. Arithmetic helpers and array builders preserve the same boundaries.
 module Chunks {
     const FIRST = 15;    // seconds, global chunk 0 only
     const LEN   = 180;   // seconds, every other chunk
@@ -35,20 +35,17 @@ module Chunks {
     }
 
     // Total chunk count across a book's files. durs = [seconds, ...].
+    // Integer duration arithmetic keeps metadata validation/resume bounded by
+    // MAX_FILES, even when an extremely long book has only a small tail left.
+    function fileCount(d, first) {
+        if (d <= 0) { return 0; }
+        var initial = first ? FIRST : LEN;
+        if (d <= initial) { return 1; }
+        return 1 + ((d - initial + LEN - 1) / LEN).toNumber();
+    }
     function total(durs) {
         var n = 0;
-        for (var f = 0; f < durs.size(); ++f) {
-            var d = durs[f];
-            if (d <= 0) { continue; }
-            var pos = 0;
-            while (pos < d) {
-                var size = (n == 0) ? FIRST : LEN;
-                var end = pos + size;
-                if (end > d) { end = d; }
-                n += 1;
-                pos = end;
-            }
-        }
+        for (var f = 0; f < durs.size(); ++f) { n += fileCount(durs[f], n == 0); }
         return n;
     }
 
@@ -82,21 +79,15 @@ module Chunks {
     // instead of materializing the O(chunks) starts array in the 512KB UI heap.
     function indexAt(durs, positionSec) {
         if ((durs == null) || (positionSec == null) || (positionSec <= 0)) { return 0; }
-        var n = 0;
-        var bookOffset = 0;
+        var n = 0; var offset = 0;
         for (var f = 0; f < durs.size(); ++f) {
-            var d = durs[f];
-            if (d <= 0) { continue; }
-            var pos = 0;
-            while (pos < d) {
-                var size = (n == 0) ? FIRST : LEN;
-                var end = pos + size;
-                if (end > d) { end = d; }
-                if (positionSec < (bookOffset + end)) { return n; }
-                n += 1;
-                pos = end;
+            var d = durs[f]; if (d <= 0) { continue; }
+            if (positionSec < offset + d) {
+                var local = positionSec - offset;
+                if (n == 0) { return (local < FIRST) ? 0 : 1 + ((local - FIRST) / LEN).toNumber(); }
+                return n + (local / LEN).toNumber();
             }
-            bookOffset = bookOffset + d;
+            n += fileCount(d, n == 0); offset += d;
         }
         return n;
     }
@@ -124,28 +115,19 @@ module Chunks {
     // { "file" => file index, "cstart"/"cend" => seconds within that file,
     //   "start" => absolute seconds within the whole book }.
     function at(durs, k) {
-        var n = 0;
-        var bookOffset = 0;
+        if (k < 0) { return null; }
+        var n = 0; var offset = 0;
         for (var f = 0; f < durs.size(); ++f) {
-            var d = durs[f];
-            if (d <= 0) { continue; }
-            var pos = 0;
-            while (pos < d) {
-                var size = (n == 0) ? FIRST : LEN;
-                var end = pos + size;
+            var d = durs[f]; if (d <= 0) { continue; }
+            var count = fileCount(d, n == 0);
+            if (k < n + count) {
+                var local = k - n;
+                var pos = (n == 0) ? ((local == 0) ? 0 : FIRST + (local - 1) * LEN) : local * LEN;
+                var end = pos + ((k == 0) ? FIRST : LEN);
                 if (end > d) { end = d; }
-                if (n == k) {
-                    return {
-                        "file"   => f,
-                        "cstart" => pos,
-                        "cend"   => end,
-                        "start"  => bookOffset + pos
-                    };
-                }
-                n += 1;
-                pos = end;
+                return { "file" => f, "cstart" => pos, "cend" => end, "start" => offset + pos };
             }
-            bookOffset = bookOffset + d;
+            n += count; offset += d;
         }
         return null;
     }

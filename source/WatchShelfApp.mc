@@ -52,7 +52,7 @@ class WatchShelfApp extends Application.AudioContentProviderApp {
     // favour of the app itself implementing Communications.SyncDelegate, but we
     // keep the sample shape here for a known-good first version.
     function getSyncDelegate() {
-        return new SyncDelegate();
+        return new WatchShelfSyncDelegate();
     }
 
     // System -> "configure playback": manage downloaded books. DownloadedMenu is

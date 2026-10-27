@@ -78,9 +78,12 @@ class LibraryView extends WatchUi.View {
             var menu = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.pickLibrary) });
             for (var i = 0; i < libs.size(); ++i) {
                 var lib = libs[i];
-                // Only book libraries are audiobooks; skip podcast libraries.
+                // Podcast libraries retain mediaType book for old clients; new
+                // sidecars identify them with additive sourceMediaType metadata.
                 if (lib["mediaType"] != null && lib["mediaType"].equals("book")) {
-                    menu.addItem(new WatchUi.MenuItem(lib["name"], null, lib["id"], null));
+                    var identity = { "id" => lib["id"],
+                        "podcast" => (lib["sourceMediaType"] != null) && lib["sourceMediaType"].equals("podcast") };
+                    menu.addItem(new WatchUi.MenuItem(lib["name"], null, identity, null));
                 }
             }
             // Replace the transient loading screen so Back returns in one press

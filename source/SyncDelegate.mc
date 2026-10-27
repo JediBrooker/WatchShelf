@@ -27,18 +27,29 @@ using Toybox.System;
 // MonkeyMusic sample - that sample is 2018-era and predates the type change;
 // build b24 tried exactly that, fixed nothing (both known failures
 // persisted), and was reverted.
-class SyncDelegate extends Communications.SyncDelegate {
+// Keep the application class name distinct from the SDK base. The Monkey C
+// generated <init> can otherwise recurse when this class is subclassed by the
+// lifecycle test harness, before initialize() is ever entered.
+class WatchShelfSyncDelegate extends Communications.SyncDelegate {
 
     private var mTotal;         // ops planned at sync start (downloads + deletes)
     private var mDone;          // ops completed
     private var mProgressSync;  // held so its async chain isn't GC'd mid-flight
+    private var mPodcast;
+    private var mPodcastDone;
+    private var mForce;
+    private var mRun;
+    private var mCompleted;
+    private var mFinishing;
     private var mSyncError;     // download error surfaced AFTER progress runs, or null
 
     function initialize() {
-        SyncDelegate.initialize();
+        Communications.SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
         mSyncError = null;
+        mRun = 0; mCompleted = true; mFinishing = false;
+        mPodcastDone = false; mForce = false;
     }
 
     function deletes() {
@@ -50,14 +61,31 @@ class SyncDelegate extends Communications.SyncDelegate {
     // and deletes, a sync is needed when we have an unflushed local listen to
     // push (Progress.hasDirty), or when the user tapped "Sync now" (the one-shot
     // FORCE_SYNC flag, cleared at the top of onStartSync so it can't loop).
+    function charging() { return PodcastSchedule.powered(); }
+    function createProgressSync() { return new ProgressSync(); }
+    function createPodcastSync() { return new PodcastSync(); }
+    function requestAudio(url, options, cb) { Communications.makeWebRequest(url, null, options, cb); }
     function isSyncNeeded() {
-        return (JobStore.list().size() != 0)
-            || (deletes().size() != 0)
-            || Progress.hasDirty()
-            || (Application.Storage.getValue(Store.FORCE_SYNC) != null);
+        if ((deletes().size() != 0) || Progress.hasDirty()
+            || (Application.Storage.getValue(Store.FORCE_SYNC) != null)) { return true; }
+        var ids = JobStore.list(); var powered = charging(); var now = Progress.nowSec();
+        for (var i = 0; i < ids.size(); ++i) {
+            var job = JobStore.get(ids[i]);
+            // Preserve old stray-index repair as an ordinary work reason.
+            if ((job == null) || PodcastSchedule.jobAllowed(ids[i], job, false, powered, now)) { return true; }
+        }
+        return PodcastSchedule.discoveryNeeded(false, powered, now);
     }
 
     function onStartSync() {
+        if (mProgressSync != null) { mProgressSync.cancel(); }
+        if (mPodcast != null) { mPodcast.cancel(); }
+        mRun += 1; mCompleted = false; mFinishing = false; mPodcastDone = false;
+        mForce = (Application.Storage.getValue(Store.FORCE_SYNC) != null);
+        // Recover invalid retention intent even with no enabled subscriptions
+        // or while unplugged. Otherwise disabling the final show after a crash
+        // could leave its surviving audio hidden forever.
+        PodcastRetention.restoreIfInvalid();
         // A delegate normally has one run, but resetting here also makes a
         // simulator/manual re-entry deterministic and prevents stale progress
         // or error state from leaking into a later run.
@@ -97,6 +125,7 @@ class SyncDelegate extends Communications.SyncDelegate {
                 BookStore.dropArtIfUnindexed(jobIds[i]);
                 continue;
             }
+            if (!PodcastSchedule.jobAllowed(jobIds[i], job, mForce, charging(), Progress.nowSec())) { continue; }
             var left = Chunks.total(job["durs"]) - job["done"];
             if (left > 0) { mTotal += left; }
         }
@@ -115,11 +144,20 @@ class SyncDelegate extends Communications.SyncDelegate {
     // even if a request errors - so the sync always reaches notifySyncComplete.
     // Kept separate from the download engine on purpose (see onStartSync).
     function finishSync() {
-        mProgressSync = new ProgressSync();
+        if (mCompleted || mFinishing) { return; }
+        mFinishing = true;
+        mProgressSync = createProgressSync();
         mProgressSync.start(method(:onProgressDone));
     }
 
     function onProgressDone() {
+        if (mCompleted) { return; }
+        if (!mPodcastDone && PodcastSchedule.discoveryNeeded(mForce, charging(), Progress.nowSec())) {
+            mPodcastDone = true;
+            mPodcast = createPodcastSync();
+            mPodcast.start(mForce, mProgressSync.acknowledgements(), method(:onPodcastDone));
+            return;
+        }
         // Report a download error (if any) only now - AFTER the progress exchange
         // has had its chance to flush a dirty offline listen. null on a clean sync.
         // Do not clear a useful prior error after a no-op/force-progress sync;
@@ -127,14 +165,31 @@ class SyncDelegate extends Communications.SyncDelegate {
         if ((mSyncError == null) && (mDone > 0)) {
             Application.Storage.deleteValue(Store.LAST_SYNC_ERROR);
         }
-        Communications.notifySyncComplete(mSyncError);
+        complete(mSyncError);
     }
 
-    // System-initiated cancel: stop cleanly. In-flight request is abandoned;
-    // jobs stay in Storage with their cursor, so the next sync resumes.
+    function onPodcastDone() {
+        if (mCompleted) { return; }
+        mFinishing = false;
+        downloadNext();
+    }
+    function discardAudio(refId) {
+        try { Media.deleteCachedItem(new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO)); }
+        catch (e) { System.println("discarded audio already absent"); }
+    }
+    function notifyComplete(error) { Communications.notifySyncComplete(error); }
+    function complete(error) {
+        if (mCompleted) { return; }
+        mCompleted = true;
+        notifyComplete(error);
+    }
+    // Each asynchronous worker is cancelled BEFORE cancelling transport: a
+    // late callback must neither restart its chain nor complete a second time.
     function onStopSync() {
+        if (mProgressSync != null) { mProgressSync.cancel(); }
+        if (mPodcast != null) { mPodcast.cancel(); }
         Communications.cancelAllRequests();
-        Communications.notifySyncComplete(null);
+        complete(null);
     }
 
     // Delete every queued BOOK: un-index it, evict its cached chunks and records,
@@ -179,33 +234,22 @@ class SyncDelegate extends Communications.SyncDelegate {
     // Download the next chunk of the first queued book. Reads the queue fresh
     // so mid-sync queue changes (new book, clear queue, delete) take effect.
     function downloadNext() {
+        if (mCompleted) { return; }
         var jobIds = JobStore.list();
-        if (jobIds.size() == 0) {
-            sweepOrphans();
-            finishSync();
-            return;
+        var itemId = null; var job = null;
+        // Skip paused automatic jobs without allowing them to block manual
+        // work behind them. Never recursively drain arbitrary queues.
+        for (var i = 0; i < jobIds.size(); ++i) {
+            var id = jobIds[i]; var candidate = JobStore.get(id);
+            if (containsId(deletes(), id)) { JobStore.remove(id); continue; }
+            if (candidate == null) {
+                JobStore.remove(id); BookStore.dropArtIfUnindexed(id); continue;
+            }
+            if (!PodcastSchedule.jobAllowed(id, candidate, mForce, charging(), Progress.nowSec())) { continue; }
+            if (Chunks.at(candidate["durs"], candidate["done"]) == null) { JobStore.remove(id); continue; }
+            itemId = id; job = candidate; break;
         }
-
-        var itemId = jobIds[0];
-
-        // Honor a delete queued mid-sync: stop downloading the doomed book
-        // now (its actual deletion runs at the next sync start) instead of
-        // pouring hundreds more chunks into a book the user already deleted.
-        if (containsId(deletes(), itemId)) {
-            JobStore.remove(itemId);
-            downloadNext();
-            return;
-        }
-
-        var job = JobStore.get(itemId);
-        if (job == null) {
-            // Stray index entry (crash window) - self-heal and move on,
-            // reclaiming any art the dead job already fetched.
-            JobStore.remove(itemId);
-            BookStore.dropArtIfUnindexed(itemId);
-            downloadNext();
-            return;
-        }
+        if (itemId == null) { sweepOrphans(); finishSync(); return; }
 
         // NO cover-art fetch here, deliberately. b29 fetched cover art at sync
         // start via Communications.makeImageRequest - but that call routes image
@@ -255,17 +299,23 @@ class SyncDelegate extends Communications.SyncDelegate {
         // even a same-cursor-value collision like 0==0 is caught), recording
         // the stale bytes would put the wrong audio at the wrong position -
         // the callback validates and discards instead.
-        var context = { "item" => itemId, "k" => job["done"], "gen" => job["gen"] };
+        var context = { "item" => itemId, "k" => job["done"], "gen" => job["gen"], "run" => mRun };
         var delegate = new RequestDelegate(method(:onTrackDownloaded), context);
         var url = AbsApi.sidecarChunkUrl(itemId, job["inos"][c["file"]],
                                         c["cstart"], c["cend"], job["speed"]);
-        delegate.makeWebRequest(url, null, options);
+        requestAudio(url, options, delegate.method(:onWebResponse));
     }
 
     // On success `data` is a Media.ContentRef (the doc's union type is loose,
     // but ContentRef is what an audio download delivers). Record its id at the
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
+        if (mCompleted || (context["run"] != mRun)) {
+            if ((code == 200) && (data != null)) {
+                discardAudio(data.getId());
+            }
+            return;
+        }
         if ((code != 200) || (data == null)) {
             var itemId = context["item"];
             var job = JobStore.get(itemId);
@@ -296,7 +346,10 @@ class SyncDelegate extends Communications.SyncDelegate {
                 // concise message below; never let diagnostics strand sync mode.
                 System.println("sync error save failed: " + e.getErrorMessage());
             }
-            JobStore.remove(itemId);
+            if (job["autoShow"] != null) {
+                job["retryAt"] = Progress.nowSec() + PodcastSchedule.RETRY;
+                JobStore.put(itemId, job);
+            } else { JobStore.remove(itemId); }
             // Heal the narrow crash window where a prior chunk was saved but
             // the process died before addToIndex(): the valid partial suffix
             // should remain visible/playable after this job is paused by removal.
@@ -305,7 +358,7 @@ class SyncDelegate extends Communications.SyncDelegate {
             } else {
                 BookStore.dropArtIfUnindexed(itemId);
             }
-            finishSync();
+            if (job["autoShow"] != null) { downloadNext(); } else { finishSync(); }
             return;
         }
 
@@ -319,7 +372,16 @@ class SyncDelegate extends Communications.SyncDelegate {
             // in flight - these bytes no longer have a valid slot. Evict the
             // now-ownerless cached item and carry on with whatever the queue
             // holds now.
-            Media.deleteCachedItem(new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO));
+            discardAudio(refId);
+            downloadNext();
+            return;
+        }
+
+        // Scope/ownership and power can change while bytes are in flight.
+        // Recheck before committing them, not only before requesting the next
+        // chunk. Scope validation may itself cancel this old account's job.
+        if (!PodcastSchedule.jobAllowed(itemId, job, mForce, charging(), Progress.nowSec())) {
+            discardAudio(refId);
             downloadNext();
             return;
         }
@@ -368,6 +430,9 @@ class SyncDelegate extends Communications.SyncDelegate {
             }
         }
 
+        var pruning = PodcastRetention.pending();
+        if (pruning != null) { BookStore.addRefIds(pruning["item"], known); }
+
         var orphans = [];
         var iter = Media.getContentRefIter({ :contentType => Media.CONTENT_TYPE_AUDIO });
         if (iter != null) {
@@ -386,7 +451,7 @@ class SyncDelegate extends Communications.SyncDelegate {
         ++mDone;
         // Mid-sync queue changes can grow/shrink the real work vs the plan
         // made at sync start - clamp so the bar never runs past 100%.
-        var pct = ((mDone / mTotal.toFloat()) * 100).toNumber();
+        var pct = (mTotal > 0) ? ((mDone / mTotal.toFloat()) * 100).toNumber() : 0;
         if (pct > 100) { pct = 100; }
         Communications.notifySyncProgress(pct);
     }

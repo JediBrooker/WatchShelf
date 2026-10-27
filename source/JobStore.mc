@@ -34,6 +34,15 @@ module JobStore {
     // bigger books at queue time.
     const MAX_FILES = 600;
 
+    // Persist a monotonic generation across removals/clear/requeue. Reusing 1
+    // after cancellation could otherwise accept an old in-flight chunk at k=0.
+    function nextGeneration() {
+        var n = Application.Storage.getValue("jobGeneration");
+        n = (n == null) ? 1 : n + 1;
+        Application.Storage.setValue("jobGeneration", n);
+        return n;
+    }
+
     function key(itemId) {
         return "job:" + itemId;
     }
@@ -79,8 +88,10 @@ module JobStore {
     // smaller queue - never an index full of entries whose values are gone
     // (which would make isSyncNeeded() true forever with nothing to heal it).
     function clearAll() {
+        PodcastSettings.cancelPending();
         var index = list();
         for (var i = 0; i < index.size(); ++i) {
+            if (PodcastSettings.owner(index[i]) != null) { PodcastSettings.suppress(index[i]); }
             remove(index[i]);
         }
     }

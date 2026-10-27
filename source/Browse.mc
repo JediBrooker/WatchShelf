@@ -16,13 +16,15 @@ using Toybox.WatchUi;
 // native player (Media.setAlbumArt).
 module Browse {
 
-    function start(libId) {
+    function start(libId, podcast) {
         var m = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.browseLibrary) });
         m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.continueListening), null, "continue", null));
-        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.allBooks), null, "all", null));
-        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.byAuthor), null, "authors", null));
-        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.bySeries), null, "series", null));
-        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.byCollection), null, "collections", null));
+        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(podcast ? Rez.Strings.podcastEpisodes : Rez.Strings.allBooks), null, "all", null));
+        m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(podcast ? Rez.Strings.podcastShows : Rez.Strings.byAuthor), null, "authors", null));
+        if (!podcast) {
+            m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.bySeries), null, "series", null));
+            m.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.byCollection), null, "collections", null));
+        }
         WatchUi.pushView(m, new BrowseDelegate(libId), WatchUi.SLIDE_LEFT);
     }
 
@@ -78,8 +80,10 @@ class BrowseDelegate extends WatchUi.Menu2InputDelegate {
         var m = new WatchUi.Menu2({ :title => WatchUi.loadResource(Rez.Strings.browseLibrary) });
         for (var i = 0; i < groups.size(); ++i) {
             var g = groups[i];
-            var sub = (g["count"] != null) ? (g["count"].toString() + " books") : null;
-            m.addItem(new WatchUi.MenuItem(g["name"], sub, g["id"], null));
+            var podcast = (g["podcast"] == true);
+            var sub = (g["count"] != null) ? (g["count"].toString() + (podcast ? " episodes" : " books")) : null;
+            var identity = podcast ? { "id" => g["id"], "podcast" => true } : g["id"];
+            m.addItem(new WatchUi.MenuItem(g["name"], sub, identity, null));
         }
         WatchUi.pushView(m, new GroupDelegate(mLib, filterType), WatchUi.SLIDE_LEFT);
     }
@@ -90,7 +94,33 @@ class GroupDelegate extends WatchUi.Menu2InputDelegate {
     private var mLib;
     private var mType;
     function initialize(libId, filterType) { Menu2InputDelegate.initialize(); mLib = libId; mType = filterType; }
-    function onSelect(item) { AbsApi.getBookList(mLib, mType, item.getId(), method(:onBooks)); }
+    function onSelect(item) {
+        var identity = item.getId();
+        if ((identity instanceof Toybox.Lang.Dictionary) && (identity["podcast"] == true)) {
+            var menu = new WatchUi.Menu2({ :title => item.getLabel() });
+            menu.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.podcastEpisodes), null, "episodes", null));
+            menu.addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.podcastAutomatic),
+                PodcastMenus.enabledLabel(PodcastSettings.get(identity["id"])["enabled"]), "automatic", null));
+            WatchUi.pushView(menu, new PodcastBrowseDelegate(mLib, identity["id"], item.getLabel()), WatchUi.SLIDE_LEFT);
+            return;
+        }
+        AbsApi.getBookList(mLib, mType, identity, method(:onBooks));
+    }
+    function onBooks(code, data) { Browse.showBooks(code, data); }
+    function onBack() { WatchUi.popView(WatchUi.SLIDE_RIGHT); }
+}
+
+class PodcastBrowseDelegate extends WatchUi.Menu2InputDelegate {
+    private var mLib;
+    private var mShow;
+    private var mTitle;
+    function initialize(lib, show, title) {
+        Menu2InputDelegate.initialize(); mLib = lib; mShow = show; mTitle = title;
+    }
+    function onSelect(item) {
+        if (item.getId().equals("automatic")) { PodcastMenus.showSettings(mShow, mTitle); }
+        else { AbsApi.getBookList(mLib, "author", mShow, method(:onBooks)); }
+    }
     function onBooks(code, data) { Browse.showBooks(code, data); }
     function onBack() { WatchUi.popView(WatchUi.SLIDE_RIGHT); }
 }

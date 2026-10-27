@@ -1,152 +1,175 @@
-# Proposal: automatic podcast sync
+# Automatic podcast downloads
 
-Status: proposed, not implemented. Tracks [issue #85](https://github.com/JediBrooker/WatchShelf/issues/85).
+Implemented in source build **b42** for [issue #85](https://github.com/JediBrooker/WatchShelf/issues/85).
+Update the watch and sidecar together. Source availability does not mean the
+matching package has been published in the Connect IQ Store.
 
-WatchShelf already participates in Garmin's system sync lifecycle, but currently
-only requests a sync for queued downloads/deletes, dirty listening progress, or
-the explicit **Sync now** action (`source/SyncDelegate.mc`). It does not discover
-new episodes automatically. Podcast support currently lives in the sidecar:
-shows appear as authors and episodes as books (`sidecar/server.js`). This feature
-therefore needs coordinated watch and sidecar changes, not an unconditional
-`return true` in `isSyncNeeded()`.
+## Set up on the watch
 
-## Proposed behavior
+Open **Downloaded → Browse library → a podcast library → Shows → a show →
+Automatic downloads**. Automatic downloads and finished-episode removal both
+start **Off**. Choose:
 
-- Add **Automatic downloads** to a podcast show's menu, off by default. Additive
-  sidecar metadata must identify podcast libraries/shows without breaking older
-  watches that use the existing book/author compatibility responses.
-- Per show, allow **Keep latest 1–5 unfinished episodes**, a download order
-  (**newest first**, default, or **oldest first** within that latest-N set), and
-  **Remove finished automatic downloads**, off by default. “Unfinished” includes
-  partially heard episodes; this wording avoids treating a started episode as
-  ineligible. Start with at most 10 enabled shows.
-- Download only episodes whose audio already exists in Audiobookshelf. Configuring
-  ABS to fetch podcast feeds remains separate. Reuse the existing download speed
-  selection, resumable jobs, chunk budget, and playback/progress behavior.
-- Enforce N as the maximum number of unfinished automatic downloads per show,
-  including queued/incomplete jobs. Keep existing unfinished downloads when the
-  target set changes; only fill vacancies from the latest-N candidate set. Lowering
-  N pauses additions until the count falls below N. This first version never
-  discards an unfinished episode merely because a newer one appears.
-- Turning the feature off stops discovery and cancels only its pending automatic
-  jobs; already downloaded audio stays. Manually downloading an episode or choosing
-  **Keep on watch** removes its automatic ownership, so retention cannot delete it.
+- **Automatic downloads:** enable this show, with at most 10 enabled shows.
+- **Keep latest unfinished:** 1–5 episodes, including partially heard episodes.
+- **Download order:** newest first (default), or oldest first within the latest-N
+  eligible episodes.
+- **Download speed:** 1.0x (default), 1.25x, 1.5x, 1.75x or 2.0x. This applies to
+  new automatic additions; it does not replace an existing unfinished download.
+- **Remove finished downloads:** optionally remove completed automatic episodes
+  after their listening progress is confirmed by the server.
 
-## Garmin lifecycle and scheduling
+**Downloaded → Podcast downloads** manages enabled shows and provides **Add a
+show**, including when nothing has downloaded yet. **Sync now** is available on a
+configured watch even with an empty downloaded library.
 
-[`Communications.SyncDelegate`](https://developer.garmin.com/connect-iq/api-docs/Toybox/Communications/SyncDelegate.html)
-provides a synchronous `isSyncNeeded()` decision and an `onStartSync()` callback
-for network work. Keep `isSyncNeeded()` local and inexpensive: preserve existing
-manual-work/progress reasons to sync, then consider enabled subscriptions and a
-persisted next-check time. Fetch episode availability only after `onStartSync()`.
+Episodes must already have audio in Audiobookshelf. Configure ABS feed fetching
+separately; WatchShelf does not make ABS download missing episodes.
 
-For an automatically due podcast check, require
-[`System.Stats.charging`](https://developer.garmin.com/connect-iq/api-docs/Toybox/System/Stats.html)
-(available since API 3.0; true while connected to power even at full charge).
-Apply that charging gate to resuming automatic jobs too; an unrelated manual sync
-must not bypass it unless the user explicitly chose **Sync now**. Manual downloads
-and **Sync now** retain their existing behavior. The firmware
-decides when to invoke the delegate and establish Wi-Fi; returning true requests
-work when polled and does not schedule an exact overnight start. Physical Venu 4
-testing must confirm the charging trigger before promising unattended delivery.
-Do not add an always-running timer or a separate background service to emulate it.
+## What is kept
 
-Suggested initial policy: check no more often than every six hours after success;
-retry failed discovery after one hour. Persist an attempt/cooldown before the
-first request so a crash cannot produce a rapid retry loop. Keep successful-check
-and attempt timestamps distinct; empty successful results count as fresh, while
-errors never authorize pruning. Clamp implausible timestamps after clock changes.
-Explicit **Sync now** may bypass discovery cooldown once. A 404 from an older
-sidecar disables discovery for that attempt and shows **Update sidecar**, while
-ordinary downloads continue.
+N is the maximum number of **unfinished automatic** downloads for one show,
+including queued and incomplete jobs. Existing unfinished downloads stay when
+newer episodes arrive. Only vacancies are filled from the latest-N candidate set;
+WatchShelf does not reach further into a show's backlog to replace an excluded
+candidate. Lowering N pauses additions until the count is below N. A completed
+episode retained on the watch does not count toward N, but its audio still uses
+the watch-wide storage budget.
 
-## Bounded sidecar contract
+Turning a show off cancels its pending automatic jobs and stops discovery. Audio
+already downloaded stays playable. Manually downloading an episode, changing its
+speed through the ordinary download flow, or choosing **Keep on watch** removes
+its automatic ownership. Finished-episode removal can no longer delete it.
+Downloads from older builds are manual by default.
 
-Add an authenticated `GET /podcasts/candidates` endpoint with validated `show`,
-`limit` (1–5), and `order` parameters. Verify the session can access the show and
-that the item is a podcast. Filter finished and unavailable episodes before
-selecting the latest N; sort that selected set for the requested download order.
+Deleting an automatic episode or clearing its queued download excludes that
+episode from automatic rediscovery. Exclusions are bounded to 20 per show. If
+another exclusion would exceed that cap, that show is turned off instead of
+forgetting an exclusion. Explicitly turning the show on again clears its
+exclusions; manually choosing an excluded episode also permits that episode.
 
-Return at most five small rows containing the existing composite episode ID,
-bounded title/author strings, publication time, and slim progress metadata, plus
-a response version and check timestamp. Obtain file metadata through the existing
-`/files` route one episode at a time. Never send full show objects, episode arrays,
-or the user's entire progress history to the watch. Bound upstream request count
-and elapsed time as well as response bytes; reject oversized/malformed results
-without altering watch state. Reuse session refresh, proxy-header behavior, and
-upstream timeout handling.
+Subscriptions are scoped to the configured server and login/API-key credential.
+Changing either cancels automatic jobs and requires explicitly enabling shows
+again. Downloaded audio stays; its old automatic ownership cannot authorize
+removal under the new account. Sidecar-internal ABS access-token refresh does not
+change the watch's session credential.
 
-Use one request at a time and one show's response at a time on the watch. Share
-the existing queue-validation logic through a small non-UI component so automatic
-jobs get the same duration, resume, storage, and generation checks as manual jobs.
-Mark ownership in separate small per-episode records and a bounded subscription
-index. Existing jobs/downloads without ownership metadata are manual. A settings
-generation captured before a request must be rechecked before applying its result,
-so disabling or editing a subscription cannot be undone by an old callback.
+## Garmin lifecycle and timing
 
-## Progress and retention safety
+Automatic discovery and automatic job resumes require the watch to report that
+it is connected to power, including at full battery. **Sync now** explicitly
+allows automatic work without that charging gate and bypasses the discovery
+cooldown for that run. It still respects a failed audio job's retry delay.
+Ordinary manually selected downloads retain their existing flow; manual work
+does not implicitly allow automatic work while unplugged.
+Charging is checked again when discovery, file-metadata and automatic audio
+callbacks arrive. Unplugging pauses automatic work and discards audio that was
+still in flight, preserving the committed resume cursor.
 
-The current delete path removes `Progress` before the final `ProgressSync`; do
-not reuse it unchanged for automatic pruning. Introduce a separate retention
-phase, after ordinary queued work, whose order is:
+The watch requests a check no more often than every six hours after successful
+discovery, or one hour after a failed/interrupted attempt. Attempt and success
+timestamps are separate; the retry deadline is stored before the first request.
+Empty successful results count as fresh. Implausible future deadlines after clock
+changes are clamped by the due check. Failed automatic audio jobs use a one-hour
+retry delay and retain their resume cursor. A persisted show cursor shares work
+across interrupted passes.
 
-1. Pull current server progress and apply the existing conflict policy; push any
-   surviving local dirty progress. Return per-episode success/failure information
-   from the exchange rather than treating its continuation as proof of success.
-2. Discover candidates and plan additions. A local finished episode must not be
-   downloaded again while its completion is waiting to be acknowledged remotely.
-3. Prune only explicitly automatic-owned episodes with a confirmed finished
-   state and no unacknowledged local progress. Re-read ownership, progress, job,
-   and settings generation immediately before deletion. A failed request, newer
-   local listen/rewind, manual adoption, or concurrent setting change skips pruning.
-4. Queue eligible additions within remaining per-show and global chunk limits,
-   download serially, then finish the normal progress exchange and system sync.
+Garmin firmware decides when to poll `isSyncNeeded()` and establish connectivity.
+No always-running timer or additional background service is installed. There is
+**no exact overnight schedule guarantee**. Physical Venu 4 charging, full-battery,
+phone-absent and Wi-Fi behavior still requires device validation; simulator tests
+cannot establish those firmware behaviors. This feature does not resolve the
+separate native Wi-Fi stall reported in issue #78.
 
-Retain enough progress/acknowledgment state to survive a crash during deletion.
-Never erase a dirty progress entry to make room. Keep manual deletions governed by
-the existing explicit user action; automatic retention must not broaden that
-permission to manually downloaded books or episodes. A retained finished episode
-does not count toward N unfinished episodes, but it still consumes the global
-chunk budget and can prevent new downloads.
+## Sidecar contract and failure limits
 
-## Resource and failure limits
+`GET /podcasts/candidates?show=SHOW_ID&limit=1..5&order=newest|oldest&token=TOKEN`
+is authenticated through the existing session/API-key path. The sidecar checks
+access to the show and requires a podcast item. It filters unavailable audio and
+finished episodes before selecting the latest N. Started episodes remain eligible.
+Publication order uses episode ID as a deterministic tie breaker.
 
-Keep `Chunks.MAX_TOTAL` (currently 1,500) and `JobStore.MAX_FILES` (600) authoritative;
-automatic work cannot bypass capacity checks. Preserve per-book storage and avoid
-per-chunk dictionaries in a single value. The existing code documents a 512 KB
-audio-provider heap and 32 KB per-value storage limit; measure on both old and new
-device profiles before selecting final caps.
+A successful response has `version: 1`, `checkedAtSec`, a small `show` object and
+at most five `episodes`. Each episode contains its existing composite `id`,
+`title`, `author`, publication time in seconds, and slim progress (or null).
+Titles/authors are limited to 160 UTF-8 bytes and the complete response to 8 KiB.
+The watch requests each episode's file metadata separately through `/files`.
 
-Each callback must do bounded work and continue through asynchronous requests,
-rather than walk an entire library or recursively drain arbitrary jobs. Limit a
-discovery pass to 10 shows and 50 candidate rows in total, with a persisted cursor
-and cooldown for partial passes. Use request timeouts, cancellation/run tokens,
-and exactly one `notifySyncComplete()` per run. Cancelled/stale callbacks must not
-restart downloads or prune content. Existing manual jobs continue if discovery
-fails. Apply backoff to failed automatic jobs rather than requeueing them on
-every system poll. Avoid cover-image requests in sync; the existing phoneless
-audio-download path deliberately excludes them.
+Each discovery request allows at most 32 upstream requests including refreshes,
+12 seconds total, a 1 MiB show response, 2 MiB total upstream response bytes, and
+2,000 source episodes. Redirects do not bypass the request budget. Malformed,
+oversized or budget-exhausting upstream results fail the check; they never return
+an incomplete successful candidate set. A show with many finished newest episodes
+may exceed the request budget and remain available for manual downloading.
 
-## Staged delivery and validation
+Library responses retain the old `mediaType: "book"` compatibility shape and add
+`sourceMediaType: "podcast"`; podcast author/show rows add `podcast: true`. Older
+watches continue to browse the same responses. An older sidecar's missing route
+(404) shows **Update sidecar** under Podcast downloads; ordinary downloads continue.
+Missing/inaccessible shows on the new route do not masquerade as that 404.
 
-1. Add sidecar metadata and candidate endpoint with tests for authorization,
-   missing audio, started/finished states, deterministic ordering, request/byte
-   limits, expiry/refresh, malformed upstream data, and old-client compatibility.
-2. Add opt-in settings and persistent ownership, then discovery-only diagnostics.
-   Test due/cooldown/clock behavior, old-sidecar fallback, cancellation, settings
-   changes during requests, and interrupted storage writes. Do not delete audio.
-3. Integrate automatic queueing with shared validation. Exercise duplicate manual
-   and automatic requests, interrupted/resumed downloads, capacity limits, API
-   failures, and disabled subscriptions. Run the relevant Monkey C simulator
-   tests/builds for Forerunner 645 Music and Venu 4 45 mm.
-4. Add opt-in retention only after progress acknowledgments are observable. Test
-   dirty offline completion, failed pushes/pulls, concurrent rewinds, manual
-   adoption, crash/restart during deletion, and missing ownership metadata.
-5. Validate on physical Venu 4 45 mm with the issue reporter: new episode while
-   idle, charging at full battery, phone absent, Wi-Fi absent/reconnected,
-   unplugging/cancelling mid-sync, repeated firmware polls, and overnight retries.
-   Simulator success cannot establish native Wi-Fi or charging behavior.
+## State, cancellation and progress safety
 
-Ship automatic downloading before optional retention if device testing reveals
-uncertainty. Keep this proposal separate from [issue #78](https://github.com/JediBrooker/WatchShelf/issues/78),
-which reports a native Wi-Fi connection stall and needs device diagnostics.
+`PodcastSettings` stores a bounded enabled-show index, small per-show settings,
+and separate per-episode ownership. `PodcastSync` processes one request and one
+show response at a time, at most 10 shows and 50 candidate rows per pass. The
+existing `Downloads.queue` validation is shared by manual and automatic work:
+duration, resume, playback speed, file count, chunk budget and job generations
+follow the same rules. `Chunks.MAX_TOTAL` remains 1,500 and `JobStore.MAX_FILES`
+remains 600. The chunk limit counts the retained download suffix, queued work and
+parked speed variants; it does not reject a long source book whose remaining tail
+fits. Chunk calculations do not allocate the whole source book's chunk list.
+
+Automatic additions also require the combined set of downloaded and queued item
+IDs, including manual downloads, to fit a conservative 24 KiB serialized-size
+estimate. This leaves margin below Storage's 32 KiB per-value ceiling when many
+short episodes with long IDs accumulate. At this limit, automatic additions stop
+before claiming ownership or creating a job; remove unwanted downloads or clear
+jobs to make room. Existing audio and unfinished jobs are retained. This extra
+index guard applies to automatic additions; manual downloads keep their existing
+capacity behavior.
+
+Before persisting a job, the shared queue bounds titles/authors to 180 characters
+and file identifiers to 24 printable ASCII characters. File and aggregate duration
+must be nonnegative finite numbers no greater than 1,000,000,000 seconds; progress
+positions use the same ceiling and epoch seconds must fit a signed 32-bit value.
+These checks bound the serialized 600-file job as well as arithmetic. Sync does
+not request cover images.
+
+Settings generations and a cancellation epoch invalidate stale discovery/file
+callbacks. Download callbacks also check the fresh job generation, automatic
+ownership and charging permission. Disabling a show, clearing jobs, manually
+adopting an episode, changing credentials, or stopping sync cannot resurrect old
+work. Ownership cleanup after failed additions or completed retention does not
+leave an accumulating history of episode tombstones.
+
+Ordinary queued work runs first. Progress exchange then returns acknowledgments
+for individual episodes. Discovery must succeed before finished episodes are
+considered for removal. Immediately before deleting audio, retention checks:
+
+- current automatic ownership and enabled settings with removal still selected;
+- no queued job or explicit exclusion;
+- the exact finished progress acknowledged in this run, with no dirty local edit.
+
+A failed pull/push, newer local listen or rewind, manual adoption, or setting
+change prevents automatic deletion. A single persistent deletion journal keeps
+the acknowledgment/progress record through an interrupted removal. Progress is
+removed only after audio deletion and only if the exact acknowledged clean entry
+still matches. Ordinary sync also checks an interrupted journal: if ownership,
+settings or progress no longer permit removal, any surviving audio is made visible
+again, even while unplugged or after the final show is disabled. Completing a
+still-authorized removal requires fresh progress acknowledgment and a successful
+discovery. Explicit user deletions keep their existing behavior.
+
+## Validation
+
+Watch tests cover settings bounds, account isolation, manual adoption, scheduling,
+cancellation, queue limits, malformed responses, and retention acknowledgments.
+Sidecar tests cover authorization, available/started/finished episodes, ordering,
+budgets, malformed upstream responses, session refresh and legacy compatibility.
+Commands, results and resource measurements are recorded in the
+[b42 validation report](podcast-auto-sync-validation.md).
+
+Physical validation is still required on Venu 4 45 mm: new episodes while idle,
+charging at full battery, phone absent, Wi-Fi unavailable/reconnected,
+unplugging/cancelling mid-sync, repeated firmware polls, and overnight retries.

@@ -23,6 +23,11 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        if ((id instanceof Toybox.Lang.String) && id.equals("podcasts")) {
+            PodcastMenus.manage();
+            return;
+        }
+
         // "Play downloaded" -> the book list (PlayMenu). Picking a book there
         // offers Resume / Play from start / Delete. A normal, always-reachable
         // tap (NOT Menu2 onDone(), which never fires on a plain Menu2).

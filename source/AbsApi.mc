@@ -130,6 +130,13 @@ module AbsApi {
             cb);
     }
 
+    // Bounded podcast discovery: one show, at most five slim episode rows.
+    function getPodcastCandidates(showId, limit, order, cb) {
+        Communications.makeWebRequest(sidecarBase() + "/podcasts/candidates",
+            { "show" => showId, "limit" => limit, "order" => order, "token" => authToken() },
+            getOptions(), cb);
+    }
+
     // One CHUNK of a file as a small AAC chunk in a REAL M4A container (the
     // container is what gives the native player a track duration - see
     // SyncDelegate). fmt=m4a3 requires speed-aware sidecar support; an older

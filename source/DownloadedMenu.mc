@@ -18,6 +18,9 @@ class DownloadedMenu extends WatchUi.Menu2 {
         // logs the user in first if they aren't configured yet.
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.browseLibrary), null, "browse", null));
 
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.podcastDownloads),
+            Application.Storage.getValue("podcastStatus"), "podcasts", null));
+
         var index = Application.Storage.getValue(Store.BOOK_INDEX);
         if (index == null) { index = []; }
 
@@ -35,7 +38,7 @@ class DownloadedMenu extends WatchUi.Menu2 {
         // which won't have fired in the minute between finishing on the watch and
         // picking up in the car - and there is no wake-on-reconnect event to make
         // it instant. This is the deterministic "sync before I switch" control.
-        if (AbsApi.isConfigured() && (index.size() > 0)) {
+        if (AbsApi.isConfigured()) {
             addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.syncNow), null, "syncnow", null));
         }
 
