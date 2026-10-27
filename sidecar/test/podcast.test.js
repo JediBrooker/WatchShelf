@@ -35,13 +35,15 @@ const jwt = () => {
   return `h.${payload}.s`;
 };
 
-let abs, absPort, side, sidePort, sid;
+let abs, absPort, side, sidePort, sid, lastAuth;
 const absCalls = [];
 
 function mockAbs() {
   return http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     absCalls.push(`${req.method} ${u.pathname}`);
+    lastAuth = req.headers.authorization;
+    if (lastAuth === 'Bearer bad-key') { res.writeHead(401).end('Unauthorized'); return; }
     const send = (o, code = 200) => {
       res.writeHead(code, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(o));
@@ -244,4 +246,16 @@ test('book libraries are unaffected', async () => {
 
   const { body: cont } = await get(`/continue?lib=${BOOK_LIB}&token=${sid}`);
   assert.deepEqual(cont.books, [{ id: BOOK, title: 'A Book', author: 'An Author' }]);
+});
+
+// Issue #80: an ABS API key from the phone settings (absApiKey) arrives as
+// ?token= but is not a sidecar session - it must reach ABS as the bearer.
+test('an ABS API key in ?token= is passed through to ABS', async () => {
+  const { status, body } = await get('/libraries?token=my-api-key');
+  assert.equal(status, 200);
+  assert.equal(lastAuth, 'Bearer my-api-key');
+  assert.ok(body.libraries.length > 0);
+  const bad = await get('/libraries?token=bad-key');
+  assert.equal(bad.status, 401);
+  assert.equal(bad.body.error, 'ABS 401');
 });
