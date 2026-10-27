@@ -88,12 +88,12 @@ class DownloadedMenu extends WatchUi.Menu2 {
         // Individual books now live under "Play downloaded" (PlayMenu), each with
         // its own Resume / Play from start / Delete actions - not as rows here.
 
-        // Last row: app name + build, "Made in Australia" and the flag. A single
-        // small bitmap in this short, fixed menu - not the per-row icons that
-        // OOM'd the Browse list. Its id has no handler, so selecting it does nothing.
-        addItem(new WatchUi.IconMenuItem(WatchUi.loadResource(Rez.Strings.AppName) + " " + Versions.tag,
-            WatchUi.loadResource(Rez.Strings.madeInAustralia), "about",
-            WatchUi.loadResource(Rez.Drawables.flagAu), null));
+        // Keep the about row text-only. The b40 bitmap IconMenuItem triggered
+        // a firmware-side startup crash on fenix847mm (issue #82), after the
+        // menu constructor returned. A plain MenuItem uses the same rendering
+        // path as the working rows above. Selecting it still does nothing.
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.AppName) + " " + Versions.tag,
+            WatchUi.loadResource(Rez.Strings.madeInAustralia), "about", null));
     }
 
     function hasQueued() {

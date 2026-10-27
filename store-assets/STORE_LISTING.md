@@ -1,7 +1,8 @@
-# Connect IQ store listing — b39
+# Connect IQ store listing — b41 (prepared, not yet published)
 
-Copy blocks below straight into the store fields. Keep this file updated with
-the listing so the two never drift.
+Upload the matching b41 package before copying these blocks into the store
+fields. Updating this file or the store text does not update the installed
+binary. Confirm the accepted package and the on-watch build tag match the notes.
 
 **The store rejects `<` and `>`** ("Illegal characters found") - the menu
 separators here are spelled out in words for that reason. Keep every block
@@ -19,7 +20,7 @@ WatchShelf
 ## Short description
 
 ```
-Listen to your own Audiobookshelf library on your watch — offline, with two-way progress sync.
+Listen to your own Audiobookshelf library on your watch - offline, with two-way progress sync.
 ```
 
 ---
@@ -70,7 +71,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b39
+## What's New — b41
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -80,6 +81,8 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
+WATCHSHELF b41
+
 UPDATE YOUR SIDECAR FIRST
 
 This release needs a newer WatchShelf sidecar. If you update the watch app
@@ -123,6 +126,14 @@ NEW
   or ARM NAS works without building anything.
 
 FIXED
+
+  Startup crash introduced in b40
+  The "Made in Australia" row now uses plain text. Its flag icon triggered
+  "Media Error Occurred" when opening the app on fenix 8 47 mm AMOLED.
+
+  Watch compatibility
+  The package includes all 93 supported audio-provider targets from the
+  October 2026 device catalog, including the fenix 9 family.
 
   Long books would not play
   Books with several hundred parts could hang on a blank player screen or fail
