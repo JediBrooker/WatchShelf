@@ -9,17 +9,19 @@ whole library, download a book, and listen offline — with two-way progress syn
 > "Made in Australia" row to avoid the startup crash reported on fēnix 8 47 mm
 > AMOLED. Physical-watch confirmation is still needed. The source build tag is
 > separate from the version available in the Connect IQ Store.
+> This update also includes the sleep timer and fixes phone API-key setup in
+> the sidecar. Update both components to get all fixes.
 >
-> **Previous validation (build `b39`):** compiles clean across the supported watch package and is
-> exercised end-to-end in the Forerunner 965 simulator. Login, Continue Listening,
-> tail-only downloads, part-to-part playback, whole-book progress, completion, and
-> two-way ABS progress sync are covered by the current test flow.
+> **Validation (28 October 2026):** all 151 device/firmware builds across the
+> 93 manifest targets compile with SDK 9.2.0. All 45 watch tests pass in the
+> fēnix 8 47 mm simulator, including sleep-timer settings and native resume;
+> all 18 sidecar tests pass, including API-key authentication and real audio
+> transcoding. The replacement menu row also renders in that simulator.
 >
 > Since b35: a long-book playback crash fixed, on-watch login no longer requires a
 > system keyboard (vívoactive 4 / 4s, Venu / Venu D), an optional reverse-proxy
 > auth header, podcast libraries, prebuilt multi-arch sidecar images, and live
-> progress pushes that no longer clobber another device's newer position. The
-> unit suite (`monkeyc -t`) is 27 tests, plus 11 sidecar tests (`npm test`).
+> progress pushes that no longer clobber another device's newer position.
 >
 > b37/b38 add per-book playback speed (1.0x–2.0x), chosen from a downloaded
 > book's playback menu. The watch keeps the previous encoding when there is
@@ -94,6 +96,10 @@ same guide.
   `source/Chunks.mc`.
 - **Playback speed** is selected per book (1.0x–2.0x); progress stays on the
   Audiobookshelf source timeline.
+- **Sleep timer** is off by default. Set 5 minutes to 2 hours from a downloaded
+  book's menu or the phone settings. It stops at the end of the current part,
+  up to about 3 minutes after the chosen time. Starting or resuming playback
+  restarts the countdown; changing the setting updates the active timer.
 - **State** lives in `Application.Storage` as chunk *params* (not URLs) to stay small.
 - **Playback** is restricted to the selected book. The native player still owns its
   part-local time bar, while the scrolling artist line shows `% of book`.
@@ -137,7 +143,9 @@ Podcast libraries show up alongside audiobooks with no extra setup: the sidecar
 presents each **show** where authors normally appear and each **episode** as a
 book, so browsing, downloading and two-way progress sync all work as they do for
 books. Episodes must already be downloaded in ABS (or auto-download enabled for
-the show) before the watch can fetch them.
+the show) before the watch can fetch them. Downloads are currently selected
+manually; automatic show subscriptions are described in the
+[podcast auto-sync proposal](docs/podcast-auto-sync.md).
 
 ## Known limitations
 

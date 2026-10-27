@@ -113,11 +113,17 @@ Upload `bin/WatchShelf.iq` as an update to the existing Connect IQ Store app, us
 the existing app ID and signing key. The manifest change alone does not update
 the live store listing. Check the store's compatible-device list after acceptance.
 
-Compatibility build verified on 6 October 2026 with SDK 9.2.0: all 151 eligible
+Compatibility build rechecked for b41 on 28 October 2026 with SDK 9.2.0: all 151 eligible
 device/firmware builds across 93 manifest targets passed. Warnings were limited
 to automatic launcher-icon scaling and one D2 Delta PX firmware variant on API
 3.0.3 being skipped (below our 3.1.0 minimum). This verifies compilation, not
 physical-watch playback or acceptance of the update by the store.
+
+b41 also passed all 45 Monkey C tests on the `fenix847mm` simulator and all
+18 sidecar tests (`npm test` in `sidecar/`). The text-only About row renders on
+that simulator. Confirm the startup-crash fix on the reported physical watch
+and sleep-timer behavior during native playback before publishing; the `.iq`
+package and prepared store notes do not mean the Store has been updated.
 
 ## Make targets
 

@@ -106,6 +106,13 @@ class ContentDelegate extends Media.ContentDelegate {
     // (Media.SONG_EVENT_PLAYBACK_NOTIFY=3, COMPLETE=4, STOP=5, PAUSE=6)
     // rather than magic numbers.
     function onSong(refId, songEvent, playbackPosition) {
+        // The native play button resumes the same delegate after a pause;
+        // unlike the book-menu Resume action it does not run initialize().
+        // Do not use START here: that also occurs at every part boundary.
+        if (songEvent == Media.SONG_EVENT_RESUME) {
+            SleepTimer.arm();
+            return;
+        }
         if (songEvent == Media.SONG_EVENT_START) {
             if (mAwaitingResetStart) {
                 mSessionFinishedItem = null;

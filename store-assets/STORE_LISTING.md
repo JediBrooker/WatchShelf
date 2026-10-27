@@ -54,6 +54,7 @@ WHAT YOU CAN DO
   - Podcast libraries work too - each show browses like an author, each
     episode like a book
   - Chapter skip, 30-second jumps, and whole-book progress on the player
+  - Optional sleep timer, from 5 minutes to 2 hours; stops after the current part
   - Two-way progress sync: finish a chapter on the watch, carry on in the car
   - Log in on the watch; only a token is stored, never your password
   - Optional shared-secret header so a reverse proxy can lock the sidecar to
@@ -97,6 +98,11 @@ Everything below is new since b35.
 
 NEW
 
+  Sleep timer
+  Choose Off, 5, 15, 20, 30, 45, 60, 90 or 120 minutes from a downloaded
+  book's menu or phone settings. Playback stops at the end of the current part,
+  up to about 3 minutes later. Starting or resuming playback restarts the timer.
+
   Set up from your phone
   Garmin Connect, then WatchShelf, then Settings, takes your WatchShelf URL
   and an Audiobookshelf API key, and the watch then needs no typing at all.
@@ -127,6 +133,11 @@ NEW
 
 FIXED
 
+  Phone API-key setup
+  The updated sidecar accepts Audiobookshelf API keys entered in Garmin Connect
+  settings, including for SSO accounts. Logging out and back in is no longer
+  necessary. Malformed credentials are rejected before they reach the downloader.
+
   Startup crash introduced in b40
   The "Made in Australia" row now uses plain text. Its flag icon triggered
   "Media Error Occurred" when opening the app on fenix 8 47 mm AMOLED.
@@ -153,6 +164,6 @@ FIXED
   appears under Downloaded. It is diagnostic only - if you see it, please open
   an issue on GitHub.
 
-With thanks to @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
+With thanks to @alt-13, @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
 features make up most of this release.
 ```

@@ -97,11 +97,15 @@ async function refreshSession(sid) {
   } catch (e) { return false; }
 }
 // A currently-valid accessToken for this session, refreshing PROACTIVELY when
-// the current one is within 60s of expiry (or already gone). null => no session
-// or the refresh token itself is dead (user must log in again - rare, ~30d idle).
+// the current one is within 60s of expiry (or already gone). null => malformed
+// credential or a stored session that cannot refresh (log in again).
 // A token that is NOT one of our sessions is an ABS API key from the phone
 // settings (absApiKey, issue #80): pass it through and let ABS validate it.
 async function freshAccess(sid) {
+  // Both fetch() and ffmpeg receive this as a Bearer credential. Reject invalid
+  // token characters first: CR/LF can inject ffmpeg HTTP headers and NUL makes
+  // spawn() throw before a child exists to report an error.
+  if (typeof sid !== 'string' || !/^[A-Za-z0-9._~+/-]+=*$/.test(sid)) { return null; }
   const s = sessions[sid];
   if (!s) { return sid || null; }
   if (jwtExp(s.access) - Math.floor(Date.now() / 1000) < 60) {

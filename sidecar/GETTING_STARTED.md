@@ -694,3 +694,34 @@ that before relying on it.
   open **Downloaded → Proxy header** on the watch and leave the name empty to
   turn it off, then remove the rule from your proxy and try again.
 
+### Stuck on “Searching for Wi-Fi” when downloading
+
+Browsing can reach the sidecar through your phone's Bluetooth connection;
+downloading audio needs the watch's own Wi-Fi connection. Seeing your library
+therefore does not establish that watch Wi-Fi works. The searching screen belongs
+to Garmin's connection flow, so this symptom alone does not identify a WatchShelf
+or sidecar bug.
+
+1. Confirm the network is saved for the **watch**, not just your phone. For a
+   Forerunner 645 Music, use **Garmin Connect → Garmin Devices → your watch →
+   General → Wi-Fi Networks**. Add/reconnect to the network and note any connection
+   error; use the watch's Wi-Fi test if your model provides one. See Garmin's
+   [645 Music connection instructions](https://www8.garmin.com/manuals/webhelp/forerunner645/EN-GB/GUID-575CE1BC-7F3C-4024-AD75-51A64A4F0B72.html).
+2. Retry near the router with the watch on its charger. Check Wi-Fi is enabled
+   and any battery-saving mode is not disabling it. Update the watch firmware and
+   WatchShelf. These are Garmin's recommended
+   [music-sync checks](https://support.garmin.com/id-ID/?faq=NP5CwjAhVN36MoazFOSrxA&searchType=noProduct).
+3. Restart the watch, then try another compatible secure Wi-Fi network or personal
+   hotspot. If that works, check your original network's compatibility and saved
+   credentials using Garmin's [Wi-Fi setup and troubleshooting guide](https://support.garmin.com/en-IN/?faq=86QHylLwpf6iG9UtYr4fY7).
+
+If it still stalls, include the exact watch model (including **Music**), firmware,
+WatchShelf version/build and install method, sidecar version/image, last working
+version if known, and the results above in your issue. Note whether it ever moves
+past searching or displays an error code. At the time of one retry, check sidecar
+logs and your proxy's access log for a `/files` request followed by `/transcode`
+(the audio download); report their HTTP status codes or that no request appeared.
+The sidecar does not log every successful request, so quiet container logs alone
+do not prove nothing reached it. Remove tokens, passwords, and secret headers
+before sharing logs, including tokens in URL query strings.
+
