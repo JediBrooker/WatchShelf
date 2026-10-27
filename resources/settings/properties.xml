@@ -4,4 +4,5 @@
     <property id="absApiKey"    type="string"></property>
     <property id="absProxyHeader" type="string"></property>
     <property id="absProxySecret" type="string"></property>
+    <property id="sleepMinutes"   type="number">0</property>
 </properties>

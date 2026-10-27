@@ -73,6 +73,7 @@ module Settings {
     const API_KEY     = "absApiKey";     // ABS long-lived API key, used as Bearer token
     const PROXY_NAME  = "absProxyHeader";  // e.g. "X-Client-Authentication"
     const PROXY_VALUE = "absProxySecret";  // the shared secret the proxy checks
+    const SLEEP_MINUTES = "sleepMinutes";  // sleep timer, 0 = off (SleepTimer.mc)
 }
 
 // Bump `current` whenever the stored data shape changes so stale caches reset.
