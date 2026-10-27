@@ -27,4 +27,19 @@
              prompt="@Strings.settingProxySecretPrompt">
         <settingConfig type="alphaNumeric"/>
     </setting>
+    <!-- Sleep timer (issue #77). Same property the watch's per-book menu
+         picker edits, so either side can set it. Values match SleepTimer.ALL. -->
+    <setting propertyKey="@Properties.sleepMinutes" title="@Strings.sleepTimer">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.sleepOff</listEntry>
+            <listEntry value="5">@Strings.sleep5</listEntry>
+            <listEntry value="15">@Strings.sleep15</listEntry>
+            <listEntry value="20">@Strings.sleep20</listEntry>
+            <listEntry value="30">@Strings.sleep30</listEntry>
+            <listEntry value="45">@Strings.sleep45</listEntry>
+            <listEntry value="60">@Strings.sleep60</listEntry>
+            <listEntry value="90">@Strings.sleep90</listEntry>
+            <listEntry value="120">@Strings.sleep120</listEntry>
+        </settingConfig>
+    </setting>
 </settings>

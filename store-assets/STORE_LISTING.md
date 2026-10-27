@@ -1,7 +1,8 @@
-# Connect IQ store listing — b39
+# Connect IQ store listing — b41 (prepared, not yet published)
 
-Copy blocks below straight into the store fields. Keep this file updated with
-the listing so the two never drift.
+Upload the matching b41 package before copying these blocks into the store
+fields. Updating this file or the store text does not update the installed
+binary. Confirm the accepted package and the on-watch build tag match the notes.
 
 **The store rejects `<` and `>`** ("Illegal characters found") - the menu
 separators here are spelled out in words for that reason. Keep every block
@@ -19,7 +20,7 @@ WatchShelf
 ## Short description
 
 ```
-Listen to your own Audiobookshelf library on your watch — offline, with two-way progress sync.
+Listen to your own Audiobookshelf library on your watch - offline, with two-way progress sync.
 ```
 
 ---
@@ -53,6 +54,7 @@ WHAT YOU CAN DO
   - Podcast libraries work too - each show browses like an author, each
     episode like a book
   - Chapter skip, 30-second jumps, and whole-book progress on the player
+  - Optional sleep timer, from 5 minutes to 2 hours; stops after the current part
   - Two-way progress sync: finish a chapter on the watch, carry on in the car
   - Log in on the watch; only a token is stored, never your password
   - Optional shared-secret header so a reverse proxy can lock the sidecar to
@@ -70,7 +72,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b39
+## What's New — b41
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -80,6 +82,8 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
+WATCHSHELF b41
+
 UPDATE YOUR SIDECAR FIRST
 
 This release needs a newer WatchShelf sidecar. If you update the watch app
@@ -93,6 +97,11 @@ Or switch to the prebuilt image, new in this release:
 Everything below is new since b35.
 
 NEW
+
+  Sleep timer
+  Choose Off, 5, 15, 20, 30, 45, 60, 90 or 120 minutes from a downloaded
+  book's menu or phone settings. Playback stops at the end of the current part,
+  up to about 3 minutes later. Starting or resuming playback restarts the timer.
 
   Set up from your phone
   Garmin Connect, then WatchShelf, then Settings, takes your WatchShelf URL
@@ -124,6 +133,19 @@ NEW
 
 FIXED
 
+  Phone API-key setup
+  The updated sidecar accepts Audiobookshelf API keys entered in Garmin Connect
+  settings, including for SSO accounts. Logging out and back in is no longer
+  necessary. Malformed credentials are rejected before they reach the downloader.
+
+  Startup crash introduced in b40
+  The "Made in Australia" row now uses plain text. Its flag icon triggered
+  "Media Error Occurred" when opening the app on fenix 8 47 mm AMOLED.
+
+  Watch compatibility
+  The package includes all 93 supported audio-provider targets from the
+  October 2026 device catalog, including the fenix 9 family.
+
   Long books would not play
   Books with several hundred parts could hang on a blank player screen or fail
   outright. Building the playlist was too slow and the watch killed it. Found
@@ -142,6 +164,6 @@ FIXED
   appears under Downloaded. It is diagnostic only - if you see it, please open
   an issue on GitHub.
 
-With thanks to @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
+With thanks to @alt-13, @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
 features make up most of this release.
 ```

@@ -42,6 +42,11 @@ class WatchShelfApp extends Application.AudioContentProviderApp {
         return new ContentDelegate(args);
     }
 
+    // Phone settings can arrive while the playback delegate is still alive.
+    function onSettingsChanged() {
+        SleepTimer.settingsChanged();
+    }
+
     // System -> sync: background download engine. getSyncDelegate() is the
     // sample's mechanism (Media.SyncDelegate). It is deprecated in newer SDKs in
     // favour of the app itself implementing Communications.SyncDelegate, but we

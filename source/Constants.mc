@@ -73,6 +73,7 @@ module Settings {
     const API_KEY     = "absApiKey";     // ABS long-lived API key, used as Bearer token
     const PROXY_NAME  = "absProxyHeader";  // e.g. "X-Client-Authentication"
     const PROXY_VALUE = "absProxySecret";  // the shared secret the proxy checks
+    const SLEEP_MINUTES = "sleepMinutes";  // sleep timer, 0 = off (SleepTimer.mc)
 }
 
 // Bump `current` whenever the stored data shape changes so stale caches reset.
@@ -104,5 +105,6 @@ module Versions {
     // with no migration at all. b39 changes no stored shape at all - it only
     // adds a first-run setup chooser and wires up settings prompts. b40 changes
     // no stored shape either - it only adds the "Made in Australia" menu row.
-    const tag = "b40";
+    // b41 makes that row text-only to avoid a firmware-side startup crash.
+    const tag = "b41";
 }

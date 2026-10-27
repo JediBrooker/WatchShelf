@@ -31,6 +31,9 @@ class BookActionMenu extends WatchUi.Menu2 {
         // back to it instant. See BookStore's variant layer.
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.playbackSpeed),
             PlaybackSpeed.label(BookStore.activeSpeed(itemId)), "speed", null));
+        // Global, not per-book: it is about tonight, not about this book.
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.sleepTimer),
+            SleepTimer.label(SleepTimer.minutes()), "sleep", null));
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteBook), null, "delete", null));
     }
 }
@@ -89,6 +92,39 @@ class BookSpeedChoiceDelegate extends WatchUi.Menu2InputDelegate {
     }
 }
 
+// Sleep timer picker (same options as Audiobookshelf's). Global setting.
+class SleepChoiceMenu extends WatchUi.Menu2 {
+    function initialize() {
+        Menu2.initialize({ :title => WatchUi.loadResource(Rez.Strings.sleepTimer) });
+        var current = SleepTimer.minutes();
+        for (var i = 0; i < SleepTimer.ALL.size(); ++i) {
+            var m = SleepTimer.ALL[i];
+            var sub = (m == current) ? WatchUi.loadResource(Rez.Strings.sleepCurrent) : null;
+            addItem(new WatchUi.MenuItem(SleepTimer.label(m), sub, m.toString(), null));
+        }
+    }
+}
+
+class SleepChoiceDelegate extends WatchUi.Menu2InputDelegate {
+    private var mRow; // the Sleep timer row in the book menu, to refresh its label
+
+    function initialize(row) {
+        Menu2InputDelegate.initialize();
+        mRow = row;
+    }
+
+    function onSelect(item) {
+        var m = item.getId().toNumber();
+        SleepTimer.setMinutes(m);
+        mRow.setSubLabel(SleepTimer.label(m));
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
+
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+    }
+}
+
 class SpeedFetchConfirmDelegate extends WatchUi.ConfirmationDelegate {
     private var mItemId;
     private var mSpeed;
@@ -123,6 +159,12 @@ class BookActionMenuDelegate extends WatchUi.Menu2InputDelegate {
         if ((id instanceof Toybox.Lang.String) && id.equals("speed")) {
             WatchUi.pushView(new BookSpeedChoiceMenu(mItemId),
                 new BookSpeedChoiceDelegate(mItemId), WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        if ((id instanceof Toybox.Lang.String) && id.equals("sleep")) {
+            WatchUi.pushView(new SleepChoiceMenu(), new SleepChoiceDelegate(item),
+                WatchUi.SLIDE_LEFT);
             return;
         }
 
