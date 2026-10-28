@@ -396,8 +396,7 @@ module BookStore {
     function addLookup(itemId, order, out) {
         var meta = get(itemId);
         if (meta == null) { return; }
-        var starts = Chunks.starts(meta["durs"]);
-        var spans = Chunks.spans(meta["durs"]);
+
         var firstChunk = first(itemId);
         var local = 0;
         var p = 0;
@@ -406,9 +405,9 @@ module BookStore {
             if (arr == null) { break; }
             for (var i = 0; i < arr.size(); ++i) {
                 var k = firstChunk + local;
-                if ((arr[i] != null) && (k < starts.size())) {
-                    var span = (k < spans.size()) ? spans[k] : null;
-                    out[arr[i]] = [order, starts[k], span, k];
+                var chunk = (arr[i] != null) ? Chunks.at(meta["durs"], k) : null;
+                if (chunk != null) {
+                    out[arr[i]] = [order, chunk["start"], chunk["cend"] - chunk["cstart"], k];
                 }
                 local += 1;
             }
@@ -420,8 +419,7 @@ module BookStore {
     function appendPlaylist(itemId, order, playlist, orders, startsOut, spansOut, globalsOut) {
         var meta = get(itemId);
         if (meta == null) { return; }
-        var starts = Chunks.starts(meta["durs"]);
-        var spans = Chunks.spans(meta["durs"]);
+
         var firstChunk = first(itemId);
         var local = 0;
         var p = 0;
@@ -430,11 +428,12 @@ module BookStore {
             if (arr == null) { break; }
             for (var i = 0; i < arr.size(); ++i) {
                 var k = firstChunk + local;
-                if ((arr[i] != null) && (k < starts.size())) {
+                var chunk = (arr[i] != null) ? Chunks.at(meta["durs"], k) : null;
+                if (chunk != null) {
                     playlist.add(arr[i]);
                     orders.add(order);
-                    startsOut.add(starts[k]);
-                    spansOut.add((k < spans.size()) ? spans[k] : null);
+                    startsOut.add(chunk["start"]);
+                    spansOut.add(chunk["cend"] - chunk["cstart"]);
                     globalsOut.add(k);
                 }
                 local += 1;

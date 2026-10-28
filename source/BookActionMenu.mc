@@ -34,6 +34,9 @@ class BookActionMenu extends WatchUi.Menu2 {
         // Global, not per-book: it is about tonight, not about this book.
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.sleepTimer),
             SleepTimer.label(SleepTimer.minutes()), "sleep", null));
+        if (PodcastSettings.owner(itemId) != null) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.podcastKeepOnWatch), null, "keep", null));
+        }
         addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.deleteBook), null, "delete", null));
     }
 }
@@ -165,6 +168,13 @@ class BookActionMenuDelegate extends WatchUi.Menu2InputDelegate {
         if ((id instanceof Toybox.Lang.String) && id.equals("sleep")) {
             WatchUi.pushView(new SleepChoiceMenu(), new SleepChoiceDelegate(item),
                 WatchUi.SLIDE_LEFT);
+            return;
+        }
+
+        if ((id instanceof Toybox.Lang.String) && id.equals("keep")) {
+            PodcastSettings.adopt(mItemId);
+            Notify.flash(Rez.Strings.podcastKept);
+            WatchUi.popView(WatchUi.SLIDE_RIGHT);
             return;
         }
 

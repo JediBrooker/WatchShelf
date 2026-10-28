@@ -30,12 +30,39 @@ class ProgressSync {
     private var mCurPos;
     private var mCurFinished;
     private var mCb;
+    private var mStopped;
+    private var mPullOk;
+    private var mRetentionCount;
+    private var mBlocked;
+    private var mAcks;
+    private var mSerial;
+    private var mWaiting;
 
     function initialize() {
         mPulls = [];
         mPushes = [];
         mPhase = 0;
         mIdx = 0;
+        mStopped = false;
+        mPullOk = {}; mRetentionCount = 0;
+        mBlocked = {};
+        mAcks = {};
+        mSerial = 0;
+        mWaiting = false;
+    }
+
+    function cancel() { mStopped = true; mCb = null; mWaiting = false; }
+    function acknowledgements() { return mAcks; }
+
+    function requestContext() {
+        mSerial += 1;
+        mWaiting = true;
+        return { "serial" => mSerial };
+    }
+    function accept(context) {
+        if (mStopped || !mWaiting || context["serial"] != mSerial) { return false; }
+        mWaiting = false;
+        return true;
     }
 
     function start(cb) {
@@ -44,6 +71,15 @@ class ProgressSync {
             var index = Application.Storage.getValue(Store.BOOK_INDEX);
             if (index == null) { index = []; }
             mPulls = index;
+            var pending = PodcastRetention.pending();
+            if (pending != null) {
+                // Recovery must receive one of the 50 bounded retention ack
+                // slots; placing it last could deadlock behind its own journal.
+                mPulls = [pending["item"]];
+                for (var i = 0; i < index.size(); ++i) {
+                    if (!index[i].equals(pending["item"])) { mPulls.add(index[i]); }
+                }
+            }
         } catch (e) {
             System.println("ProgressSync build failed: " + e.getErrorMessage());
             mPulls = [];
@@ -52,6 +88,7 @@ class ProgressSync {
     }
 
     function step() {
+        if (mStopped) { return; }
         try {
             if (mPhase == 0) {
                 if (mIdx >= mPulls.size()) {
@@ -64,7 +101,8 @@ class ProgressSync {
                 }
                 mCurId = mPulls[mIdx];
                 mIdx += 1;
-                AbsApi.getProgress(mCurId, method(:onPullDone));
+                var listener = new RequestDelegate(method(:onPullDone), requestContext());
+                requestPull(mCurId, listener.method(:onWebResponse));
                 return;
             }
 
@@ -82,8 +120,9 @@ class ProgressSync {
             // moving below ABS's completion threshold reopens a reread.
             var duration = bookDuration(mCurId);
             var finishValue = mCurFinished ? true : null;
-            AbsApi.postProgress(mCurId, e[0], duration, e[1],
-                finishValue, method(:onPushDone));
+            var listener = new RequestDelegate(method(:onPushDone), requestContext());
+            requestPush(mCurId, e[0], duration, e[1],
+                finishValue, listener.method(:onWebResponse));
         } catch (ex) {
             System.println("ProgressSync step failed: " + ex.getErrorMessage());
             // Never let a progress hiccup strand the sync - advance regardless.
@@ -92,16 +131,50 @@ class ProgressSync {
         }
     }
 
-    function onPullDone(code, data) {
+    function trackRetention(itemId, remoteFinished) {
+        if (!Progress.isFinished(itemId) && !remoteFinished) { return false; }
+        if (mPullOk.hasKey(itemId)) { return true; }
+        if (mRetentionCount >= 50) { return false; }
+        var owner = PodcastSettings.owner(itemId);
+        if (owner == null) { return false; }
+        var settings = PodcastSettings.get(owner["show"]);
+        if (!settings["enabled"] || !settings["removeFinished"]) { return false; }
+        mPullOk[itemId] = false; mRetentionCount += 1;
+        return true;
+    }
+
+    function requestPull(itemId, cb) { AbsApi.getProgress(itemId, cb); }
+    function requestPush(itemId, pos, duration, ts, finished, cb) {
+        AbsApi.postProgress(itemId, pos, duration, ts, finished, cb);
+    }
+
+    function onPullDone(code, data, context) {
+        if (!accept(context)) { return; }
         try {
-            if (code == 200) {
-                var pr = AbsApi.readProgress(data); // [posSec, tsSec, finished] or null
-                if (pr != null) {
-                    var finished = (pr.size() > 2) ? pr[2] : null;
-                    Progress.mergeServer(mCurId, pr[0], pr[1], finished);
+            var retain = trackRetention(mCurId, Downloads.validProgress(data) && data["isFinished"]);
+            if ((code == 200) && Downloads.validProgress(data)) {
+                var pr = AbsApi.readProgress(data);
+                var before = Progress.get(mCurId);
+                // A dirty local listen displaced by the conflict policy may be
+                // valuable even if the winner is finished. Never prune it in
+                // this exchange; the user must get a later successful check.
+                if (retain && (before != null) && before[2] && (pr[1] > before[1])) {
+                    mBlocked[mCurId] = true;
+                }
+                if (retain) { mPullOk[mCurId] = true; }
+                Progress.mergeServer(mCurId, pr[0], pr[1], pr[2]);
+                var now = Progress.get(mCurId);
+                if (retain && (now != null) && !now[2] && (now[0] == pr[0])
+                    && (Progress.entryFinished(now) == pr[2]) && (mBlocked[mCurId] != true)) {
+                    mAcks[mCurId] = [now[0], now[1], Progress.entryFinished(now)];
                 }
             }
+            // An empty, valid server response authorizes a later push but is
+            // never itself evidence that finished local progress was received.
+            else if ((code == 200) && (data instanceof Toybox.Lang.Dictionary)
+                && (data.size() == 0) && retain) { mPullOk[mCurId] = true; }
         } catch (ex) {
+            if (mPullOk.hasKey(mCurId)) { mPullOk[mCurId] = false; }
             System.println("ProgressSync pull failed: " + ex.getErrorMessage());
         }
         step();
@@ -116,15 +189,23 @@ class ProgressSync {
         return (total > 0) ? total : null;
     }
 
-    function onPushDone(code, data) {
+    function onPushDone(code, data, context) {
+        if (!accept(context)) { return; }
         if (code == 200) {
             Progress.markClean(mCurId, mCurTs, mCurPos, mCurFinished);
-        }
-        else { System.println("ProgressSync push failed: " + code); }
+            var now = Progress.get(mCurId);
+            if ((mPullOk[mCurId] == true) && (mBlocked[mCurId] != true)
+                && (now != null) && !now[2] && now[0] == mCurPos && now[1] == mCurTs
+                && Progress.entryFinished(now) == mCurFinished) {
+                mAcks[mCurId] = [now[0], now[1], mCurFinished];
+            }
+        } else { System.println("ProgressSync push failed: " + code); }
         step();
     }
 
     function finish() {
+        if (mStopped) { return; }
+        mStopped = true;
         if (mCb != null) {
             var cb = mCb;
             mCb = null;

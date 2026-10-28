@@ -106,5 +106,5 @@ module Versions {
     // adds a first-run setup chooser and wires up settings prompts. b40 changes
     // no stored shape either - it only adds the "Made in Australia" menu row.
     // b41 makes that row text-only to avoid a firmware-side startup crash.
-    const tag = "b41";
+    const tag = "b42";
 }

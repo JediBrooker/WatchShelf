@@ -1,6 +1,7 @@
-# Connect IQ store listing — b41 (prepared, not yet published)
+# Connect IQ store listing — b42 (prepared, not yet published)
 
-Upload the matching b41 package before copying these blocks into the store
+Physical Venu 4 charging and unattended Wi-Fi behavior still need validation.
+Upload the matching b42 package before copying these blocks into the store
 fields. Updating this file or the store text does not update the installed
 binary. Confirm the accepted package and the on-watch build tag match the notes.
 
@@ -51,8 +52,10 @@ WHAT YOU CAN DO
   - Download only the part you have not heard yet
   - Choose playback speed per book - 1.0x, 1.25x, 1.5x, 1.75x or 2.0x - from
     the book's own menu, after it is already on your watch
-  - Podcast libraries work too - each show browses like an author, each
-    episode like a book
+  - Browse podcast shows and episodes; optionally keep 1-5 unfinished episodes
+    per show, with download order and speed choices
+  - Optional removal of finished automatic episodes after progress is confirmed;
+    Keep on watch protects an episode from automatic removal
   - Chapter skip, 30-second jumps, and whole-book progress on the player
   - Optional sleep timer, from 5 minutes to 2 hours; stops after the current part
   - Two-way progress sync: finish a chapter on the watch, carry on in the car
@@ -64,6 +67,8 @@ GOOD TO KNOW
   - Downloads take a while. A long book is many small chunks by design - that
     is what keeps it within a watch's memory.
   - Podcast episodes must already be downloaded in Audiobookshelf.
+  - Automatic podcast downloads start off and request sync while charging.
+    Garmin controls the timing; Sync now also works without charging.
   - The player's time bar covers the current part; whole-book percentage is
     shown on the artist line.
 
@@ -72,7 +77,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b41
+## What's New — b42
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -82,7 +87,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
-WATCHSHELF b41
+WATCHSHELF b42
 
 UPDATE YOUR SIDECAR FIRST
 
@@ -91,12 +96,19 @@ without updating the sidecar, your downloads will fail until you do.
 
   docker compose pull && docker compose up -d
 
-Or switch to the prebuilt image, new in this release:
-  ghcr.io/jedibrooker/watchshelf:latest   (amd64 and arm64)
+Prebuilt image: ghcr.io/jedibrooker/watchshelf:latest (amd64 and arm64).
 
-Everything below is new since b35.
+New since b35:
 
 NEW
+
+  Automatic podcast downloads (off by default)
+  Choose a podcast library, Shows, a show, then Automatic downloads. Keep 1-5
+  unfinished episodes per show, with order and speed choices. Existing unfinished
+  episodes stay. Manage up to 10 shows under Downloaded, Podcast downloads.
+  Optional finished-episode removal waits for confirmed progress; Keep on watch
+  protects an episode. Automatic sync requires charging; Garmin decides timing.
+  Sync now also works without charging. Requires the updated sidecar.
 
   Sleep timer
   Choose Off, 5, 15, 20, 30, 45, 60, 90 or 120 minutes from a downloaded

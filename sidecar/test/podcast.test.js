@@ -172,12 +172,13 @@ test('a podcast library is reported to the watch as a book library', async () =>
   // LibraryView.mc only lists libraries whose mediaType equals "book", so the
   // disguise is what makes podcasts reachable at all without a watch change.
   assert.equal(shows.mediaType, 'book');
+  assert.equal(shows.sourceMediaType, 'podcast');
   assert.equal(shows.name, 'Shows');
 });
 
 test('shows are offered as authors to drill into', async () => {
   const { body } = await get(`/authors?lib=${POD_LIB}&token=${sid}`);
-  assert.deepEqual(body.authors, [{ id: SHOW, name: 'My Show', count: 2 }]);
+  assert.deepEqual(body.authors, [{ id: SHOW, name: 'My Show', count: 2, podcast: true }]);
 });
 
 test('podcasts have no series or collections', async () => {
@@ -236,6 +237,7 @@ test('continue listening shims a podcast item to its in-progress episode', async
 test('book libraries are unaffected', async () => {
   const libs = (await get(`/libraries?token=${sid}`)).body.libraries;
   assert.equal(libs.find((l) => l.id === BOOK_LIB).mediaType, 'book');
+  assert.equal(libs.find((l) => l.id === BOOK_LIB).sourceMediaType, 'book');
 
   const { body: list } = await get(`/list?lib=${BOOK_LIB}&token=${sid}`);
   assert.deepEqual(list.books, [{ id: BOOK, title: 'A Book', author: 'An Author' }]);

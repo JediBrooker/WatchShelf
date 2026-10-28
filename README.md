@@ -5,18 +5,15 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Current source: build `b41`.** Replaces b40's flag icon with a plain text
-> "Made in Australia" row to avoid the startup crash reported on fēnix 8 47 mm
-> AMOLED. Physical-watch confirmation is still needed. The source build tag is
-> separate from the version available in the Connect IQ Store.
-> This update also includes the sleep timer and fixes phone API-key setup in
-> the sidecar. Update both components to get all fixes.
+> **Current source: build `b42`.** Adds optional per-show automatic podcast
+> downloads, download order/speed, and safe removal of finished automatic episodes.
+> Update the watch and sidecar together. Automatic downloads start off; native
+> charging and unattended Wi-Fi behavior still require physical-watch validation.
+> The source build tag is separate from the Connect IQ Store version.
 >
-> **Validation (28 October 2026):** all 151 device/firmware builds across the
-> 93 manifest targets compile with SDK 9.2.0. All 45 watch tests pass in the
-> fēnix 8 47 mm simulator, including sleep-timer settings and native resume;
-> all 18 sidecar tests pass, including API-key authentication and real audio
-> transcoding. The replacement menu row also renders in that simulator.
+> b41's startup-crash workaround, sleep timer and phone API-key fix remain included.
+> See the [b42 validation report](docs/podcast-auto-sync-validation.md) for tests,
+> resource measurements and remaining physical-watch checks.
 >
 > Since b35: a long-book playback crash fixed, on-watch login no longer requires a
 > system keyboard (vívoactive 4 / 4s, Venu / Venu D), an optional reverse-proxy
@@ -37,7 +34,7 @@ puts a tiny **Node + ffmpeg sidecar** in front of ABS, and the watch talks to **
 the sidecar**:
 
 - lean lists (`/libraries`, `/continue`, `/list`, `/authors`, `/series`,
-  `/collections`, `/files`) so nothing overflows the watch;
+  `/collections`, `/files`, `/podcasts/candidates`) so nothing overflows the watch;
 - `/transcode` cuts a small on-demand AAC/M4A chunk out of any file via HTTP Range
   (it never downloads the whole gigabyte), with a real container so the native
   player shows a position/time indicator;
@@ -139,17 +136,40 @@ library** → **Continue listening / All books / By author / By series / By coll
 
 ## Podcasts
 
-Podcast libraries show up alongside audiobooks with no extra setup: the sidecar
-presents each **show** where authors normally appear and each **episode** as a
-book, so browsing, downloading and two-way progress sync all work as they do for
-books. Episodes must already be downloaded in ABS (or auto-download enabled for
-the show) before the watch can fetch them. Downloads are currently selected
-manually; automatic show subscriptions are described in the
-[podcast auto-sync proposal](docs/podcast-auto-sync.md).
+Podcast libraries appear alongside audiobooks. Open a podcast library, choose
+**Shows**, then a show to browse its **Episodes** or set **Automatic downloads**.
+Episodes must already be downloaded in ABS; configure ABS feed downloads
+separately.
+
+Automatic downloads start **Off**. Enable up to **10 shows**, each keeping the
+latest **1–5 unfinished episodes**, with newest-first or oldest-first order and
+1.0x–2.0x download speed. Started episodes count as unfinished. Existing unfinished
+automatic downloads stay when newer episodes arrive; only vacancies are filled.
+Changing the show's speed applies to new additions.
+
+Automatic work requires charging when Garmin initiates it. **Sync now** allows an
+immediate check without charging. Successful checks have a six-hour cooldown;
+failed attempts retry after an hour. Garmin controls when system sync runs, so
+this is not a promise of an exact overnight start. Physical Venu 4 charging and
+Wi-Fi behavior still need validation.
+
+Manage subscriptions from **Downloaded → Podcast downloads**, even before any
+episode has downloaded. **Remove finished downloads** is separately off by
+default and removes only automatic episodes with confirmed server progress.
+**Keep on watch** or a manual download protects an episode from this removal.
+Turning a show off cancels its pending automatic jobs and keeps downloaded audio.
+Deleting an automatic episode or clearing its job excludes it from rediscovery;
+a show turns off if another exclusion would exceed 20, until explicitly
+re-enabled. Changing the server or login/API-key credential also requires
+re-enabling shows.
+
+See [automatic podcast downloads](docs/podcast-auto-sync.md) for the exact
+retention rules, bounded sidecar limits and remaining device checks. Older
+sidecars continue manual downloads and show **Update sidecar** for automatic sync.
 
 ## Known limitations
 
-- **Long books = many chunks** (a 25-hour book → ~50). Sync is slow but works; each
+- **Long books = many chunks** (a 25-hour book → ~500). Sync is slow but works; each
   chunk is a small independent download.
 - Garmin's native elapsed/total bar is scoped to the current downloaded part. WatchShelf
   adds whole-book percentage to the player metadata but cannot replace that native bar.

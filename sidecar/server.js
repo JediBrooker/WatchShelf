@@ -19,6 +19,7 @@
 //   GET /files?item&token        -> {title,author,files:[{ino,duration}],progress}
 //                                   (or {..,files:[],fileCount,tooManyFiles:true}
 //                                    when the book has > MAX_FILES audio files)
+//   GET /podcasts/candidates?show&limit&order&token -> bounded latest unfinished episodes
 //   GET /transcode?item&file&fmt&start&end&speed&token -> a small audio chunk
 //   GET /cover?item&token[&w]    -> the book's cover, hard-resized by us to a
 //                                   small JPEG (the watch decodes it in 512KB)
@@ -82,26 +83,26 @@ const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
 // Renew one session's accessToken using its (rotating) refreshToken. ABS
 // invalidates the old refreshToken and returns a NEW pair, so we MUST keep the
 // new one or the next refresh 401s.
-async function refreshSession(sid) {
+async function refreshSession(sid, budget = null) {
   const s = sessions[sid];
   if (!s || !s.refresh) { return false; }
   try {
-    const r = await fetch(`${ABS}/auth/refresh`, { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA }, signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
-    if (!r.ok) { return false; }
-    const u = (((await r.json()) || {}).user || {});
+    const r = await absFetch('/auth/refresh', { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA } }, budget);
+    if (!r.ok) { await r.body?.cancel(); return false; }
+    const u = (((await absResponseJson(r, budget, 65536)) || {}).user || {});
     if (!u.accessToken) { return false; }
     s.access = u.accessToken;
     if (u.refreshToken) { s.refresh = u.refreshToken; }   // rotation - keep the NEW one
     saveSessions();
     return true;
-  } catch (e) { return false; }
+  } catch (e) { if (budget) { throw e; } return false; }
 }
 // A currently-valid accessToken for this session, refreshing PROACTIVELY when
 // the current one is within 60s of expiry (or already gone). null => malformed
 // credential or a stored session that cannot refresh (log in again).
 // A token that is NOT one of our sessions is an ABS API key from the phone
 // settings (absApiKey, issue #80): pass it through and let ABS validate it.
-async function freshAccess(sid) {
+async function freshAccess(sid, budget = null) {
   // Both fetch() and ffmpeg receive this as a Bearer credential. Reject invalid
   // token characters first: CR/LF can inject ffmpeg HTTP headers and NUL makes
   // spawn() throw before a child exists to report an error.
@@ -109,7 +110,7 @@ async function freshAccess(sid) {
   const s = sessions[sid];
   if (!s) { return sid || null; }
   if (jwtExp(s.access) - Math.floor(Date.now() / 1000) < 60) {
-    if (!(await refreshSession(sid))) { return null; }
+    if (!(await refreshSession(sid, budget))) { return null; }
   }
   return sessions[sid] ? sessions[sid].access : null;
 }
@@ -384,15 +385,145 @@ async function episodeProgress(itemId, episode, sid) {
 
 // `sid` is the watch's session id. Resolve it to a fresh accessToken, and if
 // ABS still 401s (token died early), refresh once and retry before giving up.
-async function absJson(path, sid) {
-  const access = await freshAccess(sid);
+async function absJson(path, sid, budget = null, maxBytes = 1048576) {
+  const access = await freshAccess(sid, budget);
   if (!access) { const e = new Error('unauthorized'); e.status = 401; throw e; }
-  let r = await fetch(`${ABS}${path}`, { headers: bearer(access), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
-  if (r.status === 401 && (await refreshSession(sid))) {
-    r = await fetch(`${ABS}${path}`, { headers: bearer(sessions[sid].access), signal: AbortSignal.timeout(ABS_TIMEOUT_MS) });
+  let r = await absFetch(path, { headers: bearer(access) }, budget);
+  if (r.status === 401 && sessions[sid]) {
+    await r.body?.cancel();
+    if (await refreshSession(sid, budget)) {
+      r = await absFetch(path, { headers: bearer(sessions[sid].access) }, budget);
+    }
   }
-  if (!r.ok) { const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
-  return r.json();
+  if (!r.ok) { await r.body?.cancel(); const e = new Error('ABS ' + r.status); e.status = r.status; throw e; }
+  return absResponseJson(r, budget, maxBytes);
+}
+
+// Automatic discovery has a single budget across show/progress requests AND
+// token refresh/retries. An ABS show has no paginated episode-detail endpoint:
+// https://api.audiobookshelf.org/#get-a-library-item
+// Read its documented expanded form with an actual streaming byte ceiling,
+// rather than inventing a limit parameter ABS silently ignores. Very large
+// shows and long runs of finished episodes fail closed; never label a partial
+// scan as the latest-N set. Ordinary browsing remains unchanged.
+const PODCAST_MAX_REQUESTS = 32, PODCAST_DEADLINE_MS = 12000;
+const PODCAST_MAX_SHOW_BYTES = 1048576, PODCAST_MAX_TOTAL_BYTES = 2097152;
+const PODCAST_MAX_EPISODES = 2000, PODCAST_MAX_RESPONSE_BYTES = 8192;
+const PODCAST_MAX_SECONDS = 1000000000, PODCAST_MAX_EPOCH_SEC = 2147483647;
+// ABS publication/progress timestamps are milliseconds. Preserve the final
+// valid second's millisecond fraction, then floor when serializing for the
+// watch's signed 32-bit Number. Reject bad upstream numbers before slimming.
+const PODCAST_MAX_EPOCH_MS = PODCAST_MAX_EPOCH_SEC * 1000 + 999;
+const podcastNumber = (value, maximum) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= maximum;
+async function absFetch(path, options, budget) {
+  let timeout = ABS_TIMEOUT_MS;
+  if (budget) {
+    timeout = Math.min(timeout, budget.deadline - Date.now());
+    if (timeout <= 0) { throw new Error('podcast discovery timed out'); }
+    if (++budget.requests > PODCAST_MAX_REQUESTS) { throw new Error('podcast discovery limit reached'); }
+  }
+  return fetch(`${ABS}${path}`, { ...options, signal: AbortSignal.timeout(timeout),
+    // Redirects could otherwise make uncounted upstream requests.
+    ...(budget ? { redirect: 'error' } : {}) });
+}
+async function absResponseJson(response, budget, maxBytes) {
+  if (!budget) { return response.json(); }
+  const declared = Number(response.headers.get('content-length'));
+  if (declared > maxBytes || declared > budget.bytesLeft) {
+    await response.body?.cancel();
+    throw new Error('podcast discovery response too large');
+  }
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of response.body) {
+    size += chunk.byteLength;
+    budget.bytesLeft -= chunk.byteLength;
+    if (size > maxBytes || budget.bytesLeft < 0) { throw new Error('podcast discovery response too large'); }
+    chunks.push(chunk);
+  }
+  try { return JSON.parse(Buffer.concat(chunks, size).toString('utf8')); }
+  catch { throw new Error('malformed podcast discovery response'); }
+}
+const podcastId = (id) => typeof id === 'string' && id.length <= 128 && IDRE.test(id) && !id.includes(SEP);
+function podcastText(value, fallback) {
+  if (value == null || value === '') { return fallback; }
+  if (typeof value !== 'string') { throw new Error('malformed podcast metadata'); }
+  // UTF-8 bytes, not JS string length, bound non-Latin titles too. Strip
+  // controls so JSON escaping cannot inflate a small title six-fold.
+  let result = '', bytes = 0;
+  for (const char of value) {
+    const clean = /[\u0000-\u001f\u007f]/.test(char) ? ' ' : char;
+    bytes += Buffer.byteLength(clean);
+    if (bytes > 160) { break; }
+    result += clean;
+  }
+  return result;
+}
+function podcastProgress(row, show, episode) {
+  if (!row || row.libraryItemId !== show || row.episodeId !== episode ||
+      typeof row.isFinished !== 'boolean' ||
+      !podcastNumber(row.currentTime, PODCAST_MAX_SECONDS) || !podcastNumber(row.duration, PODCAST_MAX_SECONDS) ||
+      !podcastNumber(row.lastUpdate, PODCAST_MAX_EPOCH_MS)) {
+    throw new Error('malformed podcast progress');
+  }
+  return slimProgress(row);
+}
+async function podcastCandidates(req, res, u) {
+  const show = u.searchParams.get('show'), token = u.searchParams.get('token');
+  const limitText = u.searchParams.get('limit'), order = u.searchParams.get('order');
+  if (!podcastId(show) || !token || !/^[1-5]$/.test(limitText || '') || !['newest', 'oldest'].includes(order)) {
+    fail(res, 400, 'bad params'); return;
+  }
+  const budget = { requests: 0, deadline: Date.now() + PODCAST_DEADLINE_MS, bytesLeft: PODCAST_MAX_TOTAL_BYTES };
+  try {
+    // This authenticated item lookup enforces ABS's per-user library/item
+    // access before exposing any episode data or fetching progress.
+    const d = await absJson(`/api/items/${encodeURIComponent(show)}?expanded=1`, token, budget, PODCAST_MAX_SHOW_BYTES);
+    if (!d || d.id !== show || !d.media) { throw new Error('malformed podcast show'); }
+    if (d.mediaType !== 'podcast') { fail(res, 400, 'item is not a podcast'); return; }
+    if (!Array.isArray(d.media.episodes)) { throw new Error('malformed podcast show'); }
+    if (d.media.episodes.length > PODCAST_MAX_EPISODES) { throw new Error('podcast show too large'); }
+    const title = podcastText(d.media.metadata?.title, 'Podcast');
+    const seen = new Set();
+    const available = [];
+    for (const ep of d.media.episodes) {
+      if (!ep || !podcastId(ep.id) || seen.has(ep.id) ||
+          (ep.publishedAt != null && !podcastNumber(ep.publishedAt, PODCAST_MAX_EPOCH_MS))) {
+        throw new Error('malformed podcast episode');
+      }
+      seen.add(ep.id);
+      const audio = ep.audioFile;
+      if (audio?.duration > PODCAST_MAX_SECONDS) { throw new Error('malformed podcast episode duration'); }
+      if (d.isMissing || d.isInvalid || !audio || audio.exclude || audio.error ||
+          !NUM.test(String(audio.ino ?? '')) || !Number.isFinite(audio.duration) || audio.duration <= 0) { continue; }
+      available.push(ep);
+    }
+    available.sort((a, b) => byNewest(a, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const episodes = [];
+    for (const ep of available) {
+      let progress = null;
+      try {
+        const row = await absJson(`/api/me/progress/${encodeURIComponent(show)}/${encodeURIComponent(ep.id)}`, token, budget, 4096);
+        progress = podcastProgress(row, show, ep.id);
+      } catch (e) { if (e.status !== 404) { throw e; } }
+      if (progress?.isFinished) { continue; }
+      episodes.push({ id: `${show}${SEP}${ep.id}`, title: podcastText(ep.title, 'Episode'), author: title,
+        // The watch's Number is 32-bit, so all epoch values use seconds.
+        publishedAt: Math.floor((ep.publishedAt || 0) / 1000), progress });
+      if (episodes.length === Number(limitText)) { break; }
+    }
+    if (order === 'oldest') { episodes.reverse(); }
+    const checkedAtSec = Math.floor(Date.now() / 1000);
+    if (!podcastNumber(checkedAtSec, PODCAST_MAX_EPOCH_SEC)) { throw new Error('podcast clock out of range'); }
+    const body = JSON.stringify({ version: 1, checkedAtSec, show: { id: show, title }, episodes });
+    if (Buffer.byteLength(body) > PODCAST_MAX_RESPONSE_BYTES) { throw new Error('podcast discovery response too large'); }
+    res.writeHead(200, jsonHead).end(body);
+  } catch (e) {
+    // Upstream 404 is a missing/inaccessible show, not an old sidecar missing
+    // this route. Reserve route-level 404 for the watch's update-sidecar hint.
+    fail(res, [401, 403].includes(e.status) ? e.status : 502,
+      e.name === 'TimeoutError' || e.name === 'AbortError' ? 'podcast discovery timed out' : String(e.message || 'ABS'));
+  }
 }
 
 async function list(req, res, u) {
@@ -476,7 +607,7 @@ const authors     = (q, s, u) => groupsOrPod(q, s, u, 'authors', (d) => ({ autho
   // Each SHOW as an "author" the watch can drill into (id = the show's item id).
   async (lib, token) => {
     const d = await absJson(`/api/libraries/${encodeURIComponent(lib)}/items?minified=1&limit=1000&sort=media.metadata.title`, token);
-    return { authors: (d.results || []).map((it) => ({ id: it.id, name: (((it.media || {}).metadata) || {}).title || '?', count: (it.media || {}).numEpisodes || 0 })) };
+    return { authors: (d.results || []).map((it) => ({ id: it.id, name: (((it.media || {}).metadata) || {}).title || '?', count: (it.media || {}).numEpisodes || 0, podcast: true })) };
   });
 const series      = (q, s, u) => groupsOrPod(q, s, u, 'series?limit=1000', (d) => ({ series: (d.results || []).map((x) => ({ id: x.id, name: x.name, count: (x.books || []).length })) }), async () => ({ series: [] }));
 const collections = (q, s, u) => groupsOrPod(q, s, u, 'collections', (d) => ({ collections: (d.results || []).map((c) => ({ id: c.id, name: c.name })) }), async () => ({ collections: [] }));
@@ -635,7 +766,7 @@ async function libraries(req, res, u) {
     const d = await absJson('/api/libraries', token);
     res.writeHead(200, jsonHead).end(JSON.stringify({ libraries: (d.libraries || []).map((l) => {
       libTypes[l.id] = (l.mediaType === 'podcast') ? 'podcast' : 'book';
-      return { id: l.id, name: l.name, mediaType: 'book' };
+      return { id: l.id, name: l.name, mediaType: 'book', sourceMediaType: libTypes[l.id] };
     }) }));
   } catch (e) { fail(res, e.status === 401 ? 401 : 502, String(e.message || 'ABS')); }
 }
@@ -659,6 +790,7 @@ const server = http.createServer((req, res) => {
   if (p === '/series'      && g) { series(req, res, u); return; }
   if (p === '/collections' && g) { collections(req, res, u); return; }
   if (p === '/files'       && g) { files(req, res, u); return; }
+  if (p === '/podcasts/candidates' && g) { podcastCandidates(req, res, u); return; }
   if (p === '/transcode'   && g) { transcode(req, res, u); return; }
   if (p === '/cover'       && g) { cover(req, res, u); return; }
   if (p === '/progress'    && g) { progressRead(req, res, u); return; }
