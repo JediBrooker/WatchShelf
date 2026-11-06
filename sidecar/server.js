@@ -47,7 +47,7 @@ const UA   = 'WatchShelf-sidecar';
 // second, so this never trips legitimately - it exists so a stale/slow token
 // refresh (or a wedged ABS) can't HANG a watch request. Without it, a bad
 // refresh left the watch's makeWebRequest to time out on its own (-300, "could
-// not load libraries") instead of getting a fast 401 it can act on. Every ABS
+// not load libraries") instead of getting a fast answer it can act on. Every ABS
 // fetch below passes `signal: AbortSignal.timeout(ABS_TIMEOUT_MS)`.
 const ABS_TIMEOUT_MS = 8000;
 // STOP PERIODIC RE-LOGIN - per user, keeping each user's own identity.
@@ -83,23 +83,31 @@ const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
 // Renew one session's accessToken using its (rotating) refreshToken. ABS
 // invalidates the old refreshToken and returns a NEW pair, so we MUST keep the
 // new one or the next refresh 401s.
+// true = renewed. false = definitively dead: there is no refresh token, or ABS
+// rejected it (ABS answers every invalid/expired refresh token with 401).
+// THROWS when the outcome is unknown - ABS unreachable or timed out, a 5xx or
+// rate-limit 429, a proxy's status or page in place of ABS. Those must not reach
+// the watch as 401, which tells the user their session expired. The stored
+// tokens are left alone so the next attempt can still succeed.
 async function refreshSession(sid, budget = null) {
   const s = sessions[sid];
   if (!s || !s.refresh) { return false; }
-  try {
-    const r = await absFetch('/auth/refresh', { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA } }, budget);
-    if (!r.ok) { await r.body?.cancel(); return false; }
-    const u = (((await absResponseJson(r, budget, 65536)) || {}).user || {});
-    if (!u.accessToken) { return false; }
-    s.access = u.accessToken;
-    if (u.refreshToken) { s.refresh = u.refreshToken; }   // rotation - keep the NEW one
-    saveSessions();
-    return true;
-  } catch (e) { if (budget) { throw e; } return false; }
+  const r = await absFetch('/auth/refresh', { method: 'POST', headers: { 'x-refresh-token': s.refresh, 'x-return-tokens': 'true', 'User-Agent': UA } }, budget);
+  if (r.status === 401) { await r.body?.cancel(); return false; }
+  if (!r.ok) { await r.body?.cancel(); throw new Error('ABS refresh ' + r.status); }
+  const u = (((await absResponseJson(r, budget, 65536)) || {}).user || {});
+  if (!u.accessToken) { throw new Error('ABS refresh returned no token'); }
+  s.access = u.accessToken;
+  if (u.refreshToken) { s.refresh = u.refreshToken; }   // rotation - keep the NEW one
+  saveSessions();
+  return true;
 }
 // A currently-valid accessToken for this session, refreshing PROACTIVELY when
 // the current one is within 60s of expiry (or already gone). null => malformed
-// credential or a stored session that cannot refresh (log in again).
+// credential or a stored session that cannot refresh (log in again). THROWS when
+// a refresh failed without a verdict and there is no usable token to fall back
+// on: an access token still inside its lifetime carries on through a blip.
+// Podcast discovery (budget) fails closed instead, never spending further budget.
 // A token that is NOT one of our sessions is an ABS API key from the phone
 // settings (absApiKey, issue #80): pass it through and let ABS validate it.
 async function freshAccess(sid, budget = null) {
@@ -109,11 +117,33 @@ async function freshAccess(sid, budget = null) {
   if (typeof sid !== 'string' || !/^[A-Za-z0-9._~+/-]+=*$/.test(sid)) { return null; }
   const s = sessions[sid];
   if (!s) { return sid || null; }
-  if (jwtExp(s.access) - Math.floor(Date.now() / 1000) < 60) {
-    if (!(await refreshSession(sid, budget))) { return null; }
+  const secondsLeft = jwtExp(s.access) - Math.floor(Date.now() / 1000);
+  if (secondsLeft < 60) {
+    try {
+      if (!(await refreshSession(sid, budget))) { return null; }
+    } catch (e) {
+      if (budget || secondsLeft <= 0) { throw e; }
+      console.error(`token refresh failed, using current token (${secondsLeft}s left):`, e.message);
+    }
   }
   return sessions[sid] ? sessions[sid].access : null;
 }
+// freshAccess for the routes that use the token themselves rather than through
+// absJson. With no token it answers via reply(status, message) and returns null:
+// 401 only for a dead credential, 503 when ABS gave no verdict, so the watch
+// retries instead of treating the session as expired.
+async function accessOrReply(token, reply) {
+  try {
+    const access = await freshAccess(token);
+    if (!access) { reply(401, 'unauthorized'); }
+    return access;
+  } catch (e) {
+    console.error('token refresh failed:', e.message);
+    reply(503, 'ABS unreachable');
+    return null;
+  }
+}
+const replyText = (res) => (code, msg) => { res.writeHead(code, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }).end(msg); };
 const jsonHead = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 // Error responses on JSON endpoints must BE JSON: the watch declares a JSON
 // responseType, and a plain-text/HTML error body surfaces on-device as the
@@ -210,8 +240,8 @@ async function transcode(req, res, u) {
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
   // Fresh token BEFORE ffmpeg fetches (ffmpeg's internal request can't refresh
   // itself; over a long download the accessToken would otherwise expire mid-book).
-  const tok = await freshAccess(token);
-  if (!tok) { res.writeHead(401).end('unauthorized'); return; }
+  const tok = await accessOrReply(token, replyText(res));
+  if (!tok) { return; }
   // Composite podcast id: only the item half names the ABS resource - the
   // episode's audio is still fetched by file ino, same as a book's.
   const src = `${ABS}/api/items/${encodeURIComponent(splitId(item).item)}/file/${encodeURIComponent(file)}/download`;
@@ -310,8 +340,8 @@ async function cover(req, res, u) {
   if (!item || !token || !IDRE.test(item)) { res.writeHead(400).end('bad params'); return; }
   if (!Number.isFinite(w) || w < 16) { w = 96; }
   if (w > 256) { w = 256; }   // hard cap - never hand the watch a big image to decode
-  const access = await freshAccess(token);
-  if (!access) { res.writeHead(401).end('unauthorized'); return; }
+  const access = await accessOrReply(token, replyText(res));
+  if (!access) { return; }
   try {
     const r = await fetch(`${ABS}/api/items/${encodeURIComponent(splitId(item).item)}/cover?format=jpeg`, { headers: bearer(access) });
     if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502).end('ABS ' + r.status); return; }
@@ -677,8 +707,8 @@ function progress(req, res, u) {
   if (!token) { fail(res, 400, 'bad params'); return; }
   readJson(req, async (body) => {
     if (!body || typeof body.itemId !== 'string' || !IDRE.test(body.itemId) || typeof body.currentTime !== 'number') { fail(res, 400, 'bad body'); return; }
-    const access = await freshAccess(token);
-    if (!access) { fail(res, 401, 'unauthorized'); return; }
+    const access = await accessOrReply(token, (code, msg) => fail(res, code, msg));
+    if (!access) { return; }
     const payload = { currentTime: body.currentTime };
     if (typeof body.duration === 'number' && body.duration > 0) { payload.duration = body.duration; payload.progress = Math.min(1, body.currentTime / body.duration); }
     if (typeof body.lastUpdateSec === 'number' && body.lastUpdateSec > 0) { payload.lastUpdate = Math.round(body.lastUpdateSec * 1000); }
