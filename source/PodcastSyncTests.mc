@@ -38,12 +38,17 @@ class PodcastDelegateHarness extends WatchShelfSyncDelegate {
     var callback;
     var progressWorker;
     var lastUrl;
+    var lastPct = null;
     function initialize() { WatchShelfSyncDelegate.initialize(); }
     function charging() { return power; }
     function createProgressSync() { progressWorker = new PodcastProgressHarness(); return progressWorker; }
     function requestAudio(url, options, cb) { audio += 1; callback = cb; lastUrl = url; }
     function notifyComplete(error) { completed += 1; }
     function discardAudio(refId) { discarded += 1; }
+    function notifyProgress(pct) { lastPct = pct; }
+    // Report the in-flight request's cancellation before cancelRequests returns.
+    var cancelReports = false;
+    function cancelRequests() { if (cancelReports) { callback.invoke(-1003, null); } }
     function sweepOrphans() {}
     function onOpDone() {}
 }
@@ -269,7 +274,8 @@ function podcastAutoFailureBackoffAndUnplugPause(logger) {
     PodcastFixtures.clear(); PodcastFixtures.show(1, false);
     PodcastFixtures.autoJob(PodcastFixtures.ONE); PodcastSchedule.success(Progress.nowSec());
     var delegate = new PodcastDelegateHarness(); delegate.power = true;
-    delegate.onStartSync(); delegate.callback.invoke(500, null);
+    delegate.onStartSync();
+    for (var i = 0; i <= WatchShelfSyncDelegate.CHUNK_RETRIES; ++i) { delegate.callback.invoke(500, null); }
     Test.assertMessage(JobStore.get(PodcastFixtures.ONE)["retryAt"] > Progress.nowSec(), "automatic failed job remains with backoff");
     Test.assertMessage(!delegate.isSyncNeeded(), "repeated firmware poll cannot spin failed transfer");
     var job = JobStore.get(PodcastFixtures.ONE); job.remove("retryAt"); JobStore.put(PodcastFixtures.ONE, job);
