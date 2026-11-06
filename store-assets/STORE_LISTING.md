@@ -1,7 +1,7 @@
-# Connect IQ store listing — b42 (prepared, not yet published)
+# Connect IQ store listing — b43 (prepared, not yet published)
 
 Physical Venu 4 charging and unattended Wi-Fi behavior still need validation.
-Upload the matching b42 package before copying these blocks into the store
+Upload the matching b43 package before copying these blocks into the store
 fields. Updating this file or the store text does not update the installed
 binary. Confirm the accepted package and the on-watch build tag match the notes.
 
@@ -77,7 +77,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b42
+## What's New — b43
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -87,7 +87,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
-WATCHSHELF b42
+WATCHSHELF b43
 
 UPDATE YOUR SIDECAR FIRST
 
@@ -145,6 +145,10 @@ NEW
 
 FIXED
 
+  Interrupted downloads carry on
+  A failed part no longer cancels the book. WatchShelf retries, then Sync now
+  continues from the same part.
+
   Phone API-key setup
   The updated sidecar accepts Audiobookshelf API keys entered in Garmin Connect
   settings, including for SSO accounts. Logging out and back in is no longer
@@ -171,10 +175,6 @@ FIXED
   Progress could go backwards
   Listening on the watch could overwrite a newer position set on another device.
   The watch now checks the server before pushing.
-
-  Also: if a progress conflict is ever detected, a "Progress conflicts" row
-  appears under Downloaded. It is diagnostic only - if you see it, please open
-  an issue on GitHub.
 
 With thanks to @alt-13, @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
 features make up most of this release.

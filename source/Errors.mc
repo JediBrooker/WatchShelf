@@ -57,6 +57,22 @@ module Errors {
         return (h != null) ? h : "Audio download failed";
     }
 
+    // Can a later attempt at this same chunk plausibly succeed without the user
+    // changing anything? True for dropped connections, timeouts, proxy/sidecar
+    // 5xx (Cloudflare's 52x included) and a malformed 200. 401 counts too: the
+    // sidecar also answers 401 when its token refresh hit a network blip, and a
+    // genuinely expired session recovers on re-login with the job intact. False
+    // only where retrying is pointless - the book or permission is gone, the
+    // sidecar is too old, the watch is full, or it rejects the audio itself.
+    function downloadRecoverable(code) {
+        if ((code == 200) || (code == 401) || (code == 408) || (code == 429) || (code >= 500)) {
+            return true;
+        }
+        if (code > 0) { return false; }
+        return (code != -1000) && (code != -1001) && (code != -1002)
+            && (code != -1005) && (code != -402) && (code != -403);
+    }
+
     // Always retain the raw callback code for support, including code 200 with
     // null data (a malformed media response rather than a successful transfer).
     function downloadMessage(code) {

@@ -5,7 +5,12 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Current source: build `b42`.** Adds optional per-show automatic podcast
+> **Current source: build `b43`.** A failed chunk no longer cancels a download:
+> WatchShelf retries it, then keeps the book queued so **Sync now** carries on
+> from the same part, with no need to select the book again. Physical-watch
+> confirmation is still outstanding.
+>
+> Build `b42` added optional per-show automatic podcast
 > downloads, download order/speed, and safe removal of finished automatic episodes.
 > Update the watch and sidecar together. Automatic downloads start off; native
 > charging and unattended Wi-Fi behavior still require physical-watch validation.

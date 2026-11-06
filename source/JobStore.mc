@@ -11,6 +11,8 @@ using Toybox.Application;
 // `base` and `done` are GLOBAL chunk indexes. base is the first unlistened
 // chunk selected for a tail-only download; done is its persisted next cursor.
 // Jobs from older builds have no base and are read as base 0.
+// An optional "retryAt" (epoch seconds) is set after a failed transfer so the
+// job waits before asking for another sync; a successful chunk clears it.
 //
 // One-job-per-key matters for the same reason BookStore pages do: a
 // chapterized book can be hundreds of per-chapter files, so a job's

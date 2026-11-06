@@ -32,8 +32,17 @@ using Toybox.System;
 // lifecycle test harness, before initialize() is ever entered.
 class WatchShelfSyncDelegate extends Communications.SyncDelegate {
 
+    // Extra attempts per chunk before a recoverable failure pauses its book. A
+    // long book is hundreds of requests through a phone or a proxy, so a single
+    // dropped one is expected rather than exceptional.
+    const CHUNK_RETRIES = 2;
+
     private var mTotal;         // ops planned at sync start (downloads + deletes)
     private var mDone;          // ops completed
+    private var mCarried;       // queued chunks already on the watch at sync start
+    private var mRetries;       // consecutive failures of the chunk in flight
+    private var mPaused;        // itemId => true: gave up on it for this run
+    private var mStopping;
     private var mProgressSync;  // held so its async chain isn't GC'd mid-flight
     private var mPodcast;
     private var mPodcastDone;
@@ -47,6 +56,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         Communications.SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
+        mCarried = 0; mRetries = 0; mPaused = {}; mStopping = false;
         mSyncError = null;
         mRun = 0; mCompleted = true; mFinishing = false;
         mPodcastDone = false; mForce = false;
@@ -72,7 +82,13 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         for (var i = 0; i < ids.size(); ++i) {
             var job = JobStore.get(ids[i]);
             // Preserve old stray-index repair as an ordinary work reason.
-            if ((job == null) || PodcastSchedule.jobAllowed(ids[i], job, false, powered, now)) { return true; }
+            if (job == null) { return true; }
+            // A manual job that just failed must not make the system start the
+            // same doomed transfer on every poll. This only limits syncs we ask
+            // for: once one is running for any reason, onStartSync resumes it.
+            if ((job["autoShow"] == null)
+                && !PodcastSchedule.elapsed(now, job["retryAt"], PodcastSchedule.RETRY)) { continue; }
+            if (PodcastSchedule.jobAllowed(ids[i], job, false, powered, now)) { return true; }
         }
         return PodcastSchedule.discoveryNeeded(false, powered, now);
     }
@@ -91,6 +107,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         // or error state from leaking into a later run.
         mTotal = 0;
         mDone = 0;
+        mCarried = 0; mRetries = 0; mPaused = {}; mStopping = false;
         mSyncError = null;
         // Consume the one-shot "Sync now" flag immediately so this sync can't be
         // re-triggered by it forever.
@@ -127,13 +144,21 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             }
             if (!PodcastSchedule.jobAllowed(jobIds[i], job, mForce, charging(), Progress.nowSec())) { continue; }
             var left = Chunks.total(job["durs"]) - job["done"];
-            if (left > 0) { mTotal += left; }
+            if (left > 0) {
+                mTotal += left;
+                var base = (job["base"] != null) ? job["base"] : 0;
+                if (job["done"] > base) { mCarried += job["done"] - base; }
+            }
         }
         if (mTotal == 0) {
             finishSync();
             return;
         }
 
+        // A resumed download starts at what it already has, not at 0%. The bar
+        // only moves when a chunk lands, and on a long book the first whole
+        // percent is several chunks away, so 0% reads as a hung sync.
+        if (mCarried > 0) { notifyProgress(percent()); }
         deleteQueued(toDelete);
         downloadNext();
     }
@@ -186,11 +211,15 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     // Each asynchronous worker is cancelled BEFORE cancelling transport: a
     // late callback must neither restart its chain nor complete a second time.
     function onStopSync() {
+        // Set first: cancelling transport can report -1003 for the chunk in
+        // flight, and that must neither count as a failure nor start a retry.
+        mStopping = true;
         if (mProgressSync != null) { mProgressSync.cancel(); }
         if (mPodcast != null) { mPodcast.cancel(); }
-        Communications.cancelAllRequests();
+        cancelRequests();
         complete(null);
     }
+    function cancelRequests() { Communications.cancelAllRequests(); }
 
     // Delete every queued BOOK: un-index it, evict its cached chunks and records,
     // and drop its saved progress.
@@ -245,6 +274,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             if (candidate == null) {
                 JobStore.remove(id); BookStore.dropArtIfUnindexed(id); continue;
             }
+            if (mPaused[id] != null) { continue; }
             if (!PodcastSchedule.jobAllowed(id, candidate, mForce, charging(), Progress.nowSec())) { continue; }
             if (Chunks.at(candidate["durs"], candidate["done"]) == null) { JobStore.remove(id); continue; }
             itemId = id; job = candidate; break;
@@ -310,7 +340,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     // but ContentRef is what an audio download delivers). Record its id at the
     // job's cursor position and advance.
     function onTrackDownloaded(code, data, context) {
-        if (mCompleted || (context["run"] != mRun)) {
+        if (mCompleted || mStopping || (context["run"] != mRun)) {
             if ((code == 200) && (data != null)) {
                 discardAudio(data.getId());
             }
@@ -327,18 +357,34 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
                 return;
             }
 
-            // Download failed. Do NOT end here: a dirty offline listen still needs
-            // flushing and the progress exchange requires no successful download.
-            // Route through finishSync (which runs ProgressSync, then reports the
-            // error via onProgressDone). Remove ONLY this failed job first: its
-            // committed BookStore suffix remains playable and re-selecting the
-            // book resumes at first+count, but isSyncNeeded no longer retries the
-            // same bad transfer forever on every system sync.
+            // Try this chunk again straight away before treating it as a real
+            // failure. A cancellation is not retried: something stopped it on
+            // purpose, and a new request would just be cancelled in turn.
+            var recoverable = Errors.downloadRecoverable(code);
+            if (recoverable && (code != -1003) && (code != -5) && (mRetries < CHUNK_RETRIES)) {
+                mRetries += 1;
+                downloadNext();
+                return;
+            }
+            mRetries = 0;
+
+            // Download failed. Do NOT end the sync here: a dirty offline listen
+            // still needs flushing and other queued books may be fine, so move
+            // on and let finishSync report the error after the progress exchange.
+            // Keep the job when a later attempt can work: dropping it left a
+            // playable partial that no sync would ever continue, so reaching its
+            // end meant re-selecting the book. retryAt stops isSyncNeeded asking
+            // for the same transfer on every poll, and mPaused stops this run
+            // coming back to it. Only a failure retrying cannot fix cancels the
+            // job; its committed BookStore suffix stays playable, and re-selecting
+            // the book resumes at first+count.
+            var keep = recoverable || (job["autoShow"] != null);
             mSyncError = Errors.downloadMessage(code);
             var title = (job["title"] != null) ? job["title"] : "Book";
             var total = Chunks.total(job["durs"]);
             var detail = title + "\nPart " + (context["k"] + 1).toString()
                 + "/" + total.toString() + "\n" + mSyncError;
+            if (keep) { detail += "\nSync now to resume"; }
             try {
                 Application.Storage.setValue(Store.LAST_SYNC_ERROR, detail);
             } catch (e) {
@@ -346,19 +392,20 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
                 // concise message below; never let diagnostics strand sync mode.
                 System.println("sync error save failed: " + e.getErrorMessage());
             }
-            if (job["autoShow"] != null) {
+            if (keep) {
                 job["retryAt"] = Progress.nowSec() + PodcastSchedule.RETRY;
                 JobStore.put(itemId, job);
+                mPaused[itemId] = true;
             } else { JobStore.remove(itemId); }
             // Heal the narrow crash window where a prior chunk was saved but
             // the process died before addToIndex(): the valid partial suffix
-            // should remain visible/playable after this job is paused by removal.
+            // should remain visible/playable while this job is paused or gone.
             if ((BookStore.get(itemId) != null) && (BookStore.count(itemId) > 0)) {
                 BookStore.addToIndex(itemId);
-            } else {
+            } else if (!keep) {
                 BookStore.dropArtIfUnindexed(itemId);
             }
-            if (job["autoShow"] != null) { downloadNext(); } else { finishSync(); }
+            downloadNext();
             return;
         }
 
@@ -397,6 +444,8 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         // overwrite-by-position, so even a crash between these writes can only
         // cause a harmless re-download, never a duplicate or a skipped chunk.
         job["done"] = k + 1;
+        job.remove("retryAt");
+        mRetries = 0;
         if (job["done"] >= Chunks.total(job["durs"])) {
             JobStore.remove(itemId);
         } else {
@@ -449,10 +498,16 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
 
     function onOpDone() {
         ++mDone;
+        notifyProgress(percent());
+    }
+
+    function percent() {
         // Mid-sync queue changes can grow/shrink the real work vs the plan
         // made at sync start - clamp so the bar never runs past 100%.
-        var pct = (mTotal > 0) ? ((mDone / mTotal.toFloat()) * 100).toNumber() : 0;
-        if (pct > 100) { pct = 100; }
-        Communications.notifySyncProgress(pct);
+        var whole = mCarried + mTotal;
+        var pct = (whole > 0) ? (((mCarried + mDone) / whole.toFloat()) * 100).toNumber() : 0;
+        return (pct > 100) ? 100 : pct;
     }
+
+    function notifyProgress(pct) { Communications.notifySyncProgress(pct); }
 }
