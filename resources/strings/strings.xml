@@ -24,6 +24,7 @@
     <string id="syncing">Syncing...</string>
     <string id="synced">synced</string>
     <string id="lastSyncError">Last sync failed</string>
+    <string id="lastSync">Last sync</string>
     <string id="nothingToDownload">No unlistened audio\nto sync</string>
     <string id="alreadyDownloaded">Already downloaded.\nSee "Downloaded".</string>
 

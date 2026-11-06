@@ -5,7 +5,12 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Current source: build `b43`.** A failed chunk no longer cancels a download:
+> **Current source: build `b44`.** A new **Last sync** row shows what the most
+> recent sync did: when it started, how it ended (or "Did not finish"), parts
+> downloaded, retries, the last reply and the last failure code. Include it when
+> reporting a sync problem. It has only run in the simulator so far.
+>
+> Build `b43`: a failed chunk no longer cancels a download.
 > WatchShelf retries it, then keeps the book queued so **Sync now** carries on
 > from the same part, with no need to select the book again. Physical-watch
 > confirmation is still outstanding.

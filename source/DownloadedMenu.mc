@@ -52,6 +52,13 @@ class DownloadedMenu extends WatchUi.Menu2 {
                 null, "syncerror", null));
         }
 
+        // What the last run did, including a run that hung or crashed and so
+        // never got to report anything. Absent until a first sync has started.
+        if (LastSync.get() != null) {
+            addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.lastSync),
+                null, "lastsync", null));
+        }
+
         // Only offer to log out if actually logged in - avoids a pointless item
         // on a fresh, unconfigured install.
         if (AbsApi.isConfigured()) {

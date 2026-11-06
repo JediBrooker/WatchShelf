@@ -61,6 +61,10 @@ module Store {
     // UNFLUSHED local listen, plus the shape of the last one. Absent until it
     // actually happens, and O(1) - a count and three numbers, never a list.
     const MERGE_CONFLICT  = "mergeConflict";
+    // What the most recent sync run actually did, for DownloadedMenu -> "Last
+    // sync" (see LastSync in SyncDelegate.mc). One small dictionary of numbers,
+    // replaced by each run and never grown by it - O(1) like the two above.
+    const LAST_SYNC       = "lastSync";
 }
 
 // ---------------------------------------------------------------------------
@@ -108,5 +112,6 @@ module Versions {
     // b41 makes that row text-only to avoid a firmware-side startup crash.
     // b43 lets a manual job carry the optional "retryAt" automatic jobs already
     // had: additive, and a job without it reads as not paused.
-    const tag = "b43";
+    // b44 adds the LAST_SYNC key: a new key, with no existing value changing shape.
+    const tag = "b44";
 }
