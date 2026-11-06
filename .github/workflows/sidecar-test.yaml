@@ -1,0 +1,65 @@
+name: Sidecar tests
+
+on:
+  pull_request:
+    # The workflow files are listed so a change to this pipeline is itself
+    # tested; a PR that only touches the watch app reports no check from here.
+    paths:
+      - 'sidecar/**'
+      - '.github/workflows/sidecar-test.yaml'
+      - '.github/workflows/sidecar-build-publish.yaml'
+  push:
+    branches: [ "main" ]
+  # sidecar-build-publish.yaml calls this as a job its publish step needs, so
+  # the tests that gate an image are the same ones a PR sees.
+  workflow_call:
+
+permissions:
+  contents: read
+
+# No workflow-level concurrency here: when called, github.workflow is the
+# caller's name, so reusing the usual group would collide with the publish
+# workflow's own group and cancel it.
+
+jobs:
+  test:
+    name: npm test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: sidecar
+        # Naming bash explicitly is what turns on pipefail: without it a failing
+        # `npm test` would be hidden by the tee below.
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Same major as FROM in sidecar/Dockerfile, so tests run on the Node the
+      # image ships. package.json has no dependencies, so there is no install.
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Run tests
+        run: npm test 2>&1 | tee "$RUNNER_TEMP/sidecar-test-output.txt"
+
+      # The transcode tests pass { skip: !hasFfmpeg }, so with ffmpeg or ffprobe
+      # missing they would report green without having run. A skip fails the job
+      # here. The pattern covers both node:test summary formats: "# skipped 0"
+      # (TAP) and "ℹ skipped 0" (spec); which one Node prints when piped depends
+      # on its version. Anything unrecognised fails too, rather than passing.
+      - name: Fail if any test was skipped
+        run: |
+          if ! grep -Eq '^(ℹ|#) skipped 0$' "$RUNNER_TEMP/sidecar-test-output.txt"; then
+            echo "::error::Sidecar tests were skipped, or the summary could not be read. Is ffmpeg/ffprobe on PATH?"
+            exit 1
+          fi
