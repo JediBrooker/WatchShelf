@@ -50,6 +50,22 @@ const UA   = 'WatchShelf-sidecar';
 // not load libraries") instead of getting a fast 401 it can act on. Every ABS
 // fetch below passes `signal: AbortSignal.timeout(ABS_TIMEOUT_MS)`.
 const ABS_TIMEOUT_MS = 8000;
+const posIntEnv = (name, fallback) => {
+  const v = Number(process.env[name]);
+  return Number.isInteger(v) && v > 0 ? Math.min(v, 2147483647) : fallback;
+};
+// Bounds on an m4a chunk (issue #44). The response is buffered, so a proxy sees
+// no bytes until ffmpeg finishes, and Cloudflare gives up after 100s with no
+// response. The wall-clock limit runs from the request's arrival, queue wait
+// included, and answers a 5xx (retryable on the watch) before that happens. Raise
+// it for a slow host with no such proxy in front.
+const TRANSCODE_TIMEOUT_MS = posIntEnv('TRANSCODE_TIMEOUT_MS', 90000);
+// One network read or connect with no progress. ffmpeg's reconnect then retries,
+// so a source stalled for good takes about 3x this plus backoff to fail (63s by
+// default, inside the wall-clock limit) and a passing blip just resumes.
+const FFMPEG_RW_TIMEOUT_MS = posIntEnv('FFMPEG_RW_TIMEOUT_MS', 20000);
+// ffmpeg processes for m4a chunks at once; further requests wait their turn.
+const TRANSCODE_CONCURRENCY = posIntEnv('TRANSCODE_CONCURRENCY', 3);
 // STOP PERIODIC RE-LOGIN - per user, keeping each user's own identity.
 // ABS >= 2.26 hands out a SHORT-LIVED (~1h) accessToken + a LONG-LIVED (~30d,
 // rotating) refreshToken at login; once the accessToken expires every watch
@@ -125,6 +141,9 @@ function ffArgs(srcUrl, token, fmt, start, end, out, speed) {
   const a = ['-hide_banner', '-loglevel', 'error', '-user_agent', UA,
     '-headers', `Authorization: Bearer ${token}\r\n`,
     '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '2'];
+  // m4a path only (`out`): the other formats have no check for the truncated
+  // output a read timeout can leave behind - see sourceReadFailed.
+  if (out) { a.push('-rw_timeout', String(FFMPEG_RW_TIMEOUT_MS * 1000)); }
   if (start != null) { a.push('-ss', String(start)); }
   // Bound the INPUT before changing tempo. An output-side -t is measured after
   // atempo, so a 180s chunk at 1.5x would consume 270s and overlap the next
@@ -199,13 +218,57 @@ function failTranscode(res, stderr) {
   res.writeHead(status, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }).end(message);
 }
 
+// ffmpeg treats a source that dies mid-read like the end of the input: it finishes
+// the output with what it has and exits 0, so this message is the only sign that
+// the chunk is short. Serving it would leave a silent hole in the book. Corrupt
+// data is excluded because retrying can't fix it and ffmpeg decodes around it.
+const sourceReadFailed = (stderr) => /Error during demuxing(?!: Invalid data)/.test(stderr);
+
+let ffmpegRunning = 0;
+const ffmpegQueue = [];
+function pumpFfmpegQueue() {
+  while (ffmpegRunning < TRANSCODE_CONCURRENCY && ffmpegQueue.length) {
+    ffmpegRunning += 1;
+    let released = false;
+    ffmpegQueue.shift()(() => {
+      if (released) { return; }
+      released = true;
+      ffmpegRunning -= 1;
+      pumpFfmpegQueue();
+    });
+  }
+}
+// Calls start(release) when a slot is free, in arrival order. Returns a function
+// that takes the request back out of the queue (a no-op once it has started).
+function queueFfmpeg(start) {
+  ffmpegQueue.push(start);
+  pumpFfmpegQueue();
+  return () => {
+    const i = ffmpegQueue.indexOf(start);
+    if (i >= 0) { ffmpegQueue.splice(i, 1); }
+  };
+}
+
+// Only ever log validated fields here, never req.url or the whole query string:
+// the watch's token is a query parameter. Rejected requests log '-' for anything
+// that failed validation, which also keeps a crafted value out of the log.
+const logField = (value, pattern) => (value != null && value.length <= 128 && pattern.test(value) ? value : '-');
+
 async function transcode(req, res, u) {
+  const receivedAt = Date.now();
+  let queuedMs = 0;
   const item = u.searchParams.get('item'), file = u.searchParams.get('file');
   const fmt = (u.searchParams.get('fmt') || 'mp3').toLowerCase();
   const start = u.searchParams.get('start'), end = u.searchParams.get('end');
   const speedRaw = u.searchParams.get('speed') || '100';
   const speed = NUM.test(speedRaw) ? Number(speedRaw) : NaN;
   const token = u.searchParams.get('token');
+  // Status is '-' when the client left before any answer was sent.
+  res.once('close', () => {
+    console.log(`transcode status=${res.headersSent ? res.statusCode : '-'} ms=${Date.now() - receivedAt} queuedMs=${queuedMs}`
+      + ` item=${logField(item, IDRE)} file=${logField(file, NUM)} range=${logField(start, NUM)}-${logField(end, NUM)}`
+      + ` clientGone=${!res.writableFinished}`);
+  });
   if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file) || !SPEEDS.has(speed)) { res.writeHead(400).end('bad params'); return; }
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
   // Fresh token BEFORE ffmpeg fetches (ffmpeg's internal request can't refresh
@@ -225,43 +288,78 @@ async function transcode(req, res, u) {
   // native "Media Error Occurred" well after the download itself already
   // reported success to the app.
   if (fmt === 'm4a2' || fmt === 'm4a3') {
+    if (res.destroyed) { return; }   // client left during the token refresh
     const out = join(tmpdir(), `watchshelf-${randomUUID()}.m4a`);
     const drop = () => unlink(out).catch(() => {});
-    const ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out, speed), { stdio: ['ignore', 'ignore', 'pipe'] });
-    const ffmpegStderr = captureFfmpegStderr(ff);
-    let done = false;
-    let cancelled = false;
+    const answer = (code, message) => {
+      if (!res.headersSent) { res.writeHead(code, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }).end(message); }
+    };
+    let ff = null;      // null until this request gets a slot
+    let done = false;   // true once the outcome is decided
+    // Answers straight away rather than on ffmpeg's exit, so a child that is slow
+    // to die can't push the response past the proxy's limit. Its close handler
+    // still removes the temp file and frees the slot.
+    const timer = setTimeout(() => {
+      if (done) { return; }
+      done = true;
+      if (ff) { ff.kill('SIGKILL'); answer(504, 'transcode timed out'); return; }
+      leaveQueue();
+      answer(503, 'transcode queue timed out');
+    }, Math.max(0, receivedAt + TRANSCODE_TIMEOUT_MS - Date.now()));
+    const leaveQueue = queueFfmpeg((release) => {
+      queuedMs = Date.now() - receivedAt;
+      try {
+        ff = spawn('ffmpeg', ffArgs(src, tok, fmt, start, end, out, speed), { stdio: ['ignore', 'ignore', 'pipe'] });
+      } catch (e) {
+        // A throw here would otherwise surface in whichever request freed the slot.
+        release();
+        if (done) { return; }
+        done = true;
+        clearTimeout(timer);
+        answer(502, 'ffmpeg error');
+        return;
+      }
+      const ffmpegStderr = captureFfmpegStderr(ff);
+      ff.on('error', () => {
+        if (!ff.pid) { release(); }   // never started, so no exit to wait for
+        drop();
+        if (done) { return; }
+        done = true;
+        clearTimeout(timer);
+        answer(502, 'ffmpeg error');
+      });
+      // Hold the slot and the final unlink for the child's actual exit: ffmpeg may
+      // create the output just after an eager unlink raced with SIGKILL.
+      ff.on('close', async (code) => {
+        release();
+        if (done) { drop(); return; }
+        done = true;
+        clearTimeout(timer);
+        const stderr = ffmpegStderr();
+        if (code !== 0 || sourceReadFailed(stderr)) { drop(); failTranscode(res, stderr); return; }
+        try {
+          const buf = await readFile(out);
+          res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
+          res.end(buf);
+        } catch (e) {
+          if (!res.headersSent) { res.writeHead(502).end('transcode read failed'); }
+        }
+        drop();
+      });
+    });
     // IncomingMessage's `close` means the REQUEST stream finished/closed, not
     // necessarily that the client abandoned the RESPONSE. Reverse proxies
     // commonly close that read side as soon as the GET has been forwarded;
     // treating it as a disconnect killed ffmpeg before it could answer and
     // surfaced publicly as a proxy-generated 502. ServerResponse `close`
     // catches the event we actually care about: the response connection went
-    // away before res.end(). `done` is already true on normal completion.
-    // Let the child's close handler do the final unlink too: ffmpeg may create
-    // the output just after an eager unlink raced with SIGKILL.
+    // away before res.end(). A queued request just drops out of the queue.
     res.on('close', () => {
-      if (!done && !res.writableEnded) { cancelled = true; ff.kill('SIGKILL'); drop(); }
-    });
-    ff.on('error', () => {
-      if (done) { return; }
+      clearTimeout(timer);
+      if (done || res.writableEnded) { return; }
       done = true;
-      drop();
-      if (!cancelled && !res.headersSent) { res.writeHead(502).end('ffmpeg error'); }
-    });
-    ff.on('close', async (code) => {
-      if (done) { return; }
-      done = true;
-      if (cancelled) { drop(); return; }
-      if (code !== 0) { drop(); failTranscode(res, ffmpegStderr()); return; }
-      try {
-        const buf = await readFile(out);
-        res.writeHead(200, { 'Content-Type': CT[fmt], 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
-        res.end(buf);
-      } catch (e) {
-        if (!res.headersSent) { res.writeHead(502).end('transcode read failed'); }
-      }
-      drop();
+      leaveQueue();
+      if (ff) { ff.kill('SIGKILL'); }
     });
     return;
   }
