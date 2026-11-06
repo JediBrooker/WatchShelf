@@ -22,6 +22,10 @@ services:
       # nobody has to re-login - even across container restarts/redeploys. Kept
       # on the named volume below.
       - SESSIONS_FILE=/data/sessions.json
+      # Optional transcode limits - see .env.example. Empty uses the default.
+      - TRANSCODE_TIMEOUT_MS=${TRANSCODE_TIMEOUT_MS:-}
+      - FFMPEG_RW_TIMEOUT_MS=${FFMPEG_RW_TIMEOUT_MS:-}
+      - TRANSCODE_CONCURRENCY=${TRANSCODE_CONCURRENCY:-}
     volumes:
       - watchshelf-data:/data
     extra_hosts:

@@ -110,3 +110,11 @@ PATH), then expose it the same way (step 3 above).
   `ffArgs`.
 - **Playback speed** supports 1.0x, 1.25x, 1.5x, 1.75x, and 2.0x via ffmpeg
   `atempo`; progress remains on the original timeline.
+- **Transcode limits** are set with `TRANSCODE_TIMEOUT_MS` (default 90000, queue
+  wait included, kept under Cloudflare's 100 s), `FFMPEG_RW_TIMEOUT_MS` (default
+  20000) and `TRANSCODE_CONCURRENCY` (default 3, extra requests queue). A chunk
+  that hits the limit gets a 5xx, which the watch retries.
+- **Logs** have one `transcode status=… ms=… queuedMs=… item=… file=… range=…
+  clientGone=…` line per chunk request. `status=504` means ffmpeg ran out of time,
+  `503` that the request never left the queue, `502` that ffmpeg failed (a stalled
+  ABS included), and `status=-` that the client left before an answer was sent.
