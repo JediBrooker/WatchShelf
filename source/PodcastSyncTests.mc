@@ -76,6 +76,7 @@ module PodcastFixtures {
         Application.Storage.deleteValue(Store.FORCE_SYNC);
         Application.Storage.deleteValue(Store.DELETE_LIST);
         Application.Storage.deleteValue(Store.LAST_SYNC_ERROR);
+        Application.Storage.deleteValue(Store.LAST_SYNC);
         Application.Storage.deleteValue("podcastStatus");
     }
     function show(limit, remove) {

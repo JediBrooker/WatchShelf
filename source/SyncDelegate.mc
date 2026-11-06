@@ -2,6 +2,8 @@ using Toybox.Application;
 using Toybox.Communications;
 using Toybox.Media;
 using Toybox.System;
+using Toybox.Time;
+using Toybox.Time.Gregorian;
 
 // Downloads queued books to the device media cache, one derived chunk at a
 // time. One chunk == one Media track, so the native player gives real chapter
@@ -36,6 +38,11 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     // long book is hundreds of requests through a phone or a proxy, so a single
     // dropped one is expected rather than exceptional.
     const CHUNK_RETRIES = 2;
+    // Seconds between saves of the "Last sync" record while chunks are landing.
+    // Every chunk already costs several Storage writes for the job and the book,
+    // so this adds at most one small write a minute, however fast chunks or
+    // retries arrive. A run that dies loses at most this much of its own record.
+    const LAST_SYNC_CHECKPOINT = 60;
 
     private var mTotal;         // ops planned at sync start (downloads + deletes)
     private var mDone;          // ops completed
@@ -51,6 +58,8 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     private var mCompleted;
     private var mFinishing;
     private var mSyncError;     // download error surfaced AFTER progress runs, or null
+    private var mLastSync;      // this run's record: see LastSync below
+    private var mLastSyncDue;   // when the next checkpoint of it is due
 
     function initialize() {
         Communications.SyncDelegate.initialize();
@@ -75,6 +84,8 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     function createProgressSync() { return new ProgressSync(); }
     function createPodcastSync() { return new PodcastSync(); }
     function requestAudio(url, options, cb) { Communications.makeWebRequest(url, null, options, cb); }
+    function clockSec() { return Progress.nowSec(); }
+    function writeLastSync(record) { Application.Storage.setValue(Store.LAST_SYNC, record); }
     function isSyncNeeded() {
         if ((deletes().size() != 0) || Progress.hasDirty()
             || (Application.Storage.getValue(Store.FORCE_SYNC) != null)) { return true; }
@@ -94,6 +105,10 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     }
 
     function onStartSync() {
+        // First, so that anything below that hangs or crashes still leaves a
+        // record. A record with no end time is how a later view recognises it.
+        mLastSync = { "s" => clockSec(), "c" => 0, "r" => 0 };
+        saveLastSync();
         if (mProgressSync != null) { mProgressSync.cancel(); }
         if (mPodcast != null) { mPodcast.cancel(); }
         mRun += 1; mCompleted = false; mFinishing = false; mPodcastDone = false;
@@ -206,7 +221,35 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     function complete(error) {
         if (mCompleted) { return; }
         mCompleted = true;
+        mLastSync["e"] = clockSec();
+        if (mStopping) { mLastSync["x"] = 1; }
+        saveLastSync();
         notifyComplete(error);
+    }
+
+    // Diagnostics must never be able to break a sync, so a failed write is only
+    // logged. This run is the record's only writer, which is why it can be held
+    // in a field and saved whole, unlike the queue state (see the top of file).
+    function saveLastSync() {
+        try {
+            writeLastSync(mLastSync);
+        } catch (e) {
+            System.println("last sync save failed");
+        }
+        mLastSyncDue = clockSec() + LAST_SYNC_CHECKPOINT;
+    }
+
+    // The first reply of a run is saved at once: it separates "the server never
+    // answered" from "it answered, then stopped", the question a hang raises.
+    function noteChunkReply() {
+        if (mLastSync["l"] == null) { mLastSyncDue = 0; }
+        mLastSync["l"] = clockSec();
+    }
+
+    function checkpointLastSync() {
+        if (PodcastSchedule.elapsed(clockSec(), mLastSyncDue, LAST_SYNC_CHECKPOINT)) {
+            saveLastSync();
+        }
     }
     // Each asynchronous worker is cancelled BEFORE cancelling transport: a
     // late callback must neither restart its chain nor complete a second time.
@@ -346,6 +389,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             }
             return;
         }
+        noteChunkReply();
         if ((code != 200) || (data == null)) {
             var itemId = context["item"];
             var job = JobStore.get(itemId);
@@ -360,13 +404,19 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             // Try this chunk again straight away before treating it as a real
             // failure. A cancellation is not retried: something stopped it on
             // purpose, and a new request would just be cancelled in turn.
+            mLastSync["f"] = code;
             var recoverable = Errors.downloadRecoverable(code);
             if (recoverable && (code != -1003) && (code != -5) && (mRetries < CHUNK_RETRIES)) {
                 mRetries += 1;
+                mLastSync["r"] += 1;
+                checkpointLastSync();
                 downloadNext();
                 return;
             }
             mRetries = 0;
+            // Saved now rather than at the next checkpoint: the code is the most
+            // useful field, and this path already writes the job and the error.
+            saveLastSync();
 
             // Download failed. Do NOT end the sync here: a dirty offline listen
             // still needs flushing and other queued books may be fine, so move
@@ -452,6 +502,8 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             JobStore.put(itemId, job);
         }
 
+        mLastSync["c"] += 1;
+        checkpointLastSync();
         onOpDone();
         downloadNext();
     }
@@ -512,4 +564,38 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     }
 
     function notifyProgress(pct) { Communications.notifySyncProgress(pct); }
+}
+
+// What the most recent sync run did, for DownloadedMenu -> "Last sync". Serial
+// logs are invisible on a real watch and LAST_SYNC_ERROR only speaks when a
+// chunk fails, so a run that hung or crashed used to leave no trace at all.
+//
+// One small dictionary, replaced by each run and never grown by it:
+//   "s" start, seconds      "c" chunks completed      "r" retries used
+//   "e" end, seconds        "f" last failure code     "l" last chunk reply, seconds
+//   "x" present if the run was stopped rather than finishing
+// Only "s", "c" and "r" exist from the start. No "e" means the run never ended.
+module LastSync {
+    function get() { return Application.Storage.getValue(Store.LAST_SYNC); }
+
+    function clock(info) {
+        return info.hour.format("%02d") + ":" + info.min.format("%02d");
+    }
+    function at(sec) { return Gregorian.info(new Time.Moment(sec), Time.FORMAT_MEDIUM); }
+
+    // ErrorView centres this without wrapping, so the top and bottom lines have
+    // the least room: lastSyncWorstCaseTextFitsARoundScreen measures every line.
+    function text(record) {
+        var start = at(record["s"]);
+        var end = "Did not finish";
+        if (record["e"] != null) {
+            end = ((record["x"] != null) ? "Stopped " : "Ended ") + clock(at(record["e"]));
+        }
+        var text = start.month + " " + start.day + " " + clock(start)
+            + "\n" + end
+            + "\nParts: " + record["c"]
+            + "\nRetries: " + record["r"]
+            + "\n" + ((record["l"] != null) ? "Last reply " + clock(at(record["l"])) : "No reply");
+        return (record["f"] != null) ? text + "\nCode: " + record["f"] : text;
+    }
 }

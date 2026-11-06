@@ -59,6 +59,15 @@ class DownloadedMenuDelegate extends WatchUi.Menu2InputDelegate {
             return;
         }
 
+        // "Last sync" -> when the last run started, how it ended and what it did.
+        if ((id instanceof Toybox.Lang.String) && id.equals("lastsync")) {
+            var record = LastSync.get();
+            if (record != null) {
+                WatchUi.pushView(new ErrorView(LastSync.text(record)), new ErrorViewDelegate(), WatchUi.SLIDE_LEFT);
+            }
+            return;
+        }
+
         // "Log out" -> clear the stored server/token and go straight to a fresh
         // on-watch login (switchToView, not push, so Back doesn't return to a
         // stale pre-logout menu - matches how LoginView.onLogin returns on success).
