@@ -491,8 +491,10 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
                 ref = iter.next();
             }
         }
+        // This now also runs after a failed download. Housekeeping must not be
+        // able to crash the sync before its progress exchange and error report.
         for (var i = 0; i < orphans.size(); ++i) {
-            Media.deleteCachedItem(new Media.ContentRef(orphans[i], Media.CONTENT_TYPE_AUDIO));
+            discardAudio(orphans[i]);
         }
     }
 
