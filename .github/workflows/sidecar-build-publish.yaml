@@ -28,7 +28,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Users pull :latest directly, so a broken sidecar must not reach the registry.
+  # Every trigger above (push, release, manual re-run) goes through this.
+  test:
+    uses: ./.github/workflows/sidecar-test.yaml
+    permissions:
+      contents: read
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
