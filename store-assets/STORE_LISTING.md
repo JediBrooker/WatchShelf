@@ -1,7 +1,7 @@
-# Connect IQ store listing — b43 (prepared, not yet published)
+# Connect IQ store listing — b44 (prepared, not yet published)
 
 Physical Venu 4 charging and unattended Wi-Fi behavior still need validation.
-Upload the matching b43 package before copying these blocks into the store
+Upload the matching b44 package before copying these blocks into the store
 fields. Updating this file or the store text does not update the installed
 binary. Confirm the accepted package and the on-watch build tag match the notes.
 
@@ -77,7 +77,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b43
+## What's New — b44
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -87,7 +87,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
-WATCHSHELF b43
+WATCHSHELF b44
 
 UPDATE YOUR SIDECAR FIRST
 
