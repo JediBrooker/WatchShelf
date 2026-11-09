@@ -1,7 +1,7 @@
-# Connect IQ store listing — b44 (prepared, not yet published)
+# Connect IQ store listing — b45 (prepared, not yet published)
 
 Physical Venu 4 charging and unattended Wi-Fi behavior still need validation.
-Upload the matching b44 package before copying these blocks into the store
+Upload the matching b45 package before copying these blocks into the store
 fields. Updating this file or the store text does not update the installed
 binary. Confirm the accepted package and the on-watch build tag match the notes.
 
@@ -77,7 +77,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b44
+## What's New — b45
 
 > Covers **everything since b35**, the previous public build. Several releases
 > landed the same day, so most users are jumping the whole span at once and the
@@ -87,7 +87,7 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 > the sidecar loses all downloads, so it must not sit under the features.
 
 ```
-WATCHSHELF b44
+WATCHSHELF b45
 
 UPDATE YOUR SIDECAR FIRST
 
@@ -122,12 +122,10 @@ NEW
   straight to the on-watch keyboard. (Connect IQ Store installs only.)
 
   Playback speed, per book
-  1.0x, 1.25x, 1.5x, 1.75x or 2.0x, chosen from a downloaded book's own menu
-  next to Resume and Play from start. A watch cannot change the speed of audio
-  it is already holding, so a speed you have not used before has to be fetched -
-  but WatchShelf keeps the previous one when there is room, so switching BACK to
-  a speed you already have is instant. The menu shows which speeds are on the
-  watch.
+  1.0x, 1.25x, 1.5x, 1.75x or 2.0x, from a downloaded book's menu. A watch
+  cannot change the speed of audio it already holds, so a speed you have not
+  used before has to be fetched - but WatchShelf keeps the previous one when
+  there is room, so switching BACK to a speed you already have is instant.
 
   Podcasts
   Podcast libraries appear alongside your audiobooks. Each show browses like an
@@ -148,6 +146,9 @@ FIXED
   Interrupted downloads carry on
   A failed part no longer cancels the book. WatchShelf retries, then Sync now
   continues from the same part.
+
+  Deleting a long book sat at 0%
+  The progress bar now moves while a book is deleted.
 
   Phone API-key setup
   The updated sidecar accepts Audiobookshelf API keys entered in Garmin Connect
