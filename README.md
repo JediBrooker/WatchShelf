@@ -5,7 +5,11 @@ self-hosted [Audiobookshelf](https://audiobookshelf.org) (ABS) server on a **Gar
 Tactix 8** (and other music-capable Garmin watches). Log in on the watch, browse your
 whole library, download a book, and listen offline — with two-way progress sync.
 
-> **Current source: build `b44`.** A new **Last sync** row shows what the most
+> **Current source: build `b45`.** Deleting a book now removes it in batches and
+> moves the progress bar as it goes, instead of sitting at 0% until a long book
+> is entirely gone. Simulator only so far.
+>
+> Build `b44`: a new **Last sync** row shows what the most
 > recent sync did: when it started, how it ended (or "Did not finish"), parts
 > downloaded, retries, the last reply and the last failure code. Include it when
 > reporting a sync problem. It has only run in the simulator so far.

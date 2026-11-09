@@ -263,30 +263,65 @@ module BookStore {
     // cached media. Leaves the book's metadata alone; callers that are removing
     // the whole book clear it separately.
     function dropSlot(itemId, slot) {
+        for (var p = lastPage(itemId, slot); p >= 0; --p) {
+            var arr = Application.Storage.getValue(pageKeyFor(itemId, slot, p));
+            if (arr != null) {
+                for (var i = 0; i < arr.size(); ++i) { evict(arr[i]); }
+            }
+            Application.Storage.deleteValue(pageKeyFor(itemId, slot, p));
+        }
+    }
+
+    // Evict up to `budget` cached parts of a book being deleted and return how
+    // many records were consumed, 0 once nothing is left. Takes from the END:
+    // the parked speed first, then the highest page, shortening it in Storage
+    // after each batch. So a stop between batches leaves a contiguous 0..m
+    // prefix whose remaining refIds are all still recorded, and the next call
+    // carries on from there without stranding any cached audio.
+    function dropSome(itemId, budget) {
+        var used = 0;
+        var slots = [SLOT_ALT, SLOT_PRIMARY];
+        for (var s = 0; (s < slots.size()) && (used < budget); ++s) {
+            var last = lastPage(itemId, slots[s]);
+            while ((last >= 0) && (used < budget)) {
+                var pageKey = pageKeyFor(itemId, slots[s], last);
+                var arr = Application.Storage.getValue(pageKey);
+                var take = budget - used;
+                if (take > arr.size()) { take = arr.size(); }
+                for (var i = arr.size() - take; i < arr.size(); ++i) { evict(arr[i]); }
+                used += take;
+                if (take == arr.size()) {
+                    Application.Storage.deleteValue(pageKey);
+                    last -= 1;
+                } else {
+                    Application.Storage.setValue(pageKey, arr.slice(0, arr.size() - take));
+                }
+            }
+        }
+        return used;
+    }
+
+    function lastPage(itemId, slot) {
         var last = -1;
         while (Application.Storage.getValue(pageKeyFor(itemId, slot, last + 1)) != null) {
             last += 1;
         }
-        for (var p = last; p >= 0; --p) {
-            var arr = Application.Storage.getValue(pageKeyFor(itemId, slot, p));
-            if (arr != null) {
-                for (var i = 0; i < arr.size(); ++i) {
-                    if (arr[i] != null) {
-                        // One unrecognised id must not abort the whole delete.
-                        // Media.deleteCachedItem throws when the id is not one
-                        // the OS knows, and an aborted delete strands every
-                        // remaining page - the leak this loop exists to avoid.
-                        // An id the OS does not know has no cached bytes to
-                        // free anyway, so skipping it costs nothing.
-                        try {
-                            Media.deleteCachedItem(new Media.ContentRef(arr[i], Media.CONTENT_TYPE_AUDIO));
-                        } catch (e) {
-                            System.println("evict skipped " + arr[i] + ": " + e.getErrorMessage());
-                        }
-                    }
-                }
-            }
-            Application.Storage.deleteValue(pageKeyFor(itemId, slot, p));
+        return last;
+    }
+
+    // One unrecognised id must not abort a delete. Media.deleteCachedItem
+    // throws when the id is not one the OS knows, and an aborted delete
+    // strands every remaining page - the leak the callers exist to avoid. An id
+    // the OS does not know has no cached bytes to free anyway. Tests set
+    // `evicted` to an array to see which ids were asked for; null otherwise.
+    var evicted = null;
+    function evict(refId) {
+        if (refId == null) { return; }
+        if (evicted != null) { evicted.add(refId); }
+        try {
+            Media.deleteCachedItem(new Media.ContentRef(refId, Media.CONTENT_TYPE_AUDIO));
+        } catch (e) {
+            System.println("evict skipped " + refId + ": " + e.getErrorMessage());
         }
     }
 

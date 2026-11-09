@@ -3,6 +3,7 @@ using Toybox.Communications;
 using Toybox.Media;
 using Toybox.System;
 using Toybox.Time;
+using Toybox.Timer;
 using Toybox.Time.Gregorian;
 
 // Downloads queued books to the device media cache, one derived chunk at a
@@ -43,6 +44,12 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     // so this adds at most one small write a minute, however fast chunks or
     // retries arrive. A run that dies loses at most this much of its own record.
     const LAST_SYNC_CHECKPOINT = 60;
+    // Cached parts evicted per event when a book is deleted, and the pause
+    // between events. A 20-hour book is ~417 parts; evicting them all in one
+    // event left the sync screen at 0% until the whole book was gone (issue
+    // #44). The pause ends the event so the progress bar can redraw.
+    const DELETE_BATCH = 20;
+    const DELETE_PAUSE_MS = 100;
 
     private var mTotal;         // ops planned at sync start (downloads + deletes)
     private var mDone;          // ops completed
@@ -60,13 +67,15 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     private var mSyncError;     // download error surfaced AFTER progress runs, or null
     private var mLastSync;      // this run's record: see LastSync below
     private var mLastSyncDue;   // when the next checkpoint of it is due
+    private var mDeleting;      // books this run is deleting, in order
+    private var mDeleteTimer;   // pause before the next delete batch
 
     function initialize() {
         Communications.SyncDelegate.initialize();
         mTotal = 0;
         mDone = 0;
         mCarried = 0; mRetries = 0; mPaused = {}; mStopping = false;
-        mSyncError = null;
+        mSyncError = null; mDeleting = [];
         mRun = 0; mCompleted = true; mFinishing = false;
         mPodcastDone = false; mForce = false;
     }
@@ -111,6 +120,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         saveLastSync();
         if (mProgressSync != null) { mProgressSync.cancel(); }
         if (mPodcast != null) { mPodcast.cancel(); }
+        stopDeleteTimer();
         mRun += 1; mCompleted = false; mFinishing = false; mPodcastDone = false;
         mForce = (Application.Storage.getValue(Store.FORCE_SYNC) != null);
         // Recover invalid retention intent even with no enabled subscriptions
@@ -143,7 +153,19 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
             JobStore.remove(toDelete[i]);
         }
 
-        mTotal = toDelete.size();
+        // Un-index FIRST, then evict. A hard kill part-way then leaves an
+        // UNindexed book with orphan chunks (finished by the next sync, never
+        // played) rather than an INDEXED book with missing chunks (which makes
+        // playback start a DIFFERENT book's audio). Prune its progress too, so
+        // a deleted book can never win bestResume() and misdirect a later
+        // native-widget resume to the wrong (or no) book. Each book counts one
+        // op per cached part, plus one for dropping its records.
+        mDeleting = toDelete;
+        for (var i = 0; i < toDelete.size(); ++i) {
+            BookStore.removeFromIndex(toDelete[i]);
+            Progress.remove(toDelete[i]);
+            mTotal += BookStore.totalChunks(toDelete[i]) + 1;
+        }
         var jobIds = JobStore.list();
         for (var i = 0; i < jobIds.size(); ++i) {
             var job = JobStore.get(jobIds[i]);
@@ -174,8 +196,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         // only moves when a chunk lands, and on a long book the first whole
         // percent is several chunks away, so 0% reads as a hung sync.
         if (mCarried > 0) { notifyProgress(percent()); }
-        deleteQueued(toDelete);
-        downloadNext();
+        deleteNext();
     }
 
     // Final, DECOUPLED step of every successful sync: exchange play progress
@@ -257,6 +278,7 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         // Set first: cancelling transport can report -1003 for the chunk in
         // flight, and that must neither count as a failure nor start a retry.
         mStopping = true;
+        stopDeleteTimer();
         if (mProgressSync != null) { mProgressSync.cancel(); }
         if (mPodcast != null) { mPodcast.cancel(); }
         cancelRequests();
@@ -264,30 +286,60 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
     }
     function cancelRequests() { Communications.cancelAllRequests(); }
 
-    // Delete every queued BOOK: un-index it, evict its cached chunks and records,
-    // and drop its saved progress.
-    function deleteQueued(toDelete) {
-        if (toDelete.size() == 0) { return; }
-        for (var i = 0; i < toDelete.size(); ++i) {
-            // Un-index FIRST, then evict. A hard kill between the two then leaves
-            // an UNindexed book with orphan chunks (harmlessly swept next sync,
-            // never played) rather than an INDEXED book with zero chunks (which
-            // makes playback start a DIFFERENT book's audio). Prune its progress
-            // too, so a deleted book can never win bestResume() and misdirect a
-            // later native-widget resume to the wrong (or no) book.
-            BookStore.removeFromIndex(toDelete[i]);
-            BookStore.deleteBook(toDelete[i]);
-            Progress.remove(toDelete[i]);
-            onOpDone();
+    // Evict the books being deleted one batch per event, reporting progress
+    // after each batch, then start the downloads. Books were un-indexed in
+    // onStartSync. A book stays on DELETE_LIST until its records are gone, so a
+    // stop or crash part-way leaves the rest for the next sync, and BookStore
+    // only ever shortens a book from its end, so what is left stays readable.
+    function deleteNext() {
+        mDeleteTimer = null;
+        while (!mCompleted) {
+            if (mDeleting.size() == 0) { downloadNext(); return; }
+            var itemId = mDeleting[0];
+            // Re-queued from the menu while this ran: it is not ours to delete.
+            if (!containsId(deletes(), itemId)) {
+                mDeleting = mDeleting.slice(1, null);
+                continue;
+            }
+            var evicted = BookStore.dropSome(itemId, DELETE_BATCH);
+            if (evicted > 0) {
+                onOpsDone(evicted);
+                if (later(method(:deleteNext))) { return; }
+                // No timer: carry on in this event, as every sync did before.
+                continue;
+            }
+            BookStore.deleteBook(itemId);
+            forgetDelete(itemId);
+            mDeleting = mDeleting.slice(1, null);
+            onOpsDone(1);
         }
+    }
 
-        // Remove ONLY the entries just processed - a delete the UI queued
-        // while this loop ran must survive for the next sync, not be
-        // silently dropped by a wholesale clear.
+    // Run `callback` after a short pause. False if no timer could be set, so
+    // the caller carries on without one rather than stalling the sync.
+    function later(callback) {
+        try {
+            mDeleteTimer = new Timer.Timer();
+            mDeleteTimer.start(callback, DELETE_PAUSE_MS, false);
+            return true;
+        } catch (e) {
+            mDeleteTimer = null;
+            System.println("delete timer unavailable: " + e.getErrorMessage());
+            return false;
+        }
+    }
+
+    function stopDeleteTimer() {
+        if (mDeleteTimer != null) { mDeleteTimer.stop(); mDeleteTimer = null; }
+    }
+
+    // Remove ONLY this book - a delete the UI queued while this ran must
+    // survive for the next sync, not be dropped by a wholesale clear.
+    function forgetDelete(itemId) {
         var fresh = deletes();
         var remaining = [];
         for (var i = 0; i < fresh.size(); ++i) {
-            if (!containsId(toDelete, fresh[i])) { remaining.add(fresh[i]); }
+            if (!fresh[i].equals(itemId)) { remaining.add(fresh[i]); }
         }
         if (remaining.size() > 0) {
             Application.Storage.setValue(Store.DELETE_LIST, remaining);
@@ -550,8 +602,9 @@ class WatchShelfSyncDelegate extends Communications.SyncDelegate {
         }
     }
 
-    function onOpDone() {
-        ++mDone;
+    function onOpDone() { onOpsDone(1); }
+    function onOpsDone(n) {
+        mDone += n;
         notifyProgress(percent());
     }
 

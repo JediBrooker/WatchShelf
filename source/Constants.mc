@@ -113,5 +113,6 @@ module Versions {
     // b43 lets a manual job carry the optional "retryAt" automatic jobs already
     // had: additive, and a job without it reads as not paused.
     // b44 adds the LAST_SYNC key: a new key, with no existing value changing shape.
-    const tag = "b44";
+    // b45 deletes a book in batches across sync events; no stored shape changes.
+    const tag = "b45";
 }
