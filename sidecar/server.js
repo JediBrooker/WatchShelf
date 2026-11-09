@@ -92,7 +92,7 @@ if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); 
 // fmt=m4a2/m4a3 are protocol guards; m4a3 additionally carries playback speed.
 // 'm4a' keeps the legacy ADTS behavior for older watch builds.
 const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4', m4a3: 'audio/mp4' };
-const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
+const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^-?[0-9]+$/;
 const SPEEDS = new Set([100, 125, 150, 175, 200]);
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
