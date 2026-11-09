@@ -4,7 +4,7 @@ using Toybox.Lang;
 
 // Shared deletion path for downloaded books - used by the per-book action menu
 // (one book) and the "Delete all downloads" confirmation (every book). Queue the
-// whole books and kick a sync; SyncDelegate.deleteQueued evicts each cached
+// whole books and kick a sync; SyncDelegate.deleteNext evicts each cached
 // chunk. Whole-book only: per-chunk state is what used to OOM-crash the app
 // (see Constants.mc).
 module Downloads {
