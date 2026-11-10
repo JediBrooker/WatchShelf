@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sidecarTmpdir } from './sidecar-tmpdir.js';
 
 const SERVER = fileURLToPath(new URL('../server.js', import.meta.url));
 const API_KEY = 'api-key._~+/-==';
@@ -15,7 +16,7 @@ const activeAccess = jwt(now + 3600, 'active');
 const renewedAccess = jwt(now + 3600, 'renewed');
 const calls = [];
 const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
-let abs, side, base, work, sessionsFile, audio, revoked = false, sideError = '';
+let abs, side, base, work, sideTmp, sessionsFile, audio, revoked = false, sideError = '';
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 
 before(async () => {
@@ -56,9 +57,10 @@ before(async () => {
   const sidePort = await listen(probe);
   await new Promise(resolve => probe.close(resolve));
   base = `http://127.0.0.1:${sidePort}`;
+  sideTmp = sidecarTmpdir();
   side = spawn(process.execPath, [SERVER], {
     env: { ...process.env, ABS_URL: `http://127.0.0.1:${absPort}`, PORT: String(sidePort),
-      BIND: '127.0.0.1', BASE_PATH: '', SESSIONS_FILE: sessionsFile },
+      BIND: '127.0.0.1', BASE_PATH: '', SESSIONS_FILE: sessionsFile, TMPDIR: sideTmp },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   side.stderr.on('data', chunk => { sideError += chunk; });
@@ -78,6 +80,7 @@ after(async () => {
   }
   if (abs) await new Promise(resolve => abs.close(resolve));
   if (work) rmSync(work, { recursive: true, force: true });
+  if (sideTmp) rmSync(sideTmp, { recursive: true, force: true });
 });
 
 const request = (path, token, options) => fetch(`${base}${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`, options);
