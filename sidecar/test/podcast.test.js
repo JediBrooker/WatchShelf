@@ -14,8 +14,10 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
+import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { sidecarTmpdir } from './sidecar-tmpdir.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SERVER = join(HERE, '..', 'server.js');
@@ -35,7 +37,7 @@ const jwt = () => {
   return `h.${payload}.s`;
 };
 
-let abs, absPort, side, sidePort, sid, lastAuth;
+let abs, absPort, side, sidePort, sideTmp, sid, lastAuth;
 const absCalls = [];
 
 function mockAbs() {
@@ -142,9 +144,10 @@ before(async () => {
   const probe = http.createServer(); sidePort = await listen(probe);
   await new Promise((r) => probe.close(r));
 
+  sideTmp = sidecarTmpdir();
   side = spawn(process.execPath, [SERVER], {
     env: { ...process.env, ABS_URL: `http://127.0.0.1:${absPort}`, PORT: String(sidePort),
-           BIND: '127.0.0.1', BASE_PATH: '', SESSIONS_FILE: '' },
+           BIND: '127.0.0.1', BASE_PATH: '', SESSIONS_FILE: '', TMPDIR: sideTmp },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   // Wait for /health rather than sleeping.
@@ -164,7 +167,15 @@ before(async () => {
   assert.ok(sid, 'login must yield a session id');
 });
 
-after(() => { side?.kill(); abs?.close(); });
+after(async () => {
+  if (side && side.exitCode === null) {
+    const stopped = new Promise((r) => side.once('exit', r));
+    side.kill();
+    await stopped;
+  }
+  abs?.close();
+  if (sideTmp) { rmSync(sideTmp, { recursive: true, force: true }); }
+});
 
 test('a podcast library is reported to the watch as a book library', async () => {
   const { body } = await get(`/libraries?token=${sid}`);

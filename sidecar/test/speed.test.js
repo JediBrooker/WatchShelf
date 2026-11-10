@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { sidecarTmpdir } from './sidecar-tmpdir.js';
 
 const sidecarDir = fileURLToPath(new URL('../', import.meta.url));
 
@@ -76,10 +77,11 @@ test('transcodes supported speeds and rejects unsupported ones', { skip: !hasFfm
   });
   await listen(absServer);
   const sidecarPort = await freePort();
+  const sideTmp = sidecarTmpdir();
   const sidecar = spawn('node', [join(sidecarDir, 'server.js')], {
     cwd: sidecarDir,
     env: { ...process.env, ABS_URL: `http://127.0.0.1:${absServer.address().port}`,
-      BIND: '127.0.0.1', PORT: String(sidecarPort), BASE_PATH: '' },
+      BIND: '127.0.0.1', PORT: String(sidecarPort), BASE_PATH: '', TMPDIR: sideTmp },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   try {
@@ -110,5 +112,6 @@ test('transcodes supported speeds and rejects unsupported ones', { skip: !hasFfm
     sidecar.kill('SIGTERM');
     await close(absServer);
     rmSync(work, { recursive: true, force: true });
+    rmSync(sideTmp, { recursive: true, force: true });
   }
 });

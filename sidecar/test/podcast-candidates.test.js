@@ -9,13 +9,14 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sidecarTmpdir } from './sidecar-tmpdir.js';
 
 const SERVER = fileURLToPath(new URL('../server.js', import.meta.url));
 const API_KEY = 'podcast-key._~+/-==';
 const now = Math.floor(Date.now() / 1000);
 const jwt = (name, expired = false) => `h.${Buffer.from(JSON.stringify({ exp: now + (expired ? -60 : 3600), sub: name })).toString('base64url')}.s`;
 const active = jwt('active'), renewed = jwt('renewed'), early = jwt('revoked-before-expiry');
-let upstream, side, base, work, sideError = '', fixture;
+let upstream, side, base, work, sideTmp, sideError = '', fixture;
 const calls = [];
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const episode = (id, publishedAt = 1700000000000, extra = {}) => ({
@@ -76,9 +77,10 @@ before(async () => {
   const probe = http.createServer(); const port = await listen(probe);
   await new Promise(resolve => probe.close(resolve));
   base = `http://127.0.0.1:${port}`;
+  sideTmp = sidecarTmpdir();
   side = spawn(process.execPath, [SERVER], {
     env: { ...process.env, ABS_URL: `http://127.0.0.1:${upstreamPort}`, PORT: String(port), BIND: '127.0.0.1',
-      BASE_PATH: '/proxy', SESSIONS_FILE: join(work, 'sessions.json') }, stdio: ['ignore', 'ignore', 'pipe'],
+      BASE_PATH: '/proxy', SESSIONS_FILE: join(work, 'sessions.json'), TMPDIR: sideTmp }, stdio: ['ignore', 'ignore', 'pipe'],
   });
   side.stderr.on('data', chunk => { sideError += chunk; });
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -93,6 +95,7 @@ after(async () => {
   if (side && side.exitCode === null) { const stopped = new Promise(resolve => side.once('exit', resolve)); side.kill(); await stopped; }
   if (upstream) { await new Promise(resolve => upstream.close(resolve)); }
   if (work) { rmSync(work, { recursive: true, force: true }); }
+  if (sideTmp) { rmSync(sideTmp, { recursive: true, force: true }); }
 });
 async function get(query = 'show=show&limit=2&order=newest', token = API_KEY) {
   const response = await fetch(`${base}/proxy/podcasts/candidates?${query}&token=${encodeURIComponent(token)}`);
