@@ -92,7 +92,12 @@ if (!ABS) { console.error('ABS_URL is required (e.g. http://127.0.0.1:13378)'); 
 // fmt=m4a2/m4a3 are protocol guards; m4a3 additionally carries playback speed.
 // 'm4a' keeps the legacy ADTS behavior for older watch builds.
 const CT   = { mp3: 'audio/mpeg', m4a: 'audio/aac', m4a2: 'audio/mp4', m4a3: 'audio/mp4' };
-const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^-?[0-9]+$/;
+const IDRE = /^[A-Za-z0-9_\-]+$/, NUM = /^[0-9]+$/;
+// ABS file ids are filesystem inodes as decimal strings. Node reports a 64-bit
+// inode above 2^63 as negative (seen on rclone/FUSE mounts), and ABS keeps that
+// string as the file's id, so the sign is part of the id. Only inodes may be
+// negative: start/end/speed stay on NUM.
+const INO = /^-?[0-9]{1,20}$/;
 const SPEEDS = new Set([100, 125, 150, 175, 200]);
 const b64  = (s) => Buffer.from(String(s)).toString('base64');
 const bearer = (t) => ({ Authorization: `Bearer ${t}`, 'User-Agent': UA });
@@ -296,10 +301,10 @@ async function transcode(req, res, u) {
   // Status is '-' when the client left before any answer was sent.
   res.once('close', () => {
     console.log(`transcode status=${res.headersSent ? res.statusCode : '-'} ms=${Date.now() - receivedAt} queuedMs=${queuedMs}`
-      + ` item=${logField(item, IDRE)} file=${logField(file, NUM)} range=${logField(start, NUM)}-${logField(end, NUM)}`
+      + ` item=${logField(item, IDRE)} file=${logField(file, INO)} range=${logField(start, NUM)}-${logField(end, NUM)}`
       + ` clientGone=${!res.writableFinished}`);
   });
-  if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !NUM.test(file) || !SPEEDS.has(speed)) { res.writeHead(400).end('bad params'); return; }
+  if (!item || !file || !token || !CT[fmt] || !IDRE.test(item) || !INO.test(file) || !SPEEDS.has(speed)) { res.writeHead(400).end('bad params'); return; }
   if ((start != null && !NUM.test(start)) || (end != null && !NUM.test(end))) { res.writeHead(400).end('bad range'); return; }
   // Fresh token BEFORE ffmpeg fetches (ffmpeg's internal request can't refresh
   // itself; over a long download the accessToken would otherwise expire mid-book).
@@ -623,7 +628,7 @@ async function podcastCandidates(req, res, u) {
       const audio = ep.audioFile;
       if (audio?.duration > PODCAST_MAX_SECONDS) { throw new Error('malformed podcast episode duration'); }
       if (d.isMissing || d.isInvalid || !audio || audio.exclude || audio.error ||
-          !NUM.test(String(audio.ino ?? '')) || !Number.isFinite(audio.duration) || audio.duration <= 0) { continue; }
+          !INO.test(String(audio.ino ?? '')) || !Number.isFinite(audio.duration) || audio.duration <= 0) { continue; }
       available.push(ep);
     }
     available.sort((a, b) => byNewest(a, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));

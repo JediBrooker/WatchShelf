@@ -55,6 +55,7 @@ after(() => rmSync(work, { recursive: true, force: true }));
 //   denied-  answers 401
 async function startAbs(accessToken) {
   const seen = [];
+  const files = [];
   const counts = {};
   const open = new Set();
   let held = [];
@@ -72,8 +73,9 @@ async function startAbs(accessToken) {
       res.end(JSON.stringify({ user: { accessToken, username: 'test' } }));
       return;
     }
-    const item = /^\/api\/items\/([^/]+)\/file\/1\/download$/.exec(req.url)?.[1];
+    const [, item, file] = /^\/api\/items\/([^/]+)\/file\/(-?[0-9]+)\/download$/.exec(req.url) || [];
     if (!item) { res.writeHead(404).end(); return; }
+    files.push(file);
     if (!seen.includes(item)) { seen.push(item); }
     counts[item] = (counts[item] || 0) + 1;
     open.add(req.socket);
@@ -94,7 +96,7 @@ async function startAbs(accessToken) {
     return new Promise((resolve) => server.close(resolve));
   });
   return {
-    port, seen, open,
+    port, seen, files, open,
     release() {
       const waiting = held;
       held = [];
@@ -305,4 +307,35 @@ test('every request logs one line and no token reaches the logs', { skip: !hasFf
   assert.match(side.lineFor('ok-a'), /^transcode status=200 .* range=0-4 clientGone=false$/);
   assert.match(side.lineFor('denied-a'), /^transcode status=401 /);
   assert.match(side.lines().at(-1), /^transcode status=400 .* item=- file=1 range=--- clientGone=false$/);
+});
+
+test('a negative inode reaches ABS unchanged, while start and end stay non-negative', { skip: !hasFfmpeg }, async () => {
+  // Node reports inodes above 2^63 as negative (rclone/FUSE mounts), and ABS
+  // uses that string as the file id.
+  const ino = '-7463524515094582699';
+  const abs = await startAbs('unused');
+  const side = await startSidecar(abs.port);
+  const transcode = async (query) => {
+    const response = await fetch(`${side.base}/transcode?item=ok-neg&fmt=m4a3&token=test-api-key&${query}`);
+    return { status: response.status, body: Buffer.from(await response.arrayBuffer()) };
+  };
+
+  const ok = await transcode(`file=${ino}&start=0&end=4`);
+  assert.equal(ok.status, 200);
+  assert.ok(ok.body.length > 0);
+  assert.ok(abs.files.length > 0 && abs.files.every((file) => file === ino), `ABS saw ${abs.files}`);
+  await until(() => side.lineFor('ok-neg'), 'the transcode log line');
+  assert.match(side.lineFor('ok-neg'), new RegExp(`^transcode status=200 .* file=${ino} range=0-4 `));
+
+  const fetched = abs.files.length;
+  for (const file of ['--1', '1-2', '-', '+1', '1.5', '123456789012345678901']) {
+    assert.equal((await transcode(`file=${encodeURIComponent(file)}&start=0&end=4`)).status, 400, `file=${file}`);
+  }
+  for (const range of ['start=-5&end=4', 'start=0&end=-4']) {
+    const bad = await transcode(`file=${ino}&${range}`);
+    assert.equal(bad.status, 400, range);
+    assert.equal(bad.body.toString(), 'bad range');
+  }
+  assert.equal((await transcode(`file=${ino}&start=0&end=4&speed=-100`)).status, 400);
+  assert.equal(abs.files.length, fetched, 'rejected requests must not reach ABS');
 });

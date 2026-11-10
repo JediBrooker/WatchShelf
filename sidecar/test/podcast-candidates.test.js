@@ -140,6 +140,17 @@ test('filters finished and unavailable before latest-N, retaining partly played 
   assert.deepEqual(oldest.body.episodes.map(ep => ep.id), ['show__partly', 'show__new']);
 });
 
+test('negative 64-bit inodes are valid episode audio; malformed inodes are not', async () => {
+  fixture.show.media.episodes = [
+    episode('signed', 1700000002000, { audioFile: { ino: '-7463524515094582699', duration: 60 } }),
+    episode('double-minus', 1700000003000, { audioFile: { ino: '--1', duration: 60 } }),
+    episode('inner-minus', 1700000004000, { audioFile: { ino: '1-2', duration: 60 } }),
+    episode('plain', 1700000001000)];
+  const result = await get();
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.episodes.map(ep => ep.id), ['show__signed', 'show__plain']);
+});
+
 test('at most five rows, deterministic tie order, and old/new order select the same set', async () => {
   fixture.show.media.episodes = ['f', 'b', 'e', 'd', 'c', 'a'].map(id => episode(id));
   const newest = await get('show=show&limit=5&order=newest');
