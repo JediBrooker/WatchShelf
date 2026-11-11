@@ -1,7 +1,7 @@
-# Connect IQ store listing — b44 (prepared, not yet published)
+# Connect IQ store listing — b45 (prepared, not yet published)
 
 Physical Venu 4 charging and unattended Wi-Fi behavior still need validation.
-Upload the matching b44 package before copying these blocks into the store
+Upload the matching b45 package before copying these blocks into the store
 fields. Updating this file or the store text does not update the installed
 binary. Confirm the accepted package and the on-watch build tag match the notes.
 
@@ -77,105 +77,97 @@ Open source, MIT licensed: github.com/JediBrooker/WatchShelf
 
 ---
 
-## What's New — b44
+## What's New — b45
 
-> Covers **everything since b35**, the previous public build. Several releases
-> landed the same day, so most users are jumping the whole span at once and the
-> notes have to read as one list rather than a changelog.
+> A changelog, newest build first, covering **everything since b35**, the
+> previous public build. Most users jump the whole span at once, so every build
+> is listed rather than only the latest. Add each new build at the top.
 >
-> The backend line is first on purpose: anyone updating the app without updating
-> the sidecar loses all downloads, so it must not sit under the features.
+> The sidecar update is first on purpose: anyone updating the app without
+> updating the sidecar loses all downloads. The default `docker-compose.yml`
+> builds from source, so `docker compose pull` alone does not update it; each
+> install method gets its own command.
 
 ```
-WATCHSHELF b44
+WATCHSHELF b45
 
 UPDATE YOUR SIDECAR FIRST
 
-This release needs a newer WatchShelf sidecar. If you update the watch app
-without updating the sidecar, your downloads will fail until you do.
+This release needs a newer WatchShelf sidecar. Update it before the watch app,
+or downloads will fail. In your sidecar folder:
 
-  docker compose pull && docker compose up -d
+  Prebuilt image (docker-compose.ghcr.yml):
+    docker compose -f docker-compose.ghcr.yml pull
+    docker compose -f docker-compose.ghcr.yml up -d
 
-Prebuilt image: ghcr.io/jedibrooker/watchshelf:latest (amd64 and arm64).
+  Built from source (docker-compose.yml):
+    git pull
+    docker compose up -d --build
 
-New since b35:
+  Installed with install.sh: run the installer again.
 
-NEW
+Image: ghcr.io/jedibrooker/watchshelf:latest (amd64 and arm64).
 
-  Automatic podcast downloads (off by default)
-  Choose a podcast library, Shows, a show, then Automatic downloads. Keep 1-5
-  unfinished episodes per show, with order and speed choices. Existing unfinished
-  episodes stay. Manage up to 10 shows under Downloaded, Podcast downloads.
-  Optional finished-episode removal waits for confirmed progress; Keep on watch
-  protects an episode. Automatic sync requires charging; Garmin decides timing.
-  Sync now also works without charging. Requires the updated sidecar.
+CHANGELOG SINCE b35
 
-  Sleep timer
-  Choose Off, 5, 15, 20, 30, 45, 60, 90 or 120 minutes from a downloaded
-  book's menu or phone settings. Playback stops at the end of the current part,
-  up to about 3 minutes later. Starting or resuming playback restarts the timer.
+b45
+- Deleting a long book no longer sits at 0%. The progress bar moves as it goes.
 
-  Set up from your phone
-  Garmin Connect, then WatchShelf, then Settings, takes your WatchShelf URL
-  and an Audiobookshelf API key, and the watch then needs no typing at all.
-  The app offers this the first time you open it, instead of sending you
-  straight to the on-watch keyboard. (Connect IQ Store installs only.)
+b44
+- New Last sync row under Downloaded shows what the latest sync did: start,
+  end or Did not finish, parts, retries and the last error code. Include it
+  when reporting a sync problem.
+- Sidecar: a network blip while renewing your session is no longer reported
+  as an expired session.
 
-  Playback speed, per book
-  1.0x, 1.25x, 1.5x, 1.75x or 2.0x, chosen from a downloaded book's own menu
-  next to Resume and Play from start. A watch cannot change the speed of audio
-  it is already holding, so a speed you have not used before has to be fetched -
-  but WatchShelf keeps the previous one when there is room, so switching BACK to
-  a speed you already have is instant. The menu shows which speeds are on the
-  watch.
+b43
+- A failed part no longer cancels a download. WatchShelf retries it, then
+  Sync now continues from the same part without selecting the book again.
 
-  Podcasts
-  Podcast libraries appear alongside your audiobooks. Each show browses like an
-  author and each episode like a book, with progress syncing per episode.
-  Episodes must already be downloaded in Audiobookshelf.
+b42
+- Automatic podcast downloads, off by default. Choose a podcast library,
+  Shows, a show, then Automatic downloads. Keep 1-5 unfinished episodes per
+  show, with order and speed choices. Optional removal of finished episodes
+  waits for confirmed progress. Automatic sync needs the watch on charge;
+  Sync now works without. Manage up to 10 shows under Downloaded, Podcast
+  downloads.
+- Sleep timer: Off, 5, 15, 20, 30, 45, 60, 90 or 120 minutes, from a book's
+  menu or phone settings. Playback stops at the end of the current part.
+- Fixed: Audiobookshelf API keys entered in Garmin Connect settings now work,
+  including for SSO accounts.
 
-  Lock the sidecar to your watch
-  Optional shared-secret header, so a reverse proxy can reject anything that is
-  not your watch. Set it under Downloaded, then Proxy header, or from Garmin
-  Connect.
+b41
+- Fixed: "Media Error Occurred" when opening the app on fenix 8 47 mm AMOLED,
+  introduced in b40.
 
-  Prebuilt sidecar images
-  ghcr.io/jedibrooker/watchshelf:latest, for amd64 and arm64 - so a Raspberry Pi
-  or ARM NAS works without building anything.
+b40
+- All 93 audio-capable Garmin watches supported, including the fenix 9 family.
+- "Made in Australia" row at the foot of the Downloaded menu.
 
-FIXED
+b39
+- First run offers setup from your phone (Garmin Connect, WatchShelf,
+  Settings) before the on-watch keyboard. Connect IQ Store installs only.
 
-  Interrupted downloads carry on
-  A failed part no longer cancels the book. WatchShelf retries, then Sync now
-  continues from the same part.
+b38
+- Change a book's playback speed after downloading it. WatchShelf keeps the
+  previous speed when there is room, so switching back is instant.
 
-  Phone API-key setup
-  The updated sidecar accepts Audiobookshelf API keys entered in Garmin Connect
-  settings, including for SSO accounts. Logging out and back in is no longer
-  necessary. Malformed credentials are rejected before they reach the downloader.
+b37
+- Playback speed per book: 1.0x, 1.25x, 1.5x, 1.75x or 2.0x.
 
-  Startup crash introduced in b40
-  The "Made in Australia" row now uses plain text. Its flag icon triggered
-  "Media Error Occurred" when opening the app on fenix 8 47 mm AMOLED.
+b36
+- Podcasts: shows browse like authors and episodes like books, with progress
+  per episode. Episodes must be downloaded in Audiobookshelf.
+- Optional proxy header locks the sidecar to your watch. Set it under
+  Downloaded, Proxy header, or in Garmin Connect.
+- Prebuilt sidecar images for amd64 and arm64.
+- Fixed: books with several hundred parts hung or failed to play. Found and
+  fixed by @Ayfteyd7Od and @idanbauer.
+- Fixed: login crashed on vivoactive 4 / 4s and Venu / Venu D. They now get
+  an on-watch character wheel.
+- Fixed: listening on the watch could overwrite a newer position from
+  another device.
 
-  Watch compatibility
-  The package includes all 93 supported audio-provider targets from the
-  October 2026 device catalog, including the fenix 9 family.
-
-  Long books would not play
-  Books with several hundred parts could hang on a blank player screen or fail
-  outright. Building the playlist was too slow and the watch killed it. Found
-  and fixed by @Ayfteyd7Od and @idanbauer.
-
-  Login crashed on vivoactive 4 / 4s and Venu / Venu D
-  Those watches have no on-screen keyboard, and the app crashed the moment you
-  started logging in. They now get an on-watch character wheel - though the
-  phone setup above is far quicker if you can use it.
-
-  Progress could go backwards
-  Listening on the watch could overwrite a newer position set on another device.
-  The watch now checks the server before pushing.
-
-With thanks to @alt-13, @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose fixes and
-features make up most of this release.
+With thanks to @alt-13, @idanbauer, @Ayfteyd7Od, @treyg and @pbzdyl, whose
+fixes and features make up most of this release.
 ```
