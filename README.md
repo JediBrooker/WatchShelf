@@ -102,9 +102,11 @@ same guide.
   character wheel on `vivoactive4/4s` and `venu/venud`, which don't. A first run
   offers the choice; a re-login keeps the URL and only asks for what's missing.
   Only the ABS token is stored, never the password.
-- **Chunks** are ~3-min, 96 kbps mono AAC in a real M4A container (~2 MB) — the
-  container is what lets the native player show a position/time indicator. Tune in
-  `source/Chunks.mc`.
+- **Chunks** are ~3-min, 96 kbps mono AAC by default in a real M4A container
+  (~2 MB) — the container is what lets the native player show a position/time
+  indicator. Set `TRANSCODE_AUDIO_BITRATE_KBPS` and
+  `TRANSCODE_AUDIO_CHANNELS` in the sidecar's `.env` file for a higher bitrate or
+  stereo output; see the [sidecar tuning guide](sidecar/README.md#tuning).
 - **Playback speed** is selected per book (1.0x–2.0x); progress stays on the
   Audiobookshelf source timeline.
 - **Sleep timer** is off by default. Set 5 minutes to 2 hours from a downloaded

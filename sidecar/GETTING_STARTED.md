@@ -74,6 +74,15 @@ same machine (or same network) as your Audiobookshelf server.
    already reachable at a public web address); pick the one that matches your
    setup.
 
+   Audio quality defaults to 96 kbps mono. To use a different setting, create a
+   `.env` file in this folder and add, for example, these lines for 192 kbps
+   stereo:
+   ```
+   TRANSCODE_AUDIO_BITRATE_KBPS=192
+   TRANSCODE_AUDIO_CHANNELS=2
+   ```
+   The bitrate can be 32–320 kbps; channels can be `1` (mono) or `2` (stereo).
+
 3. Start it:
    ```
    docker compose up -d --build
