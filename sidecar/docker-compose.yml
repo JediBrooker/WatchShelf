@@ -26,6 +26,9 @@ services:
       - TRANSCODE_TIMEOUT_MS=${TRANSCODE_TIMEOUT_MS:-}
       - FFMPEG_RW_TIMEOUT_MS=${FFMPEG_RW_TIMEOUT_MS:-}
       - TRANSCODE_CONCURRENCY=${TRANSCODE_CONCURRENCY:-}
+      # Audio quality defaults to 96 kbps mono; see .env.example.
+      - TRANSCODE_AUDIO_BITRATE_KBPS=${TRANSCODE_AUDIO_BITRATE_KBPS:-}
+      - TRANSCODE_AUDIO_CHANNELS=${TRANSCODE_AUDIO_CHANNELS:-}
     volumes:
       - watchshelf-data:/data
     extra_hosts:

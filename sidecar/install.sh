@@ -594,7 +594,16 @@ main() {
   ABS_NETWORK=""
   detect_abs_url
 
-  printf 'ABS_URL=%s\n' "$ABS_URL" > "$SIDECAR_DIR/.env"
+  # Keep user-selected audio quality when the installer is re-run. The other
+  # generated settings are still refreshed from the setup answers/defaults.
+  local preserved_audio_settings=""
+  if [ -f "$SIDECAR_DIR/.env" ]; then
+    preserved_audio_settings="$(grep -E '^(TRANSCODE_AUDIO_BITRATE_KBPS|TRANSCODE_AUDIO_CHANNELS)=' "$SIDECAR_DIR/.env" || true)"
+  fi
+  {
+    printf 'ABS_URL=%s\n' "$ABS_URL"
+    if [ -n "$preserved_audio_settings" ]; then printf '%s\n' "$preserved_audio_settings"; fi
+  } > "$SIDECAR_DIR/.env"
   ok "Sidecar configured to reach Audiobookshelf at: $ABS_URL"
 
   if [ -n "$ABS_NETWORK" ]; then

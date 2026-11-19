@@ -54,6 +54,18 @@ const posIntEnv = (name, fallback) => {
   const v = Number(process.env[name]);
   return Number.isInteger(v) && v > 0 ? Math.min(v, 2147483647) : fallback;
 };
+const boundedIntEnv = (name, fallback, min, max) => {
+  const raw = process.env[name];
+  if (raw == null || raw === '') { return fallback; }
+  const v = Number(raw);
+  if (Number.isInteger(v) && v >= min && v <= max) { return v; }
+  console.warn(`${name} must be an integer from ${min} to ${max}; using ${fallback}`);
+  return fallback;
+};
+// Audio quality is configured once for the sidecar, and applies to every
+// supported transcode format. These defaults preserve existing chunk output.
+const TRANSCODE_AUDIO_BITRATE_KBPS = boundedIntEnv('TRANSCODE_AUDIO_BITRATE_KBPS', 96, 32, 320);
+const TRANSCODE_AUDIO_CHANNELS = boundedIntEnv('TRANSCODE_AUDIO_CHANNELS', 1, 1, 2);
 // Bounds on an m4a chunk (issue #44). The response is buffered, so a proxy sees
 // no bytes until ffmpeg finishes, and Cloudflare gives up after 100s with no
 // response. The wall-clock limit runs from the request's arrival, queue wait
@@ -206,18 +218,18 @@ function ffArgs(srcUrl, token, fmt, start, end, out, speed) {
   // finalized at the end; +faststart then rewrites it to the front), so this
   // branch writes to a temp file (`out`) instead of pipe:1 - transcode()
   // already buffers fully anyway.
-  if (fmt === 'm4a2' || fmt === 'm4a3') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-movflags', '+faststart', '-f', 'ipod', out); }
+  if (fmt === 'm4a2' || fmt === 'm4a3') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', `${TRANSCODE_AUDIO_BITRATE_KBPS}k`, '-ac', String(TRANSCODE_AUDIO_CHANNELS), '-ar', '44100', '-movflags', '+faststart', '-f', 'ipod', out); }
   // Legacy ADTS for watch builds <= b28, which cache this as ENCODING_ADTS.
-  else if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-f', 'adts', 'pipe:1'); }
-  // 44100Hz/96kbps instead of the original 22050Hz/64kbps: the file itself was
-  // independently verified valid, complete, standard MP3 (clean full decode,
-  // correct headers) - but 22050Hz mono is a much less common combination than
-  // typical commercial audio, a plausible edge case for Garmin's specific
-  // hardware decoder to not handle even though it's fully spec-compliant.
-  // Mono is kept (legitimate, common for spoken word, and halves file size vs
-  // stereo for no perceptual benefit on speech) - only sample rate/bitrate move
-  // to more mainstream values.
-  else { a.push('-map', '0:a:0', '-c:a', 'libmp3lame', '-b:a', '96k', '-ac', '1', '-ar', '44100', '-f', 'mp3', 'pipe:1'); }
+  else if (fmt === 'm4a') { a.push('-map', '0:a:0', '-c:a', 'aac', '-b:a', `${TRANSCODE_AUDIO_BITRATE_KBPS}k`, '-ac', String(TRANSCODE_AUDIO_CHANNELS), '-ar', '44100', '-f', 'adts', 'pipe:1'); }
+  // 44100Hz and configurable bitrate (96kbps by default) instead of the
+  // original 22050Hz/64kbps: the file itself was independently verified valid,
+  // complete, standard MP3 (clean full decode, correct headers) - but 22050Hz
+  // mono is a much less common combination than typical commercial audio, a
+  // plausible edge case for Garmin's specific hardware decoder to not handle
+  // even though it's fully spec-compliant.
+  // Apply the same configurable bitrate/channel settings to this legacy MP3
+  // output so the sidecar's quality options behave consistently across formats.
+  else { a.push('-map', '0:a:0', '-c:a', 'libmp3lame', '-b:a', `${TRANSCODE_AUDIO_BITRATE_KBPS}k`, '-ac', String(TRANSCODE_AUDIO_CHANNELS), '-ar', '44100', '-f', 'mp3', 'pipe:1'); }
   return a;
 }
 
@@ -941,4 +953,4 @@ readdir(tmpdir()).then((names) => {
 }).catch(() => {});
 
 const BIND = process.env.BIND || '127.0.0.1';
-server.listen(PORT, BIND, () => console.log(`WatchShelf sidecar ${BIND}:${PORT} -> ${ABS}`));
+server.listen(PORT, BIND, () => console.log(`WatchShelf sidecar ${BIND}:${PORT} -> ${ABS} (audio ${TRANSCODE_AUDIO_BITRATE_KBPS} kbps, ${TRANSCODE_AUDIO_CHANNELS} channel${TRANSCODE_AUDIO_CHANNELS === 1 ? '' : 's'})`));

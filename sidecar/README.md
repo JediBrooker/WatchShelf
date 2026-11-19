@@ -105,9 +105,14 @@ PATH), then expose it the same way (step 3 above).
 - **Chunk length** is ~3 min (first chunk 15 s so playback can be tested right
   after a sync starts), set in the watch app (`source/Chunks.mc`, `FIRST`/`LEN`).
   Smaller → more, smaller downloads; larger → fewer, bigger.
-- **Quality** is 96 kbps mono AAC in an M4A container (spoken-word sweet spot;
-  the real container is what gives the player a duration). Change in `server.js`
-  `ffArgs`.
+- **Audio quality** defaults to 96 kbps mono AAC in an M4A container (the real
+  container is what gives the player a duration). Set
+  `TRANSCODE_AUDIO_BITRATE_KBPS` (32–320, default `96`) and
+  `TRANSCODE_AUDIO_CHANNELS` (`1` mono or `2` stereo, default `1`) in the
+  sidecar's `.env` file. For example, `192` and `2` gives 192 kbps stereo.
+  Invalid values log a warning and fall back to their defaults. Higher bitrates
+  create larger chunks and use more watch storage and download time. Recreate the
+  sidecar after changing these settings with `docker compose up -d`.
 - **Playback speed** supports 1.0x, 1.25x, 1.5x, 1.75x, and 2.0x via ffmpeg
   `atempo`; progress remains on the original timeline.
 - **Transcode limits** are set with `TRANSCODE_TIMEOUT_MS` (default 90000, queue
